@@ -1,0 +1,6 @@
+[submodule ".\\Vendor\\SDL"]
+	path = .\\Vendor\\SDL
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "Vendor/vkboostrap"]
+	path = Vendor/vkboostrap
+	url = https://github.com/charles-lunarg/vk-bootstrap.git
