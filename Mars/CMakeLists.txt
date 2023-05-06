@@ -11,8 +11,12 @@ add_library(${PROJECT_NAME}
 			Engine/Core/Application.cpp
 			Engine/Core/Window.h
 			Engine/Core/Window.cpp
+			Engine/Util/Utils.h
+			Engine/Util/Utils.cpp
 			Engine/Renderer/Renderer.h
 			Engine/Renderer/Renderer.cpp
+			Engine/Renderer/Vulkan/VulkanMesh.h
+			Engine/Renderer/Vulkan/VulkanMesh.cpp
 			Engine/Renderer/Vulkan/VulkanStructures.h
 			Engine/Renderer/Vulkan/VulkanUtils.h
 			Engine/Renderer/Vulkan/VulkanUtils.cpp
@@ -24,11 +28,13 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 			Engine
 			$ENV{VULKAN_SDK}/include
 			${CMAKE_SOURCE_DIR}/Vendor/vkboostrap/src
+			${CMAKE_SOURCE_DIR}/Vendor/VulkanMemoryAllocator/include
 			)
 target_link_directories(${PROJECT_NAME} PUBLIC
 			$ENV{VULKAN_SDK}/Lib)
 link_libraries(${PROJECT_NAME} PUBLIC
 			Vendor
+			vma
 			vulkan-1)
 
 

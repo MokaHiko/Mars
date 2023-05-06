@@ -18,6 +18,7 @@ namespace mrs {
 		_renderer->Shutdown();
 
 	}
+
 	void Application::Run()
 	{
 		while (_running)

@@ -4,12 +4,16 @@
 #pragma once 
 
 #include <memory>
-#include <vulkan/vulkan.h>
 #include <vector>
+#include <functional>
+
+#include <vulkan/vulkan.h>
 
 #include "Core/Window.h"
 #include "Vulkan/VulkanUtils.h"
 #include "Vulkan/VulkanStructures.h"
+
+#include "Vulkan/VulkanMesh.h"
 
 namespace mrs {
 
@@ -27,8 +31,42 @@ namespace mrs {
 		virtual void Init();
 		virtual void Update();
 		virtual void Shutdown();
+
+		virtual void UploadMesh(std::shared_ptr<Mesh> mesh);
+
+		virtual void LoadResources() {
+			my_mesh = std::make_shared<Mesh>();
+		
+			my_mesh->_vertices.resize(3);
+
+			//vertex positions
+			my_mesh->_vertices[0].position = { 1.f, 1.f, 0.0f };
+			my_mesh->_vertices[1].position = { -1.f, 1.f, 0.0f };
+			my_mesh->_vertices[2].position = { 0.f,-1.f, 0.0f };
+
+			//vertex colors, all green
+			my_mesh->_vertices[0].color = { 0.f, 1.f, 0.0f }; //pure green
+			my_mesh->_vertices[1].color = { 0.f, 1.f, 0.0f }; //pure green
+			my_mesh->_vertices[2].color = { 0.f, 1.f, 0.0f }; //pure green
+
+			UploadMesh(my_mesh);
+		};
+
+		std::shared_ptr<Mesh> my_mesh;
 	private:
 		const std::shared_ptr<Window> _window;
+	public:
+		// ~ Client Application Level
+
+	public:
+		// Returns whether or not shader module was created succesefully
+		bool LoadShaderModule(const char* path, VkShaderModule* module);
+
+		// Used for immedaite time and blocking execution of commands 
+		void ImmediateSubmit(std::function<void(VkCommandBuffer)>&& fn);
+
+		// Creates and allocates buffer with given size
+		AllocatedBuffer CreateBuffer(size_t size, VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, VkMemoryPropertyFlags memory_props = 0);
 	private:
 		// Creates swapchain and gets handle to image s/views
 		void InitSwapchain();
@@ -44,6 +82,9 @@ namespace mrs {
 
 		// Creates all the fences and semaphores
 		void InitSyncStructures();
+
+		// Creates graphics pipelines
+		void InitPipelines();
 	private:
 		inline uint32_t GetCurrentFrame() const { return _frame_count % frame_overlaps; }
 	private:
@@ -57,15 +98,22 @@ namespace mrs {
 		std::vector<VkImage> _swapchain_images = {};
 		std::vector<VkImageView> _swapchain_image_views = {};
 
-		VkRenderPass _render_pass = {};
+		AllocatedImage _depth_image = {};
+		VkFormat _depth_image_format = {};
+		VkImageView _depth_image_view = {};
 
+		VkRenderPass _render_pass = {};
 		std::vector<VkFramebuffer> _framebuffers;
+
+		VkPipeline _default_pipeline;
+		VkPipelineLayout _default_pipeline_layout;
 
 		VulkanDevice _device = {};
 		VulkanQueues _queues = {};
 		VulkanQueueFamilyIndices _queue_indices = {};
-		
+
 		// Number of frame contexts
+		static const uint64_t time_out = 1000000000;
 		static const uint32_t frame_overlaps = 2;
 		VulkanFrameContext _frame_data[frame_overlaps];
 
@@ -73,8 +121,10 @@ namespace mrs {
 		VulkanUploadContext _upload_context = {};
 
 		vkutil::DeletionQueue _deletion_queue;
-
 		uint32_t _frame_count = 0;
+	private:
+		// Main gpu resource allocator
+		VmaAllocator _allocator;
 	};
 }
 

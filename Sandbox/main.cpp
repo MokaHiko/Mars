@@ -2,7 +2,6 @@
 
 #include <Mars.h>
 
-
 class SandboxApp : public mrs::Application
 {
 public:

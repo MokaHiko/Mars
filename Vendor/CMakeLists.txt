@@ -3,9 +3,15 @@ project(Vendor)
 
 add_subdirectory(SDL)
 add_subdirectory(vkboostrap)
+add_subdirectory(glm)
 
 add_library(${PROJECT_NAME} INTERFACE)
-
 target_link_libraries(${PROJECT_NAME} 
 					INTERFACE SDL2::SDL2
-					INTERFACE vk-bootstrap::vk-bootstrap)
+					INTERFACE vk-bootstrap::vk-bootstrap
+					INTERFACE glm::glm
+					)
+
+# Header only libraries 
+add_library(vma INTERFACE)
+target_include_directories(vma INTERFACE VulkanMemoryAllocator/include)

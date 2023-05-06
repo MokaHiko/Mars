@@ -15,9 +15,12 @@ namespace mrs {
 		Application();
 		virtual ~Application();
 
+	public:
+		// Where shaders, textures and meshes are loaded
+		virtual void LoadResources() {};
+
 	private:
 		void Run();
-
 	private:
 		std::shared_ptr<Window> _window = nullptr;
 		std::unique_ptr<Renderer> _renderer = nullptr;
@@ -25,7 +28,7 @@ namespace mrs {
 		bool _running = false;
 	};
 
-	 extern mrs::Application* CreateApplication();
+	extern mrs::Application* CreateApplication();
 }
 
 // To be implemented by client

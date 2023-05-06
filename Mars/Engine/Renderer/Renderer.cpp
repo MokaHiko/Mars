@@ -3,8 +3,12 @@
 #include <SDL2/SDL.h>
 #include <VkBootstrap.h>
 
+#include "Util/Utils.h"
 #include "Vulkan/VulkanUtils.h"
 #include "Vulkan/VulkanInitializers.h"
+
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
 
 namespace mrs
 {
@@ -15,8 +19,6 @@ namespace mrs
 
 	void Renderer::Init()
 	{
-		// CORE VULKAN STRUCTURES
-
 		// Instance
 		vkb::InstanceBuilder builder;
 		auto intance_result = builder.set_app_name("First App")
@@ -60,9 +62,18 @@ namespace mrs
 		_queues.compute = vkb_device.get_queue(vkb::QueueType::compute).value();
 		_queue_indices.compute = vkb_device.get_queue_index(vkb::QueueType::compute).value();
 
+		VmaAllocatorCreateInfo allocator_info = {};
+		allocator_info.physicalDevice = _device.physical_device;
+		allocator_info.device = _device.device;
+		allocator_info.instance = _instance;
+		vmaCreateAllocator(&allocator_info, &_allocator);
+
 		_deletion_queue.Push([=]() {
+			vmaDestroyAllocator(_allocator);
+
 			vkDestroyDevice(_device.device, nullptr);
 			vkb::destroy_debug_utils_messenger(_instance, _debug_messenger, nullptr);
+
 			vkDestroySurfaceKHR(_instance, _surface, nullptr);
 			vkDestroyInstance(_instance, nullptr);
 			});
@@ -72,12 +83,118 @@ namespace mrs
 		InitFramebuffers();
 		InitCommands();
 		InitSyncStructures();
+
+		InitPipelines();
+
+		LoadResources();
 	}
 
 	void Renderer::Shutdown()
 	{
 		vkDeviceWaitIdle(_device.device);
 		_deletion_queue.Flush();
+	}
+
+	void Renderer::UploadMesh(std::shared_ptr<Mesh> mesh)
+	{
+		// Create and upload data to staging bufffer
+		const size_t buffer_size = mesh->_vertices.size() * sizeof(Vertex);
+		AllocatedBuffer staging_buffer = CreateBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+		void* data;
+		vmaMapMemory(_allocator, staging_buffer.allocation, &data);
+		memcpy(data, mesh->_vertices.data(), buffer_size);
+		vmaUnmapMemory(_allocator, staging_buffer.allocation);
+
+		// Create and transfer data to vertex bufffer stored in vulkan mesh 
+		mesh->_buffer = CreateBuffer(buffer_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0);
+
+		// Copy data to vertex buffer via immediate commands
+		ImmediateSubmit([=](VkCommandBuffer cmd) {
+			VkBufferCopy region = {};
+			region.dstOffset = 0;
+			region.size = buffer_size;
+			region.srcOffset = 0;
+			vkCmdCopyBuffer(cmd, staging_buffer.buffer, mesh->_buffer.buffer, 1, &region);
+			});
+
+		// Clean up staging buffer and queue vertex buffer for deletion
+		vmaDestroyBuffer(_allocator, staging_buffer.buffer, staging_buffer.allocation);
+
+		_deletion_queue.Push([=]() {
+			vmaDestroyBuffer(_allocator, mesh->_buffer.buffer, mesh->_buffer.allocation);
+			});
+	}
+
+	bool Renderer::LoadShaderModule(const char* path, VkShaderModule* module)
+	{
+		std::vector<char> shader_code;
+		util::read_file(path, shader_code);
+
+		if (shader_code.data() == nullptr) {
+			return false;
+		}
+
+		VkShaderModuleCreateInfo shader_info = {};
+		shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		shader_info.pNext = nullptr;
+
+		shader_info.codeSize = shader_code.size();
+		shader_info.pCode = reinterpret_cast<const uint32_t*>(shader_code.data());
+		shader_info.flags = 0;
+
+		if (vkCreateShaderModule(_device.device, &shader_info, nullptr, module) != VK_SUCCESS) {
+			return false;
+		}
+
+		return true;
+	}
+
+	void Renderer::ImmediateSubmit(std::function<void(VkCommandBuffer)>&& fn)
+	{
+		VkCommandBuffer cmd = _upload_context.command_buffer;
+
+		VkCommandBufferBeginInfo begin_info = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+		vkBeginCommandBuffer(cmd, &begin_info);
+
+		// Execute passed commands
+		fn(cmd);
+
+		vkEndCommandBuffer(cmd);
+
+		VkSubmitInfo submit_info = {};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info.pNext = nullptr;
+
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &_upload_context.command_buffer;
+		vkQueueSubmit(_queues.graphics, 1, &submit_info, _upload_context.upload_fence);
+
+		vkWaitForFences(_device.device, 1, &_upload_context.upload_fence, VK_TRUE, time_out);
+		vkResetFences(_device.device, 1, &_upload_context.upload_fence);
+
+		// Reset command pool
+		vkResetCommandPool(_device.device, _upload_context.command_pool, 0);
+	}
+
+	AllocatedBuffer Renderer::CreateBuffer(size_t size, VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, VkMemoryPropertyFlags memory_props)
+	{
+		//AllocatedBuffer buffer;
+		VkBufferCreateInfo buffer_info = {};
+		buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		buffer_info.pNext = nullptr;
+
+		buffer_info.usage = buffer_usage;
+		buffer_info.size = (VkDeviceSize)size;
+
+		VmaAllocationCreateInfo alloc_info = {};
+		alloc_info.usage = memory_usage;
+		alloc_info.requiredFlags = memory_props;
+
+		AllocatedBuffer a_buffer;
+		vmaCreateBuffer(_allocator, &buffer_info, &alloc_info, &a_buffer.buffer, &a_buffer.allocation, nullptr);
+
+		return a_buffer;
 	}
 
 	void Renderer::InitSwapchain()
@@ -96,7 +213,27 @@ namespace mrs
 		// Swap chain image views are created
 		_swapchain_image_views = vkb_swapchain.get_image_views().value();
 
+		// Create swapchain depth attachment
+		VkExtent3D depth_extent = {};
+		depth_extent.width = _window->GetWidth();
+		depth_extent.height = _window->GetHeight();
+		depth_extent.depth = 1;
+
+		_depth_image_format = VK_FORMAT_D32_SFLOAT;
+		VkImageCreateInfo depth_image_info = vkinit::image_create_info(_depth_image_format, depth_extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+		VmaAllocationCreateInfo depth_alloc_info = {};
+		depth_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		depth_alloc_info.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		vmaCreateImage(_allocator, &depth_image_info, &depth_alloc_info, &_depth_image.image, &_depth_image.allocation, nullptr);
+
+		VkImageViewCreateInfo depth_image_view_info = vkinit::image_view_create_info(_depth_image.image, _depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
+		VK_CHECK(vkCreateImageView(_device.device, &depth_image_view_info, nullptr, &_depth_image_view));
+
 		_deletion_queue.Push([=]() {
+			vmaDestroyImage(_allocator, _depth_image.image, _depth_image.allocation);
+			vkDestroyImageView(_device.device, _depth_image_view, nullptr);
 			for (auto image_view : _swapchain_image_views) {
 				vkDestroyImageView(_device.device, image_view, nullptr);
 			}
@@ -138,54 +275,87 @@ namespace mrs
 		color_attachment.flags = 0;
 		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 
-		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		//color_attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
 		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
 		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
-		std::vector<VkAttachmentDescription> attachments = { color_attachment };
+		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkAttachmentDescription depth_attachment = {};
+		depth_attachment.format = _depth_image_format;
+		depth_attachment.flags = 0;
+		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+
+		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		std::vector<VkAttachmentDescription> attachments = { color_attachment, depth_attachment};
 
 		VkAttachmentReference color_attachment_reference = {};
 		color_attachment_reference.attachment = 0;
 		color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+		VkAttachmentReference depth_attachment_reference = {};
+		depth_attachment_reference.attachment = 1;
+		depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
 		// Create subpasses
 		VkSubpassDescription main_subpass = {};
+		main_subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
 		main_subpass.colorAttachmentCount = 1;
 		main_subpass.pColorAttachments = &color_attachment_reference;
-		main_subpass.pDepthStencilAttachment = nullptr;
-		main_subpass.inputAttachmentCount = 0;
-		main_subpass.pInputAttachments = 0;
 
-		// Create dependencies
+		main_subpass.pDepthStencilAttachment = &depth_attachment_reference;
+
+		//Create dependencies
 		VkSubpassDependency color_dependency = {};
+
 		// ~ after subpass external - outputs to color attachment - using color_attachment write memory access
 		color_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		color_dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		color_dependency.srcAccessMask = 0;
 
-		// ~ bofere subpass external - outputs to color attachment - using color_attachment write memory access
+		// ~ before this subpass - outputs to color attachment - using color_attachment write memory access
 		color_dependency.dstSubpass = 0;
 		color_dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		color_dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		VkSubpassDependency depth_dependency = {};
+
+		// ~ after subpass external - tests fragments - using depth_attachment write memory access
+		depth_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		depth_dependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		depth_dependency.srcAccessMask = 0;
+
+		// ~ before this subpass - outputs to depth attachment - using depth_attachment write memory access
+		depth_dependency.dstSubpass = 0;
+		depth_dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		depth_dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+		std::vector<VkSubpassDependency> dependencies = { color_dependency, depth_dependency};
 
 		VkRenderPassCreateInfo render_pass_info = {};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		render_pass_info.pNext = nullptr;
 
-		render_pass_info.attachmentCount = 1;
+		render_pass_info.attachmentCount = static_cast<uint32_t>(attachments.size());
 		render_pass_info.pAttachments = attachments.data();
 
 		render_pass_info.subpassCount = 1;
 		render_pass_info.pSubpasses = &main_subpass;
 
-		render_pass_info.dependencyCount = 1;
-		render_pass_info.pDependencies = &color_dependency;
+		render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
+		render_pass_info.pDependencies = dependencies.data();
 
 		VK_CHECK(vkCreateRenderPass(_device.device, &render_pass_info, nullptr, &_render_pass));
 
@@ -204,8 +374,9 @@ namespace mrs
 			frame_buffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			frame_buffer_info.pNext = nullptr;
 
-			frame_buffer_info.attachmentCount = 1;
-			frame_buffer_info.pAttachments = &_swapchain_image_views[i];
+			std::vector<VkImageView> attachments = { _swapchain_image_views[i], _depth_image_view };
+			frame_buffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+			frame_buffer_info.pAttachments = attachments.data();
 
 			// 2d attachments buffer
 			frame_buffer_info.width = _window->GetWidth();
@@ -249,11 +420,75 @@ namespace mrs
 		}
 
 		// Create sync structures for upload
+		fence_info.flags = 0;
 		vkCreateFence(_device.device, &fence_info, nullptr, &_upload_context.upload_fence);
 		_deletion_queue.Push([=]() {
 			vkDestroyFence(_device.device, _upload_context.upload_fence, nullptr);
 			});
 	}
+
+	void Renderer::InitPipelines()
+	{
+		vkutil::PipelineBuilder pipeline_builder = {};
+
+		// Pipeline view port
+		pipeline_builder._scissor.extent = { _window->GetWidth(), _window->GetHeight() };
+		pipeline_builder._scissor.offset = { 0, 0 };
+
+		pipeline_builder._viewport.x = 0.0f;
+		pipeline_builder._viewport.y = 0.0f;
+		pipeline_builder._viewport.width = (float)(_window->GetWidth());
+		pipeline_builder._viewport.height = (float)(_window->GetHeight());
+		pipeline_builder._viewport.minDepth = 0.0f;
+		pipeline_builder._viewport.maxDepth = 1.0f;
+
+		// Shaders modules
+		bool loaded = false;
+		VkShaderModule vertex_shader_module, fragment_shader_module = {};
+		loaded = LoadShaderModule("Assets/Shaders/default_shader.vert.spv", &vertex_shader_module);
+		loaded = LoadShaderModule("Assets/Shaders/default_shader.frag.spv", &fragment_shader_module);
+
+		pipeline_builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader_module));
+		pipeline_builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader_module));
+
+		// Vertex input (Primitives and Vertex Input Descriptions
+		pipeline_builder._input_assembly = vkinit::pipeline_input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+		VertexInputDescription& vb_desc = Vertex::GetDescription();
+
+		pipeline_builder._vertex_input_info = vkinit::pipeline_vertex_input_state_create_info();
+
+		pipeline_builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(vb_desc.bindings.size());
+		pipeline_builder._vertex_input_info.pVertexBindingDescriptions = vb_desc.bindings.data();
+
+		pipeline_builder._vertex_input_info.vertexAttributeDescriptionCount= static_cast<uint32_t>(vb_desc.attributes.size());
+		pipeline_builder._vertex_input_info.pVertexAttributeDescriptions = vb_desc.attributes.data();
+
+		// Graphics Settings
+		pipeline_builder._rasterizer = vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
+		pipeline_builder._multisampling = vkinit::pipeline_mulitisample_state_create_info();
+		pipeline_builder._color_blend_attachment = vkinit::pipeline_color_blend_attachment_state();
+		pipeline_builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+
+		// Create pipeline layout
+		VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
+		VK_CHECK(vkCreatePipelineLayout(_device.device, &pipeline_layout_info, nullptr, &_default_pipeline_layout));
+		pipeline_builder._pipeline_layout = _default_pipeline_layout;
+
+		_default_pipeline = pipeline_builder.Build(_device.device, _render_pass);
+
+		if (_default_pipeline == VK_NULL_HANDLE) {
+			printf("Failed to create pipeline!");
+		}
+
+		// Clean Up
+		vkDestroyShaderModule(_device.device, fragment_shader_module, nullptr);
+		vkDestroyShaderModule(_device.device, vertex_shader_module, nullptr);
+		_deletion_queue.Push([=]() {
+			vkDestroyPipelineLayout(_device.device, _default_pipeline_layout, nullptr);
+			vkDestroyPipeline(_device.device, _default_pipeline, nullptr);
+			});
+	}
+
 	void Renderer::Update()
 	{
 		// Get current frame index, current frame data, current cmd bufffer
@@ -262,7 +497,6 @@ namespace mrs
 		VkCommandBuffer cmd = frame.command_buffer;
 
 		// Wait till render fence has been flagged
-		static const uint64_t time_out = 1000000000;
 		VK_CHECK(vkWaitForFences(_device.device, 1, &frame.render_fence, VK_TRUE, time_out));
 		vkResetFences(_device.device, 1, &frame.render_fence);
 
@@ -282,14 +516,24 @@ namespace mrs
 		area.offset = { 0,0 };
 
 		VkClearValue clear_value = {};
-		clear_value.color = { 0.1f, (float)sin(_frame_count / 120.0f), 0.1f };
+		clear_value.color = { (float)sin(_frame_count / 120.0f), 0.1f, 0.1f };
 
-		VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(_framebuffers[current_image], _render_pass, area, &clear_value, 1);
+		VkClearValue depth_value = {};
+		depth_value.depthStencil = { 1.0f, 0 };
+
+		// clear values are per attachment 
+		VkClearValue clear_values[2] = { clear_value, depth_value };
+
+		VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(_framebuffers[current_image], _render_pass, area, clear_values, 2);
 		vkCmdBeginRenderPass(cmd, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
 		// General render commands
 		{
+			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline);
 
+			VkDeviceSize offset = 0;
+			vkCmdBindVertexBuffers(cmd, 0, 1, &my_mesh->_buffer.buffer, &offset);
+			vkCmdDraw(cmd, static_cast<uint32_t>(my_mesh->_vertices.size()), 1, 0, 0);
 		}
 
 		vkCmdEndRenderPass(cmd);
@@ -324,7 +568,7 @@ namespace mrs
 		present_info.pSwapchains = &_swapchain;
 
 		present_info.waitSemaphoreCount = 1;
-		present_info.pWaitSemaphores= &frame.render_semaphore;
+		present_info.pWaitSemaphores = &frame.render_semaphore;
 
 		VK_CHECK(vkQueuePresentKHR(_queues.graphics, &present_info));
 

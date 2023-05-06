@@ -4,6 +4,8 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include "vk_mem_alloc.h"
+
 struct VulkanDevice
 {
 	VkDevice device;
@@ -50,6 +52,18 @@ struct VulkanUploadContext
 };
 
 
+// A struct that holds a handle to buffer and its allocation
+struct AllocatedBuffer
+{
+	VkBuffer buffer;
+	VmaAllocation allocation;
+};
 
+// A struct that holds a handle to image and a allocation
+struct AllocatedImage
+{
+	VkImage image;
+	VmaAllocation allocation;
+};
 
 #endif
