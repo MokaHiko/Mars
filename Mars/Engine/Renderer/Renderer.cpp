@@ -10,6 +10,9 @@
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
+// TODO: Remove
+#include <glm/gtc/matrix_transform.hpp>
+
 namespace mrs
 {
 	Renderer::Renderer(const std::shared_ptr<Window> window)
@@ -43,11 +46,18 @@ namespace mrs
 			.select()
 			.value();
 		_device.physical_device = physical_device_result.physical_device;
-
+		_physical_device_props = physical_device_result.properties;
 
 		// Create device and get queue and queue family indices 
 		vkb::DeviceBuilder device_builder{ physical_device_result };
-		vkb::Device vkb_device = device_builder.build().value();
+
+		VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters_features = {};
+		shader_draw_parameters_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
+		shader_draw_parameters_features.pNext = nullptr;
+		shader_draw_parameters_features.shaderDrawParameters = VK_TRUE;
+
+		vkb::Device vkb_device = device_builder.add_pNext(&shader_draw_parameters_features).build().value();
+
 		_device.device = vkb_device.device;
 
 		_queues.graphics = vkb_device.get_queue(vkb::QueueType::graphics).value();
@@ -84,14 +94,18 @@ namespace mrs
 		InitCommands();
 		InitSyncStructures();
 
+		InitDescriptors();
 		InitPipelines();
-
-		LoadResources();
 	}
 
 	void Renderer::Shutdown()
 	{
 		vkDeviceWaitIdle(_device.device);
+
+		// Shutdown descriptors managers
+		_descriptor_layout_cache->Clear();
+		_descriptor_allocator->CleanUp();
+
 		_deletion_queue.Flush();
 	}
 
@@ -124,6 +138,16 @@ namespace mrs
 		_deletion_queue.Push([=]() {
 			vmaDestroyBuffer(_allocator, mesh->_buffer.buffer, mesh->_buffer.allocation);
 			});
+	}
+
+	void Renderer::UploadResources()
+	{
+		// Upload all meshes
+		for (auto& it: ResourceManager::Get()._meshes) {
+			UploadMesh(it.second);
+		}
+
+		my_mesh = Mesh::Get("default_triangle");
 	}
 
 	bool Renderer::LoadShaderModule(const char* path, VkShaderModule* module)
@@ -298,7 +322,7 @@ namespace mrs
 		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		std::vector<VkAttachmentDescription> attachments = { color_attachment, depth_attachment};
+		std::vector<VkAttachmentDescription> attachments = { color_attachment, depth_attachment };
 
 		VkAttachmentReference color_attachment_reference = {};
 		color_attachment_reference.attachment = 0;
@@ -342,7 +366,7 @@ namespace mrs
 		depth_dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 		depth_dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-		std::vector<VkSubpassDependency> dependencies = { color_dependency, depth_dependency};
+		std::vector<VkSubpassDependency> dependencies = { color_dependency, depth_dependency };
 
 		VkRenderPassCreateInfo render_pass_info = {};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -460,7 +484,7 @@ namespace mrs
 		pipeline_builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(vb_desc.bindings.size());
 		pipeline_builder._vertex_input_info.pVertexBindingDescriptions = vb_desc.bindings.data();
 
-		pipeline_builder._vertex_input_info.vertexAttributeDescriptionCount= static_cast<uint32_t>(vb_desc.attributes.size());
+		pipeline_builder._vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(vb_desc.attributes.size());
 		pipeline_builder._vertex_input_info.pVertexAttributeDescriptions = vb_desc.attributes.data();
 
 		// Graphics Settings
@@ -471,6 +495,11 @@ namespace mrs
 
 		// Create pipeline layout
 		VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
+
+		std::vector<VkDescriptorSetLayout> descriptor_layouts = { global_descriptor_set_layout };
+		pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
+		pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
+
 		VK_CHECK(vkCreatePipelineLayout(_device.device, &pipeline_layout_info, nullptr, &_default_pipeline_layout));
 		pipeline_builder._pipeline_layout = _default_pipeline_layout;
 
@@ -487,6 +516,70 @@ namespace mrs
 			vkDestroyPipelineLayout(_device.device, _default_pipeline_layout, nullptr);
 			vkDestroyPipeline(_device.device, _default_pipeline, nullptr);
 			});
+	}
+
+	void Renderer::InitDescriptors()
+	{
+		// Init descriptor resource managers
+		_descriptor_allocator = std::make_unique<vkutil::DescriptorAllocator>();
+		_descriptor_allocator->Init(_device.device);
+
+		_descriptor_layout_cache = std::make_unique<vkutil::DescriptorLayoutCache>();
+		_descriptor_layout_cache->Init(_device.device);
+
+		// Init descriptor resources (i.e buffers, images) DescriptorInfos
+
+		// ~ Global descriptor
+		uint32_t n_static_objects = 10;
+		size_t buffer_size = sizeof(StaticObjectData) * n_static_objects;
+		global_descriptor_buffer = CreateBuffer(buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+		std::vector<StaticObjectData> static_object_data(n_static_objects);
+
+		for (int i = 0; i < n_static_objects; i++) {
+			glm::vec3 pos = glm::vec3(0.0, i * 0.2f, 0.2);
+
+			glm::mat4 model(1.0f);
+			model = glm::translate(model, pos);
+			model = glm::scale(model, glm::vec3(0.25f));
+			static_object_data[i].model_matrix = model;
+			static_object_data[i].color = glm::vec4(pos, 1.0f);
+		}
+
+		void* data;
+		vmaMapMemory(_allocator, global_descriptor_buffer.allocation, &data);
+		StaticObjectData* s_objectData = (StaticObjectData*)data;
+		for (uint32_t i = 0; i < n_static_objects; i++) {
+			s_objectData[i] = static_object_data[i];
+		}
+		vmaUnmapMemory(_allocator, global_descriptor_buffer.allocation);
+
+		VkDescriptorBufferInfo global_descriptor_buffer_info = {};
+		global_descriptor_buffer_info.buffer = global_descriptor_buffer.buffer;
+		global_descriptor_buffer_info.offset = 0;
+		global_descriptor_buffer_info.range = sizeof(StaticObjectData) * n_static_objects;
+
+		// Build descriptors
+		vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
+			.BindBuffer(0, &global_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+			.Build(&global_descriptor_set, &global_descriptor_set_layout);
+
+		// Clean descriptor resources
+		_deletion_queue.Push([=]() {
+			vmaDestroyBuffer(_allocator, global_descriptor_buffer.buffer, global_descriptor_buffer.allocation);
+			});
+	}
+
+	size_t Renderer::PadToUniformBufferSize(size_t original_size)
+	{
+		// Calculate required alignment based on minimum device offset alignment
+		size_t min_ubo_allignment = _physical_device_props.limits.minUniformBufferOffsetAlignment;
+		size_t aligned_size = original_size;
+
+		if (min_ubo_allignment > 0) {
+			aligned_size = (aligned_size + min_ubo_allignment - 1) & ~(min_ubo_allignment - 1);
+		}
+		return aligned_size;
 	}
 
 	void Renderer::Update()
@@ -531,9 +624,14 @@ namespace mrs
 		{
 			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline);
 
+			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 0, 1, &global_descriptor_set, 0, nullptr);
+
 			VkDeviceSize offset = 0;
 			vkCmdBindVertexBuffers(cmd, 0, 1, &my_mesh->_buffer.buffer, &offset);
-			vkCmdDraw(cmd, static_cast<uint32_t>(my_mesh->_vertices.size()), 1, 0, 0);
+			
+			for (uint32_t i = 0; i < 10; i++) {
+				vkCmdDraw(cmd, static_cast<uint32_t>(my_mesh->_vertices.size()), 1, 0, i);
+			}
 		}
 
 		vkCmdEndRenderPass(cmd);

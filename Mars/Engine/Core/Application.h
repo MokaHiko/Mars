@@ -12,15 +12,13 @@ namespace mrs {
 	class Application
 	{
 	public:
-		Application();
+		Application(const std::string& app_name = "First App", uint32_t width = 720,  uint32_t height = 480);
 		virtual ~Application();
 
+		void Run();
 	public:
 		// Where shaders, textures and meshes are loaded
 		virtual void LoadResources() {};
-
-	private:
-		void Run();
 	private:
 		std::shared_ptr<Window> _window = nullptr;
 		std::unique_ptr<Renderer> _renderer = nullptr;
@@ -28,9 +26,9 @@ namespace mrs {
 		bool _running = false;
 	};
 
+	// To be implemented by client
 	extern mrs::Application* CreateApplication();
 }
 
-// To be implemented by client
 
 #endif

@@ -32,32 +32,23 @@ namespace mrs {
 		virtual void Update();
 		virtual void Shutdown();
 
-		virtual void UploadMesh(std::shared_ptr<Mesh> mesh);
-
-		virtual void LoadResources() {
-			my_mesh = std::make_shared<Mesh>();
-		
-			my_mesh->_vertices.resize(3);
-
-			//vertex positions
-			my_mesh->_vertices[0].position = { 1.f, 1.f, 0.0f };
-			my_mesh->_vertices[1].position = { -1.f, 1.f, 0.0f };
-			my_mesh->_vertices[2].position = { 0.f,-1.f, 0.0f };
-
-			//vertex colors, all green
-			my_mesh->_vertices[0].color = { 0.f, 1.f, 0.0f }; //pure green
-			my_mesh->_vertices[1].color = { 0.f, 1.f, 0.0f }; //pure green
-			my_mesh->_vertices[2].color = { 0.f, 1.f, 0.0f }; //pure green
-
-			UploadMesh(my_mesh);
-		};
-
-		std::shared_ptr<Mesh> my_mesh;
+		void UploadResources();
 	private:
 		const std::shared_ptr<Window> _window;
 	public:
 		// ~ Client Application Level
+		std::shared_ptr<Mesh> my_mesh;
 
+		struct StaticObjectData
+		{
+			glm::vec4 color;
+			glm::mat4 model_matrix;
+		};
+
+		// Global frame descriptors
+		VkDescriptorSet global_descriptor_set;
+		VkDescriptorSetLayout global_descriptor_set_layout;
+		AllocatedBuffer global_descriptor_buffer;
 	public:
 		// Returns whether or not shader module was created succesefully
 		bool LoadShaderModule(const char* path, VkShaderModule* module);
@@ -85,8 +76,17 @@ namespace mrs {
 
 		// Creates graphics pipelines
 		void InitPipelines();
+
+		// Creates and allocates descriptors 
+		void InitDescriptors();
 	private:
 		inline uint32_t GetCurrentFrame() const { return _frame_count % frame_overlaps; }
+
+		// Pads size to be compatible with minimum unifrom buffer alignment of physical device
+		size_t PadToUniformBufferSize(size_t original_size);
+
+		// Upload mesh to GPU via immediate command buffers
+		void UploadMesh(std::shared_ptr<Mesh> mesh);
 	private:
 		// Vulkan Structures
 		VkInstance _instance = {};
@@ -110,6 +110,7 @@ namespace mrs {
 
 		VulkanDevice _device = {};
 		VulkanQueues _queues = {};
+		VkPhysicalDeviceProperties _physical_device_props = {};
 		VulkanQueueFamilyIndices _queue_indices = {};
 
 		// Number of frame contexts
@@ -122,9 +123,16 @@ namespace mrs {
 
 		vkutil::DeletionQueue _deletion_queue;
 		uint32_t _frame_count = 0;
+
 	private:
-		// Main gpu resource allocator
+		// ~Vulkan resource management
+
+		// Main gpu upload resource allocator
 		VmaAllocator _allocator;
+
+		// Desccriptor allocator and layout cache
+		std::shared_ptr<vkutil::DescriptorAllocator> _descriptor_allocator;
+		std::shared_ptr<vkutil::DescriptorLayoutCache> _descriptor_layout_cache;
 	};
 }
 

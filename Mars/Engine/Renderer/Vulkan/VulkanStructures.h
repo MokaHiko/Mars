@@ -28,20 +28,6 @@ struct VulkanQueues
 	VkQueue compute;
 };
 
-// Objects that need to handled for each frame
-struct VulkanFrameContext
-{
-	VkFence render_fence;
-
-	VkSemaphore present_semaphore;
-	VkSemaphore render_semaphore;
-
-	// Main command pool for frame
-	VkCommandPool command_pool;
-	VkCommandBuffer command_buffer;
-};
-
-
 // Data needed for direct uploading data to the gpu
 struct VulkanUploadContext
 {
@@ -65,5 +51,20 @@ struct AllocatedImage
 	VkImage image;
 	VmaAllocation allocation;
 };
+
+// Objects that need to handled for each frame
+struct VulkanFrameContext
+{
+	VkFence render_fence;
+
+	VkSemaphore present_semaphore;
+	VkSemaphore render_semaphore;
+
+	// Main command pool for frame
+	VkCommandPool command_pool;
+	VkCommandBuffer command_buffer;
+};
+
+
 
 #endif

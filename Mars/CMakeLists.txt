@@ -11,6 +11,8 @@ add_library(${PROJECT_NAME}
 			Engine/Core/Application.cpp
 			Engine/Core/Window.h
 			Engine/Core/Window.cpp
+			Engine/Core/ResourceManager.h
+			Engine/Core/ResourceManager.cpp
 			Engine/Util/Utils.h
 			Engine/Util/Utils.cpp
 			Engine/Renderer/Renderer.h
