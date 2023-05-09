@@ -17,6 +17,9 @@
 
 namespace mrs {
 
+	static const uint64_t time_out = 1000000000;
+	static const uint32_t frame_overlaps = 2;
+
 	struct GraphicsSettings
 	{
 		bool vsync = true;
@@ -39,16 +42,26 @@ namespace mrs {
 		// ~ Client Application Level
 		std::shared_ptr<Mesh> my_mesh;
 
-		struct StaticObjectData
+		struct ObjectData
 		{
 			glm::vec4 color;
 			glm::mat4 model_matrix;
 		};
 
-		// Global frame descriptors
+		struct GlobalDescriptorData {
+			glm::mat4 view_proj;
+		};
+
+		// Global descriptor
 		VkDescriptorSet global_descriptor_set;
 		VkDescriptorSetLayout global_descriptor_set_layout;
 		AllocatedBuffer global_descriptor_buffer;
+
+		// Object descriptors (per frame)
+		std::vector<VkDescriptorSet> object_descriptor_set;
+		std::vector<AllocatedBuffer> object_descriptor_buffer;
+		VkDescriptorSetLayout object_descriptor_set_layout;
+
 	public:
 		// Returns whether or not shader module was created succesefully
 		bool LoadShaderModule(const char* path, VkShaderModule* module);
@@ -114,8 +127,6 @@ namespace mrs {
 		VulkanQueueFamilyIndices _queue_indices = {};
 
 		// Number of frame contexts
-		static const uint64_t time_out = 1000000000;
-		static const uint32_t frame_overlaps = 2;
 		VulkanFrameContext _frame_data[frame_overlaps];
 
 		// Main upload struct

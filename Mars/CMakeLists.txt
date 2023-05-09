@@ -29,12 +29,10 @@ add_library(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PUBLIC
 			Engine
 			$ENV{VULKAN_SDK}/include
-			${CMAKE_SOURCE_DIR}/Vendor/vkboostrap/src
-			${CMAKE_SOURCE_DIR}/Vendor/VulkanMemoryAllocator/include
 			)
 target_link_directories(${PROJECT_NAME} PUBLIC
 			$ENV{VULKAN_SDK}/Lib)
-link_libraries(${PROJECT_NAME} PUBLIC
+target_link_libraries(${PROJECT_NAME} PUBLIC
 			Vendor
 			vma
 			vulkan-1)

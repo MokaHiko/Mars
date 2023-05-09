@@ -143,11 +143,11 @@ namespace mrs
 	void Renderer::UploadResources()
 	{
 		// Upload all meshes
-		for (auto& it: ResourceManager::Get()._meshes) {
+		for (auto& it : ResourceManager::Get()._meshes) {
 			UploadMesh(it.second);
 		}
 
-		my_mesh = Mesh::Get("default_triangle");
+		my_mesh = mrs::Mesh::Get("Assets/Models/monkey_smooth.boop_obj");
 	}
 
 	bool Renderer::LoadShaderModule(const char* path, VkShaderModule* module)
@@ -496,7 +496,7 @@ namespace mrs
 		// Create pipeline layout
 		VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
 
-		std::vector<VkDescriptorSetLayout> descriptor_layouts = { global_descriptor_set_layout };
+		std::vector<VkDescriptorSetLayout> descriptor_layouts = { global_descriptor_set_layout , object_descriptor_set_layout };
 		pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
 		pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
 
@@ -529,45 +529,95 @@ namespace mrs
 
 		// Init descriptor resources (i.e buffers, images) DescriptorInfos
 
-		// ~ Global descriptor
-		uint32_t n_static_objects = 10;
-		size_t buffer_size = sizeof(StaticObjectData) * n_static_objects;
-		global_descriptor_buffer = CreateBuffer(buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+		// ~ Global
+		{
+			size_t buffer_size = PadToUniformBufferSize(sizeof(GlobalDescriptorData));
+			global_descriptor_buffer = CreateBuffer(sizeof(GlobalDescriptorData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-		std::vector<StaticObjectData> static_object_data(n_static_objects);
+			GlobalDescriptorData global_descriptor_data = {};
+			glm::mat4 view_proj = glm::mat4(1.0f);
 
-		for (int i = 0; i < n_static_objects; i++) {
-			glm::vec3 pos = glm::vec3(0.0, i * 0.2f, 0.2);
+			// TODO: Move camera to its own class
+			glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
+			glm::mat4 projection = glm::perspective(glm::radians(70.0f),
+				static_cast<float>(_window->GetWidth()) / static_cast<float>(_window->GetHeight()),
+				0.1f,
+				200.0f);
+			projection[1][1] *= -1; // Reconfigure y values as positive for vulkan
+			global_descriptor_data.view_proj = projection * view;
 
-			glm::mat4 model(1.0f);
-			model = glm::translate(model, pos);
-			model = glm::scale(model, glm::vec3(0.25f));
-			static_object_data[i].model_matrix = model;
-			static_object_data[i].color = glm::vec4(pos, 1.0f);
+			void* data;
+			vmaMapMemory(_allocator, global_descriptor_buffer.allocation, &data);
+			memcpy(data, &global_descriptor_data, sizeof(GlobalDescriptorData));
+			vmaUnmapMemory(_allocator, global_descriptor_buffer.allocation);
+
+			// Describe Buffer
+			VkDescriptorBufferInfo global_descriptor_buffer_info = {};
+			global_descriptor_buffer_info.buffer = global_descriptor_buffer.buffer;
+			global_descriptor_buffer_info.offset = 0;
+			global_descriptor_buffer_info.range = sizeof(GlobalDescriptorData);
+
+			// Build descriptors
+			vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
+				.BindBuffer(0, &global_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+				.Build(&global_descriptor_set, &global_descriptor_set_layout);
+
+			// Clean descriptor resources
+			_deletion_queue.Push([=]() {
+				vmaDestroyBuffer(_allocator, global_descriptor_buffer.buffer, global_descriptor_buffer.allocation);
+				});
 		}
 
-		void* data;
-		vmaMapMemory(_allocator, global_descriptor_buffer.allocation, &data);
-		StaticObjectData* s_objectData = (StaticObjectData*)data;
-		for (uint32_t i = 0; i < n_static_objects; i++) {
-			s_objectData[i] = static_object_data[i];
+		// ~ Object Data
+		{
+			const uint32_t max_objects = 10;
+			object_descriptor_buffer.resize(frame_overlaps);
+			object_descriptor_set.resize(frame_overlaps);
+			for (uint32_t i = 0; i < frame_overlaps; i++) {
+
+				// Create buffer to store per object data per frame
+				//size_t buffer_size = PadToUniformBufferSize(sizeof(ObjectData) * max_objects);
+				size_t buffer_size = sizeof(ObjectData) * max_objects;
+				object_descriptor_buffer[i] = CreateBuffer(buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+				// Create data for buffer
+				std::vector<ObjectData> object_data(max_objects);
+				for (int i = 0; i < max_objects; i++) {
+					glm::vec3 pos = glm::vec3(0.0, i * 0.2f, 0.2);
+
+					glm::mat4 model(1.0f);
+					model = glm::translate(model, pos);
+					model = glm::scale(model, glm::vec3(0.25f));
+					object_data[i].model_matrix = model;
+					object_data[i].color = glm::vec4(pos, 1.0f);
+				}
+
+				// Copy to GPU
+				void* data;
+				vmaMapMemory(_allocator, object_descriptor_buffer[i].allocation, &data);
+				ObjectData* object_dataSSBO = (ObjectData*)data;
+				for (uint32_t i = 0; i < max_objects; i++) {
+					object_dataSSBO[i] = object_data[i];
+				}
+				vmaUnmapMemory(_allocator, object_descriptor_buffer[i].allocation);
+
+				// Describe Buffer
+				VkDescriptorBufferInfo object_descriptor_buffer_info = {};
+				object_descriptor_buffer_info.buffer = object_descriptor_buffer[i].buffer;
+				object_descriptor_buffer_info.offset = 0;
+				object_descriptor_buffer_info.range = sizeof(ObjectData) * max_objects;
+
+				// Build descriptors
+				vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
+					.BindBuffer(0, &object_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+					.Build(&object_descriptor_set[i], &object_descriptor_set_layout);
+
+				// Clean descriptor resources
+				_deletion_queue.Push([=]() {
+					vmaDestroyBuffer(_allocator, object_descriptor_buffer[i].buffer, object_descriptor_buffer[i].allocation);
+					});
+			}
 		}
-		vmaUnmapMemory(_allocator, global_descriptor_buffer.allocation);
-
-		VkDescriptorBufferInfo global_descriptor_buffer_info = {};
-		global_descriptor_buffer_info.buffer = global_descriptor_buffer.buffer;
-		global_descriptor_buffer_info.offset = 0;
-		global_descriptor_buffer_info.range = sizeof(StaticObjectData) * n_static_objects;
-
-		// Build descriptors
-		vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
-			.BindBuffer(0, &global_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-			.Build(&global_descriptor_set, &global_descriptor_set_layout);
-
-		// Clean descriptor resources
-		_deletion_queue.Push([=]() {
-			vmaDestroyBuffer(_allocator, global_descriptor_buffer.buffer, global_descriptor_buffer.allocation);
-			});
 	}
 
 	size_t Renderer::PadToUniformBufferSize(size_t original_size)
@@ -622,14 +672,35 @@ namespace mrs
 
 		// General render commands
 		{
+			// Bind Mesh Data
+			void* objectData;
+			vmaMapMemory(_allocator, object_descriptor_buffer[n_frame].allocation, &objectData);
+			ObjectData* s_data = (ObjectData*)(objectData);
+			ObjectData obj_info= {};
+
+			for (uint32_t i = 0; i < 5; i++) {
+				glm::mat4 model(1.0f);
+				glm::vec3 pos = glm::vec3(-1.5f + (0.7f* i), 0, 0.2);
+
+				model = glm::translate(model, pos);
+				model = glm::rotate(model, (float)glm::radians(glm::sin(SDL_GetTicks() * 0.001) * 360), glm::vec3(0.4f, 0.2f, 0.4f));
+				model = glm::scale(model, glm::vec3(0.25f));
+
+				obj_info.model_matrix = model;
+				obj_info.color = glm::vec4(1.0, 0.2 + (0.1 * i), 0.3, 1.0f);
+				s_data[i] = obj_info;
+			}
+			vmaUnmapMemory(_allocator, object_descriptor_buffer[n_frame].allocation);
+
+			// Bind Materials
 			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline);
-
 			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 0, 1, &global_descriptor_set, 0, nullptr);
+			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 1, 1, &object_descriptor_set[n_frame], 0, nullptr);
 
-			VkDeviceSize offset = 0;
-			vkCmdBindVertexBuffers(cmd, 0, 1, &my_mesh->_buffer.buffer, &offset);
-			
-			for (uint32_t i = 0; i < 10; i++) {
+			// Draw commands
+			for (uint32_t i = 0; i < 5; i++) {
+				VkDeviceSize offset = 0;
+				vkCmdBindVertexBuffers(cmd, 0, 1, &my_mesh->_buffer.buffer, &offset);
 				vkCmdDraw(cmd, static_cast<uint32_t>(my_mesh->_vertices.size()), 1, 0, i);
 			}
 		}

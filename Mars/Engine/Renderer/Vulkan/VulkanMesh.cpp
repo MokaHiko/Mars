@@ -1,5 +1,7 @@
 #include "VulkanMesh.h"
 
+#include <boop.h>
+
 mrs::VertexInputDescription& mrs::Vertex::GetDescription()
 {
 	static VertexInputDescription description = {};
@@ -31,4 +33,24 @@ mrs::VertexInputDescription& mrs::Vertex::GetDescription()
 	description.attributes.push_back(color_atr);
 
 	return description;
+}
+
+std::shared_ptr<mrs::Mesh> mrs::Mesh::LoadFromAsset(const std::string& path)
+{
+	auto mesh = std::make_shared<Mesh>();
+	ResourceManager::Get()._meshes[path] = mesh;
+
+	// Load mesh asset file
+	boop::AssetFile asset = {};
+	boop::load(path.c_str(), asset);
+
+	// Unpack data into mesh
+	boop::MeshInfo mesh_info = boop::read_mesh_info(&asset);
+
+	mesh->_vertices.resize(mesh_info.vertex_buffer_size);
+	mesh->_indices.resize(mesh_info.index_buffer_size);
+
+	boop::unpack_mesh(&mesh_info, asset.raw_data.data(), asset.raw_data.size(), (char*)mesh->_vertices.data(), (char*)mesh->_indices.data());
+
+	return mesh;
 }

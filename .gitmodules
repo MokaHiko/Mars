@@ -10,3 +10,6 @@
 [submodule "Vendor/glm"]
 	path = Vendor/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "Vendor/boop"]
+	path = Vendor/boop
+	url = https://github.com/MokaHiko/Boop.git
