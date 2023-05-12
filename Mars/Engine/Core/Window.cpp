@@ -1,5 +1,7 @@
 #include "Window.h"
 
+#include <Core/Input.h>
+
 namespace mrs {
 
 	Window::Window(const std::string& window_title, int width, int height)
@@ -27,7 +29,18 @@ namespace mrs {
 			if (_event.type == SDL_QUIT) {
 				return false;
 			}
-			if (_event.type == SDL_KEYDOWN) {
+			switch (_event.type) {
+			case SDL_QUIT:
+				return false;
+				break;
+			case SDL_KEYDOWN:
+				Input::Keys[_event.key.keysym.sym] = true;
+				break;
+			case SDL_KEYUP:
+				Input::Keys[_event.key.keysym.sym] = false;
+				break;
+			default:
+				break;
 			}
 		}
 

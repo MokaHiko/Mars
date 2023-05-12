@@ -13,3 +13,6 @@
 [submodule "Vendor/boop"]
 	path = Vendor/boop
 	url = https://github.com/MokaHiko/Boop.git
+[submodule "Vendor/entt"]
+	path = Vendor/entt
+	url = https://github.com/skypjack/entt.git

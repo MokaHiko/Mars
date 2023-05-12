@@ -2,6 +2,9 @@
 
 #include <fstream>
 
+#include <string>
+#include <SDL.h>
+
 void util::read_file(const char* file_path, std::vector<char>& buffer)
 {
 	std::ifstream file(file_path, std::ios::ate | std::ios::binary);
@@ -19,4 +22,20 @@ void util::read_file(const char* file_path, std::vector<char>& buffer)
 
 	printf("Failed to read file: ");
 	printf("%s\n", file_path);
+}
+
+util::Timer::Timer(std::function<void(const Timer&)> finished_callback)
+{
+	then_ = SDL_GetTicks();
+	callback_ = finished_callback;
+}
+
+util::Timer::~Timer()
+{
+	now_ = SDL_GetTicks();
+	delta_ = now_ - then_;
+	delta_ /= 1000;
+
+	if(callback_ != nullptr)
+		callback_(*this);
 }

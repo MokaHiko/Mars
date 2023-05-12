@@ -174,16 +174,16 @@ VkImageCreateInfo vkinit::image_create_info(VkFormat format, VkExtent3D extent, 
 	info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	info.pNext = nullptr;
 
-    info.imageType = VK_IMAGE_TYPE_2D;
+	info.imageType = VK_IMAGE_TYPE_2D;
 
-    info.format = format;
-    info.extent = extent;
+	info.format = format;
+	info.extent = extent;
 
-    info.mipLevels = 1;
-    info.arrayLayers = 1;
-    info.samples = VK_SAMPLE_COUNT_1_BIT;
-    info.tiling = VK_IMAGE_TILING_OPTIMAL;
-    info.usage = usage;
+	info.mipLevels = 1;
+	info.arrayLayers = 1;
+	info.samples = VK_SAMPLE_COUNT_1_BIT;
+	info.tiling = VK_IMAGE_TILING_OPTIMAL;
+	info.usage = usage;
 
 	return info;
 }
@@ -204,8 +204,23 @@ VkImageViewCreateInfo vkinit::image_view_create_info(VkImage image, VkFormat for
 
 	info.subresourceRange.layerCount = 1;
 	info.subresourceRange.baseArrayLayer = 0;
-	info.subresourceRange.levelCount= 1;
+	info.subresourceRange.levelCount = 1;
 	info.subresourceRange.baseMipLevel = 0;
+
+	return info;
+}
+
+VkSamplerCreateInfo vkinit::sampler_create_info(VkFilter filter, VkSamplerAddressMode sampler_address_mode)
+{
+	VkSamplerCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	info.pNext = nullptr;
+
+	info.magFilter = filter;
+	info.minFilter = filter;
+	info.addressModeU = sampler_address_mode;
+	info.addressModeV = sampler_address_mode;
+	info.addressModeW = sampler_address_mode;
 
 	return info;
 }

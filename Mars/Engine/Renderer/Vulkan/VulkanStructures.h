@@ -65,6 +65,4 @@ struct VulkanFrameContext
 	VkCommandBuffer command_buffer;
 };
 
-
-
 #endif

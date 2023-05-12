@@ -281,8 +281,30 @@ vkutil::DescriptorBuilder& vkutil::DescriptorBuilder::BindBuffer(uint32_t bindin
 	return *this;
 }
 
-vkutil::DescriptorBuilder& vkutil::DescriptorBuilder::BindImage(uint32_t binding, VkDescriptorImageInfo* buffer_info, VkDescriptorType type, VkShaderStageFlags shader_stage)
+vkutil::DescriptorBuilder& vkutil::DescriptorBuilder::BindImage(uint32_t binding, VkDescriptorImageInfo* image_info, VkDescriptorType type, VkShaderStageFlags shader_stage)
 {
+	VkDescriptorSetLayoutBinding layout_binding = {};
+	layout_binding.binding = binding;
+	layout_binding.descriptorType= type;
+	layout_binding.stageFlags = shader_stage;
+
+	layout_binding.pImmutableSamplers = nullptr;
+
+	layout_binding.descriptorCount = 1;
+
+	_bindings.push_back(layout_binding);
+
+	VkWriteDescriptorSet write = {};
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write.pNext = nullptr;
+
+	write.descriptorType = type;
+	write.descriptorCount = 1;
+	write.pImageInfo = image_info;
+	write.dstBinding = binding;
+
+	_writes.push_back(write);
+
 	return *this;
 }
 

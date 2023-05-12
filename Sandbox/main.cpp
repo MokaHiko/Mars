@@ -2,6 +2,8 @@
 
 #include <Mars.h>
 
+#include <Core/Input.h>
+
 class SandboxApp : public mrs::Application
 {
 public:
@@ -10,19 +12,36 @@ public:
 	~SandboxApp() {};
 
 	virtual void LoadResources() override {
-		auto my_mesh = mrs::Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj");
-		//auto my_mesh = mrs::Mesh::Create("default_triangle");
+		using namespace mrs;
 
-		////vertex positionsk
-		//my_mesh->_vertices.resize(3);
-		//my_mesh->_vertices[0].position = { 1.f, 1.f, 0.0f };
-		//my_mesh->_vertices[1].position = { -1.f, 1.f, 0.0f };
-		//my_mesh->_vertices[2].position = { 0.f,-1.f, 0.0f };
+		//auto mesh = Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj", "default_mesh");
+		auto mesh = Mesh::LoadFromAsset("Assets/Models/lost_empire.boop_obj", "default_mesh");
 
-		////vertex colors, all green
-		//my_mesh->_vertices[0].color = { 0.f, 1.f, 0.0f }; //pure green
-		//my_mesh->_vertices[1].color = { 0.f, 1.f, 0.0f }; //pure green
-		//my_mesh->_vertices[2].color = { 0.f, 1.f, 0.0f }; //pure green
+		Texture::LoadFromAsset("Assets/Models/lost_empire-RGBA.boop_png", "default_texture");
+		auto mat = Material::Create("default_material");
+		
+		mrs::Entity e = GetScene()->Instantiate();
+		e.AddComponent<mrs::RenderableObject>(mesh, mat);
+	}
+
+	virtual void OnStart() override {
+		_main_camera->GetPosition() = glm::vec3(0.0, 0.0, -20.0f);
+	}
+
+	virtual void OnUpdate() override {
+		using namespace mrs;
+		if (Input::IsKeyPressed(SDLK_w)) {
+			_main_camera->GetPosition() += glm::vec3(0.0, 0.0, 5) * GetDeltaTime();
+		}
+		if (Input::IsKeyPressed(SDLK_s)) {
+			_main_camera->GetPosition() -= glm::vec3(0.0, 0.0, 5) * GetDeltaTime();
+		}
+		if (Input::IsKeyPressed(SDLK_d)) {
+			_main_camera->GetPosition() += glm::vec3(5, 0.0, 0) * GetDeltaTime();
+		}
+		if (Input::IsKeyPressed(SDLK_a)) {
+			_main_camera->GetPosition() -= glm::vec3(5, 0.0, 0) * GetDeltaTime();
+		}
 	}
 };
 

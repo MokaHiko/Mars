@@ -15,8 +15,8 @@
 
 namespace mrs
 {
-	Renderer::Renderer(const std::shared_ptr<Window> window)
-		:_window(window) {}
+	Renderer::Renderer(RendererInitInfo& info)
+		:_window(info.window), _camera(info.camera) {}
 
 	Renderer::~Renderer() {}
 
@@ -95,7 +95,6 @@ namespace mrs
 		InitSyncStructures();
 
 		InitDescriptors();
-		InitPipelines();
 	}
 
 	void Renderer::Shutdown()
@@ -109,11 +108,158 @@ namespace mrs
 		_deletion_queue.Flush();
 	}
 
+	void Renderer::DrawObjects(VkCommandBuffer cmd, Scene* scene)
+	{
+		uint32_t n_frame = GetCurrentFrame();
+
+		// Update Camera
+		_camera->UpdateViewProj();
+		void* camera_data;
+		vmaMapMemory(_allocator, global_descriptor_buffer.allocation, &camera_data);
+		GlobalDescriptorData global_info = {};
+		global_info.view_proj = _camera->GetViewProj();
+		memcpy(camera_data, &_camera->GetViewProj(), sizeof(GlobalDescriptorData));
+		vmaUnmapMemory(_allocator, global_descriptor_buffer.allocation);
+
+		// Bind Object Data
+		void* objectData;
+		vmaMapMemory(_allocator, object_descriptor_buffer[n_frame].allocation, &objectData);
+		ObjectData* s_data = (ObjectData*)(objectData);
+		ObjectData obj_info = {};
+
+		for (uint32_t i = 0; i < 5; i++) {
+			glm::mat4 model(1.0f);
+			glm::vec3 pos = glm::vec3(-1.5f + (0.7f * i), 0, 0.2);
+
+			model = glm::translate(model, pos);
+			model = glm::rotate(model, (float)glm::radians(glm::sin(SDL_GetTicks() * 0.0001) * 360), glm::vec3(0.4f, 0.2f, 0.4f));
+			model = glm::scale(model, glm::vec3(0.25f));
+
+			obj_info.model_matrix = model;
+			obj_info.color = glm::vec4(1.0, 0.2 + (0.1 * i), 0.3, 1.0f);
+			s_data[i] = obj_info;
+		}
+		vmaUnmapMemory(_allocator, object_descriptor_buffer[n_frame].allocation);
+
+		// Bind global descriptors
+		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline);
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 0, 1, &global_descriptor_set, 0, nullptr);
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 1, 1, &object_descriptor_set[n_frame], 0, nullptr);
+
+
+		auto view = scene->Registry()->view<Transform, RenderableObject>();
+		uint32_t counter = 0;
+
+		for (auto entity : view)
+		{
+			// Bind mesh & material if different
+			auto& renderable = Entity(entity, scene).GetComponent<RenderableObject>();
+
+			VkDeviceSize offset = 0;
+			vkCmdBindVertexBuffers(cmd, 0, 1, &renderable.mesh->_buffer.buffer, &offset);
+			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &renderable.material->texture_set, 0, nullptr);
+
+			vkCmdDraw(cmd, renderable.mesh->_vertex_count, 1, 0, counter);
+			counter++;
+		}
+	}
+
+	void Renderer::UploadTexture(std::shared_ptr<Texture> texture)
+	{
+		void* pixel_ptr = nullptr;
+
+		// Copy to staging buffer
+		AllocatedBuffer staging_buffer = CreateBuffer(texture->pixel_data.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+		vmaMapMemory(_allocator, staging_buffer.allocation, &pixel_ptr);
+		memcpy(pixel_ptr, texture->pixel_data.data(), texture->pixel_data.size());
+		vmaUnmapMemory(_allocator, staging_buffer.allocation);
+
+		// Free pixel data
+		texture->pixel_data.clear();
+		texture->pixel_data.shrink_to_fit();
+
+		// Create texture 
+		VkExtent3D extent;
+		extent.width = texture->_width;
+		extent.height = texture->_height;
+		extent.depth = 1;
+
+		VkImageCreateInfo image_create_info = vkinit::image_create_info(texture->_format, extent, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+		VmaAllocationCreateInfo vma_alloc_info = {};
+		vma_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+		vmaCreateImage(_allocator, &image_create_info, &vma_alloc_info, &texture->_image.image, &texture->_image.allocation, nullptr);
+
+		// Copy data to texture via immediate mode submit
+		ImmediateSubmit([&](VkCommandBuffer cmd) {
+
+			// ~ Transition to transfer optimal
+			VkImageSubresourceRange range = {};
+			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			range.layerCount = 1;
+			range.baseArrayLayer = 0;
+			range.levelCount = 1;
+			range.baseMipLevel = 0;
+
+			VkImageMemoryBarrier image_to_transfer_barrier = {};
+			image_to_transfer_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			image_to_transfer_barrier.pNext = nullptr;
+
+			image_to_transfer_barrier.image = texture->_image.image;
+			image_to_transfer_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			image_to_transfer_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+			image_to_transfer_barrier.srcAccessMask = 0;
+			image_to_transfer_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+			image_to_transfer_barrier.subresourceRange = range;
+
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_to_transfer_barrier);
+
+			// ~ Copy to from staging to texture
+			VkBufferImageCopy region = {};
+			region.bufferImageHeight = 0;
+			region.bufferRowLength = 0;
+			region.bufferOffset = 0;
+
+			region.imageExtent = extent;
+			region.imageOffset = { 0 };
+			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			region.imageSubresource.baseArrayLayer = 0;
+			region.imageSubresource.layerCount = 1;
+			region.imageSubresource.mipLevel = 0;
+
+			vkCmdCopyBufferToImage(cmd, staging_buffer.buffer, texture->_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+			// ~ Transition to from shader read only 
+			VkImageMemoryBarrier image_to_shader_barrier = image_to_transfer_barrier;
+			image_to_shader_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			image_to_shader_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			image_to_shader_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			image_to_shader_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_to_shader_barrier);
+			});
+
+		// Create iamge view
+		VkImageViewCreateInfo image_view_info = vkinit::image_view_create_info(texture->_image.image, texture->_format, VK_IMAGE_ASPECT_COLOR_BIT);
+		VK_CHECK(vkCreateImageView(_device.device, &image_view_info, nullptr, &texture->_image_view));
+
+		// Clean up
+		vmaDestroyBuffer(_allocator, staging_buffer.buffer, staging_buffer.allocation);
+		_deletion_queue.Push([=]() {
+			vkDestroyImageView(_device.device, texture->_image_view, nullptr);
+			vmaDestroyImage(_allocator, texture->_image.image, texture->_image.allocation);
+			});
+	}
+
 	void Renderer::UploadMesh(std::shared_ptr<Mesh> mesh)
 	{
 		// Create and upload data to staging bufffer
 		const size_t buffer_size = mesh->_vertices.size() * sizeof(Vertex);
-		AllocatedBuffer staging_buffer = CreateBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+		AllocatedBuffer staging_buffer = CreateBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
 
 		void* data;
 		vmaMapMemory(_allocator, staging_buffer.allocation, &data);
@@ -133,6 +279,11 @@ namespace mrs
 			});
 
 		// Clean up staging buffer and queue vertex buffer for deletion
+		mesh->_vertices.clear();
+		mesh->_vertices.shrink_to_fit();
+		mesh->_indices.clear();
+		mesh->_indices.shrink_to_fit();
+
 		vmaDestroyBuffer(_allocator, staging_buffer.buffer, staging_buffer.allocation);
 
 		_deletion_queue.Push([=]() {
@@ -142,12 +293,38 @@ namespace mrs
 
 	void Renderer::UploadResources()
 	{
-		// Upload all meshes
+		// Upload each resource type
+
 		for (auto& it : ResourceManager::Get()._meshes) {
 			UploadMesh(it.second);
 		}
 
-		my_mesh = mrs::Mesh::Get("Assets/Models/monkey_smooth.boop_obj");
+		for (auto& it : ResourceManager::Get()._textures) {
+			UploadTexture(it.second);
+		}
+
+		// ~ Materials
+		{
+			// Create Sampler 
+			VkSamplerCreateInfo default_sampler_info = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+			VK_CHECK(vkCreateSampler(_device.device, &default_sampler_info, nullptr, &_default_image_sampler));
+
+			for (auto& it : ResourceManager::Get()._materials) {
+
+				VkDescriptorImageInfo image_buffer_info = {};
+				image_buffer_info.sampler = _default_image_sampler;
+				image_buffer_info.imageView = Texture::Get("default_texture")->_image_view;
+				image_buffer_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+				vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
+					.BindImage(0, &image_buffer_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+					.Build(&it.second->texture_set, &_default_image_set_layout);
+			}
+
+			_deletion_queue.Push([=]() {
+				vkDestroySampler(_device.device, _default_image_sampler, nullptr);
+				});
+		}
 	}
 
 	bool Renderer::LoadShaderModule(const char* path, VkShaderModule* module)
@@ -496,7 +673,7 @@ namespace mrs
 		// Create pipeline layout
 		VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
 
-		std::vector<VkDescriptorSetLayout> descriptor_layouts = { global_descriptor_set_layout , object_descriptor_set_layout };
+		std::vector<VkDescriptorSetLayout> descriptor_layouts = { global_descriptor_set_layout , object_descriptor_set_layout, _default_image_set_layout };
 		pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
 		pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
 
@@ -535,16 +712,7 @@ namespace mrs
 			global_descriptor_buffer = CreateBuffer(sizeof(GlobalDescriptorData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 			GlobalDescriptorData global_descriptor_data = {};
-			glm::mat4 view_proj = glm::mat4(1.0f);
-
-			// TODO: Move camera to its own class
-			glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
-			glm::mat4 projection = glm::perspective(glm::radians(70.0f),
-				static_cast<float>(_window->GetWidth()) / static_cast<float>(_window->GetHeight()),
-				0.1f,
-				200.0f);
-			projection[1][1] *= -1; // Reconfigure y values as positive for vulkan
-			global_descriptor_data.view_proj = projection * view;
+			global_descriptor_data.view_proj = _camera->GetViewProj();
 
 			void* data;
 			vmaMapMemory(_allocator, global_descriptor_buffer.allocation, &data);
@@ -632,7 +800,7 @@ namespace mrs
 		return aligned_size;
 	}
 
-	void Renderer::Update()
+	void Renderer::Render(Scene* scene)
 	{
 		// Get current frame index, current frame data, current cmd bufffer
 		uint32_t n_frame = GetCurrentFrame();
@@ -670,40 +838,8 @@ namespace mrs
 		VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(_framebuffers[current_image], _render_pass, area, clear_values, 2);
 		vkCmdBeginRenderPass(cmd, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-		// General render commands
-		{
-			// Bind Mesh Data
-			void* objectData;
-			vmaMapMemory(_allocator, object_descriptor_buffer[n_frame].allocation, &objectData);
-			ObjectData* s_data = (ObjectData*)(objectData);
-			ObjectData obj_info= {};
-
-			for (uint32_t i = 0; i < 5; i++) {
-				glm::mat4 model(1.0f);
-				glm::vec3 pos = glm::vec3(-1.5f + (0.7f* i), 0, 0.2);
-
-				model = glm::translate(model, pos);
-				model = glm::rotate(model, (float)glm::radians(glm::sin(SDL_GetTicks() * 0.001) * 360), glm::vec3(0.4f, 0.2f, 0.4f));
-				model = glm::scale(model, glm::vec3(0.25f));
-
-				obj_info.model_matrix = model;
-				obj_info.color = glm::vec4(1.0, 0.2 + (0.1 * i), 0.3, 1.0f);
-				s_data[i] = obj_info;
-			}
-			vmaUnmapMemory(_allocator, object_descriptor_buffer[n_frame].allocation);
-
-			// Bind Materials
-			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline);
-			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 0, 1, &global_descriptor_set, 0, nullptr);
-			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 1, 1, &object_descriptor_set[n_frame], 0, nullptr);
-
-			// Draw commands
-			for (uint32_t i = 0; i < 5; i++) {
-				VkDeviceSize offset = 0;
-				vkCmdBindVertexBuffers(cmd, 0, 1, &my_mesh->_buffer.buffer, &offset);
-				vkCmdDraw(cmd, static_cast<uint32_t>(my_mesh->_vertices.size()), 1, 0, i);
-			}
-		}
+		// ~ Client Application render commands
+		DrawObjects(cmd, scene);
 
 		vkCmdEndRenderPass(cmd);
 		VK_CHECK(vkEndCommandBuffer(cmd));

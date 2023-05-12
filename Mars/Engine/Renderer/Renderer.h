@@ -13,7 +13,13 @@
 #include "Vulkan/VulkanUtils.h"
 #include "Vulkan/VulkanStructures.h"
 
+#include "Vulkan/VulkanMaterial.h"
+#include "Vulkan/VulkanTexture.h"
 #include "Vulkan/VulkanMesh.h"
+
+#include "Camera.h"
+
+#include "ECS/Scene.h"
 
 namespace mrs {
 
@@ -25,22 +31,32 @@ namespace mrs {
 		bool vsync = true;
 	};
 
+	struct RendererInitInfo
+	{
+		std::shared_ptr<Window> window;
+		std::shared_ptr<Camera> camera;
+
+		GraphicsSettings graphics_settings = {};
+	};
+
 	class Renderer
 	{
 	public:
-		Renderer(const std::shared_ptr<Window> window);
+		Renderer(RendererInitInfo& info);
 		~Renderer();
 
 		virtual void Init();
-		virtual void Update();
+		virtual void Render(Scene* scene);
 		virtual void Shutdown();
+
+		virtual void DrawObjects(VkCommandBuffer cmd, Scene* scene);
 
 		void UploadResources();
 	private:
 		const std::shared_ptr<Window> _window;
 	public:
-		// ~ Client Application Level
-		std::shared_ptr<Mesh> my_mesh;
+		// Cameras perspective to render to
+		std::shared_ptr<Camera> _camera;
 
 		struct ObjectData
 		{
@@ -62,6 +78,8 @@ namespace mrs {
 		std::vector<AllocatedBuffer> object_descriptor_buffer;
 		VkDescriptorSetLayout object_descriptor_set_layout;
 
+		VkSampler _default_image_sampler;
+		VkDescriptorSetLayout _default_image_set_layout;
 	public:
 		// Returns whether or not shader module was created succesefully
 		bool LoadShaderModule(const char* path, VkShaderModule* module);
@@ -87,16 +105,19 @@ namespace mrs {
 		// Creates all the fences and semaphores
 		void InitSyncStructures();
 
-		// Creates graphics pipelines
-		void InitPipelines();
-
 		// Creates and allocates descriptors 
 		void InitDescriptors();
+	public:
+		// Creates graphics pipelines based of parameters
+		void InitPipelines();
 	private:
 		inline uint32_t GetCurrentFrame() const { return _frame_count % frame_overlaps; }
 
 		// Pads size to be compatible with minimum unifrom buffer alignment of physical device
 		size_t PadToUniformBufferSize(size_t original_size);
+
+		// Upload texture to GPU via immediate command buffers
+		void UploadTexture(std::shared_ptr<Texture> texture);
 
 		// Upload mesh to GPU via immediate command buffers
 		void UploadMesh(std::shared_ptr<Mesh> mesh);

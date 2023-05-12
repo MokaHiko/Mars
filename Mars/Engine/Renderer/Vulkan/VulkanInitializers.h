@@ -27,6 +27,8 @@ namespace vkinit {
 	// Resources
 	VkImageCreateInfo image_create_info(VkFormat format, VkExtent3D extent, VkImageUsageFlags usage);
 	VkImageViewCreateInfo image_view_create_info(VkImage image, VkFormat format, VkImageAspectFlags aspect);
+
+	VkSamplerCreateInfo sampler_create_info(VkFilter filter, VkSamplerAddressMode sampler_address_mode);
 }
 
 

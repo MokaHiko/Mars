@@ -5,6 +5,7 @@ add_subdirectory(SDL)
 add_subdirectory(vkboostrap)
 add_subdirectory(glm)
 add_subdirectory(boop)
+add_subdirectory(entt)
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_link_libraries(${PROJECT_NAME} 
@@ -12,6 +13,7 @@ target_link_libraries(${PROJECT_NAME}
 					INTERFACE SDL2::SDL2
 					INTERFACE vk-bootstrap::vk-bootstrap
 					INTERFACE glm::glm
+					INTERFACE EnTT
 					)
 
 # Header only libraries 

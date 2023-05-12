@@ -21,8 +21,8 @@ namespace mrs {
 	struct Vertex
 	{
 		glm::vec3 position;
-		glm::vec3 normal;
 		glm::vec3 color;
+		glm::vec3 normal;
 		glm::vec2 uv;
 
 		static VertexInputDescription& GetDescription();
@@ -34,7 +34,7 @@ namespace mrs {
 		Mesh() {};
 		~Mesh() {};
 
-		static std::shared_ptr<Mesh> LoadFromAsset(const std::string& path);
+		static std::shared_ptr<Mesh> LoadFromAsset(const std::string& path, const std::string& alias);
 
 		static std::shared_ptr<Mesh> Create(const std::string& path)
 		{
@@ -42,9 +42,9 @@ namespace mrs {
 			return ResourceManager::Get()._meshes[path];
 		}
 
-		static std::shared_ptr<Mesh> Get(const std::string& path)
+		static std::shared_ptr<Mesh> Get(const std::string& alias)
 		{
-			auto it = ResourceManager::Get()._meshes.find(path);
+			auto it = ResourceManager::Get()._meshes.find(alias);
 
 			if (it != ResourceManager::Get()._meshes.end()) {
 				return it->second;
@@ -52,6 +52,9 @@ namespace mrs {
 
 			return nullptr;
 		}
+
+		uint32_t _index_count = 0;
+		uint32_t _vertex_count = 0;
 
 		std::vector<Vertex> _vertices;
 		std::vector<uint32_t> _indices;

@@ -164,7 +164,7 @@ namespace vkutil {
 		DescriptorBuilder& BindBuffer(uint32_t binding, VkDescriptorBufferInfo* buffer_info, VkDescriptorType type, VkShaderStageFlags shader_stage);
 
 		// Queues image to descriptor binding
-		DescriptorBuilder& BindImage(uint32_t binding, VkDescriptorImageInfo* buffer_info, VkDescriptorType type, VkShaderStageFlags shader_stage);
+		DescriptorBuilder& BindImage(uint32_t binding, VkDescriptorImageInfo* image_info, VkDescriptorType type, VkShaderStageFlags shader_stage);
 
 		bool Build(VkDescriptorSet* set, VkDescriptorSetLayout* layout);
 	private:
