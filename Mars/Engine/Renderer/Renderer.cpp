@@ -112,7 +112,7 @@ namespace mrs
 	{
 		uint32_t n_frame = GetCurrentFrame();
 
-		// Update Camera
+		// Update camera descriptor
 		_camera->UpdateViewProj();
 		void* camera_data;
 		vmaMapMemory(_allocator, global_descriptor_buffer.allocation, &camera_data);
@@ -121,13 +121,13 @@ namespace mrs
 		memcpy(camera_data, &_camera->GetViewProj(), sizeof(GlobalDescriptorData));
 		vmaUnmapMemory(_allocator, global_descriptor_buffer.allocation);
 
-		// Bind Object Data
+		// Bind object data storage buffer
 		void* objectData;
 		vmaMapMemory(_allocator, object_descriptor_buffer[n_frame].allocation, &objectData);
 		ObjectData* s_data = (ObjectData*)(objectData);
 		ObjectData obj_info = {};
 
-		for (uint32_t i = 0; i < 5; i++) {
+		for (uint32_t i = 0; i < 10; i++) {
 			glm::mat4 model(1.0f);
 			glm::vec3 pos = glm::vec3(-1.5f + (0.7f * i), 0, 0.2);
 
@@ -145,7 +145,6 @@ namespace mrs
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 0, 1, &global_descriptor_set, 0, nullptr);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 1, 1, &object_descriptor_set[n_frame], 0, nullptr);
-
 
 		auto view = scene->Registry()->view<Transform, RenderableObject>();
 		uint32_t counter = 0;

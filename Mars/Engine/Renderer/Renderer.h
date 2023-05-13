@@ -49,8 +49,6 @@ namespace mrs {
 		virtual void Render(Scene* scene);
 		virtual void Shutdown();
 
-		virtual void DrawObjects(VkCommandBuffer cmd, Scene* scene);
-
 		void UploadResources();
 	private:
 		const std::shared_ptr<Window> _window;
@@ -121,6 +119,9 @@ namespace mrs {
 
 		// Upload mesh to GPU via immediate command buffers
 		void UploadMesh(std::shared_ptr<Mesh> mesh);
+
+	private:
+		virtual void DrawObjects(VkCommandBuffer cmd, Scene* scene);
 	private:
 		// Vulkan Structures
 		VkInstance _instance = {};

@@ -11,6 +11,8 @@
 
 #include "ECS/Scene.h"
 
+#include "Layer.h"
+
 
 namespace mrs {
 	class Application
@@ -20,30 +22,24 @@ namespace mrs {
 		virtual ~Application();
 
 		void Run();
-		inline std::shared_ptr<Scene> GetScene() { return _scene; }
-	public:
+		void OnUpdate();
 
-		// Where shaders, textures and meshes are loaded
-		virtual void LoadResources() {};
+		void PushLayer(Layer* layer);
+		void PopLayer(Layer* layer);
 
-		virtual void OnStart() {};
-		virtual void OnUpdate() {};
-	public:
+		// Get static instance of application
+		static Application& GetInstance() { return *_instance; }
 
-		inline const float GetDeltaTime() const { return _dt; }
-
-	protected:
-
-		// Editor camera
-		std::shared_ptr<Camera> _main_camera = nullptr;
+		// Returns shared ptr to application window
+		std::shared_ptr<Window> GetWindow() { return _window; }
+	private:
+		LayerStack _layer_stack;
 	private:
 		std::shared_ptr<Window> _window = nullptr;
-		std::unique_ptr<Renderer> _renderer = nullptr;
+		static Application* _instance;
 
 		bool _running = false;
 		float _dt = 0.0f;
-	private:
-		std::shared_ptr<Scene> _scene;
 	};
 
 	// To be implemented by client

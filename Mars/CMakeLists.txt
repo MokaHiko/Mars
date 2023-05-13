@@ -9,6 +9,8 @@ add_library(${PROJECT_NAME}
 			Engine/Core/Entrypoint.cpp 
 			Engine/Core/Application.h
 			Engine/Core/Application.cpp
+			Engine/Core/Layer.h
+			Engine/Core/Layer.cpp
 			Engine/Core/Window.h
 			Engine/Core/Window.cpp
 			Engine/Core/Input.h

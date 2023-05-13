@@ -9,4 +9,4 @@ add_subdirectory(Mars)
 
 
 # Client Application
-add_subdirectory(Sandbox)
+add_subdirectory(Rover)
