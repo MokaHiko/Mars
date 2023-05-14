@@ -1,6 +1,7 @@
 #include "Window.h"
 
 #include <Core/Input.h>
+#include <imgui_impl_sdl2.h>
 
 namespace mrs {
 
@@ -29,19 +30,22 @@ namespace mrs {
 			if (_event.type == SDL_QUIT) {
 				return false;
 			}
+
+			int32_t key = (int32_t)_event.key.keysym.sym;
 			switch (_event.type) {
 			case SDL_QUIT:
 				return false;
 				break;
 			case SDL_KEYDOWN:
-				Input::Keys[_event.key.keysym.sym] = true;
+				if (key < 322) { Input::Keys[_event.key.keysym.sym] = true; }
 				break;
 			case SDL_KEYUP:
-				Input::Keys[_event.key.keysym.sym] = false;
+				if (key < 322) { Input::Keys[_event.key.keysym.sym] = false; }
 				break;
 			default:
 				break;
 			}
+			ImGui_ImplSDL2_ProcessEvent(&_event);
 		}
 
 		return true;

@@ -46,13 +46,24 @@ namespace mrs {
 		~Renderer();
 
 		virtual void Init();
-		virtual void Render(Scene* scene);
 		virtual void Shutdown();
 
+		virtual void Begin(Scene* scene);
+		virtual void End();
+
 		void UploadResources();
-	private:
-		const std::shared_ptr<Window> _window;
+
+		// Getters
+		inline VkInstance GetInstance() { return _instance; }
+		inline VkRenderPass GetRenderPass() { return _render_pass; }
+		inline VulkanDevice& GetDevice() { return _device; }
+		inline vkutil::DeletionQueue& GetDeletionQueue() { return _deletion_queue; }
+		inline VulkanQueues& GetQueues() { return _queues; }
+
 	public:
+		// Handle to window being rendered to
+		const std::shared_ptr<Window> _window;
+
 		// Cameras perspective to render to
 		std::shared_ptr<Camera> _camera;
 
@@ -87,6 +98,7 @@ namespace mrs {
 
 		// Creates and allocates buffer with given size
 		AllocatedBuffer CreateBuffer(size_t size, VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, VkMemoryPropertyFlags memory_props = 0);
+
 	private:
 		// Creates swapchain and gets handle to image s/views
 		void InitSwapchain();
@@ -121,7 +133,7 @@ namespace mrs {
 		void UploadMesh(std::shared_ptr<Mesh> mesh);
 
 	private:
-		virtual void DrawObjects(VkCommandBuffer cmd, Scene* scene);
+		void DrawObjects(VkCommandBuffer cmd, Scene* scene);
 	private:
 		// Vulkan Structures
 		VkInstance _instance = {};
@@ -150,6 +162,7 @@ namespace mrs {
 
 		// Number of frame contexts
 		VulkanFrameContext _frame_data[frame_overlaps];
+		uint32_t _current_swapchain_image = -1;
 
 		// Main upload struct
 		VulkanUploadContext _upload_context = {};
@@ -158,7 +171,7 @@ namespace mrs {
 		uint32_t _frame_count = 0;
 
 	private:
-		// ~Vulkan resource management
+		// ~ Vulkan resource management
 
 		// Main gpu upload resource allocator
 		VmaAllocator _allocator;

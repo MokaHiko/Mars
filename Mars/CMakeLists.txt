@@ -40,6 +40,8 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/Vulkan/VulkanUtils.cpp
 			Engine/Renderer/Vulkan/VulkanInitializers.h
 			Engine/Renderer/Vulkan/VulkanInitializers.cpp
+			Engine/ImGui/MarsImGui.h
+			Engine/ImGui/MarsImGui.cpp
 			)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -51,6 +53,7 @@ target_link_directories(${PROJECT_NAME} PUBLIC
 target_link_libraries(${PROJECT_NAME} PUBLIC
 			Vendor
 			vma
+			imgui
 			vulkan-1)
 
 

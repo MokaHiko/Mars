@@ -12,6 +12,9 @@
 
 // TODO: Remove
 #include <glm/gtc/matrix_transform.hpp>
+#include <ImGui/MarsImGui.h>
+#include <imgui.h>
+#include <imgui_impl_vulkan.h>
 
 namespace mrs
 {
@@ -95,6 +98,10 @@ namespace mrs
 		InitSyncStructures();
 
 		InitDescriptors();
+
+		// TODO: Make optional 
+		// Ready Engine for ImGUi
+		MarsImGuiInit(this);
 	}
 
 	void Renderer::Shutdown()
@@ -127,17 +134,24 @@ namespace mrs
 		ObjectData* s_data = (ObjectData*)(objectData);
 		ObjectData obj_info = {};
 
-		for (uint32_t i = 0; i < 10; i++) {
+		auto view = scene->Registry()->view<Transform, RenderableObject>();
+		uint32_t ctr = 0;
+
+		for (auto entity : view) {
+			auto& game_object = Entity(entity, scene);
+			Transform& transform = game_object.GetComponent<Transform>();
+
 			glm::mat4 model(1.0f);
-			glm::vec3 pos = glm::vec3(-1.5f + (0.7f * i), 0, 0.2);
+			glm::vec3 pos = transform.position;
 
 			model = glm::translate(model, pos);
 			model = glm::rotate(model, (float)glm::radians(glm::sin(SDL_GetTicks() * 0.0001) * 360), glm::vec3(0.4f, 0.2f, 0.4f));
-			model = glm::scale(model, glm::vec3(0.25f));
+			model = glm::scale(model, transform.scale);
 
 			obj_info.model_matrix = model;
-			obj_info.color = glm::vec4(1.0, 0.2 + (0.1 * i), 0.3, 1.0f);
-			s_data[i] = obj_info;
+			s_data[ctr] = obj_info;
+
+			ctr++;
 		}
 		vmaUnmapMemory(_allocator, object_descriptor_buffer[n_frame].allocation);
 
@@ -146,20 +160,29 @@ namespace mrs
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 0, 1, &global_descriptor_set, 0, nullptr);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 1, 1, &object_descriptor_set[n_frame], 0, nullptr);
 
-		auto view = scene->Registry()->view<Transform, RenderableObject>();
-		uint32_t counter = 0;
-
+		ctr = 0;
+		Mesh* last_mesh = nullptr;
+		Material* last_material = nullptr;
 		for (auto entity : view)
 		{
-			// Bind mesh & material if different
 			auto& renderable = Entity(entity, scene).GetComponent<RenderableObject>();
 
-			VkDeviceSize offset = 0;
-			vkCmdBindVertexBuffers(cmd, 0, 1, &renderable.mesh->_buffer.buffer, &offset);
-			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &renderable.material->texture_set, 0, nullptr);
+			// Bind mesh if different
+			if (renderable.mesh.get() != last_mesh) {
+				VkDeviceSize offset = 0;
+				vkCmdBindVertexBuffers(cmd, 0, 1, &renderable.mesh->_buffer.buffer, &offset);
 
-			vkCmdDraw(cmd, renderable.mesh->_vertex_count, 1, 0, counter);
-			counter++;
+				last_mesh = renderable.mesh.get();
+			}
+
+			// Bind material if different
+			if (renderable.material.get() != last_material) {
+				vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &renderable.material->texture_set, 0, nullptr);
+				last_material = renderable.material.get();
+			}
+
+			vkCmdDraw(cmd, renderable.mesh->_vertex_count, 1, 0, ctr);
+			ctr++;
 		}
 	}
 
@@ -737,7 +760,7 @@ namespace mrs
 
 		// ~ Object Data
 		{
-			const uint32_t max_objects = 10;
+			const uint32_t max_objects = 100000;
 			object_descriptor_buffer.resize(frame_overlaps);
 			object_descriptor_set.resize(frame_overlaps);
 			for (uint32_t i = 0; i < frame_overlaps; i++) {
@@ -799,12 +822,14 @@ namespace mrs
 		return aligned_size;
 	}
 
-	void Renderer::Render(Scene* scene)
+	void Renderer::Begin(Scene* scene)
 	{
 		// Get current frame index, current frame data, current cmd bufffer
-		uint32_t n_frame = GetCurrentFrame();
 		auto& frame = _frame_data[GetCurrentFrame()];
 		VkCommandBuffer cmd = frame.command_buffer;
+
+		// Set up ImGui to Draw
+		ImGui::Render();
 
 		// Wait till render fence has been flagged
 		VK_CHECK(vkWaitForFences(_device.device, 1, &frame.render_fence, VK_TRUE, time_out));
@@ -812,8 +837,7 @@ namespace mrs
 
 		// Get current image to render to 
 		// Make sure image has been acquired before submitting
-		uint32_t current_image = -1;
-		vkAcquireNextImageKHR(_device.device, _swapchain, time_out, frame.present_semaphore, VK_NULL_HANDLE, &current_image);
+		vkAcquireNextImageKHR(_device.device, _swapchain, time_out, frame.present_semaphore, VK_NULL_HANDLE, &_current_swapchain_image);
 
 		// ~ Begin Recording 
 		VK_CHECK(vkResetCommandBuffer(cmd, 0));
@@ -834,12 +858,20 @@ namespace mrs
 		// clear values are per attachment 
 		VkClearValue clear_values[2] = { clear_value, depth_value };
 
-		VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(_framebuffers[current_image], _render_pass, area, clear_values, 2);
+		VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(_framebuffers[_current_swapchain_image], _render_pass, area, clear_values, 2);
 		vkCmdBeginRenderPass(cmd, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-		// ~ Client Application render commands
+		// Draw all renderable objects
 		DrawObjects(cmd, scene);
+	}
 
+	void Renderer::End()
+	{
+		auto& frame = _frame_data[GetCurrentFrame()];
+		VkCommandBuffer cmd = frame.command_buffer;
+
+		// TODO: Move to UI render pass
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
 		vkCmdEndRenderPass(cmd);
 		VK_CHECK(vkEndCommandBuffer(cmd));
 
@@ -867,7 +899,7 @@ namespace mrs
 		present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		present_info.pNext = nullptr;
 
-		present_info.pImageIndices = &current_image;
+		present_info.pImageIndices = &_current_swapchain_image;
 		present_info.swapchainCount = 1;
 		present_info.pSwapchains = &_swapchain;
 

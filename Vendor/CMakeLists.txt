@@ -19,3 +19,15 @@ target_link_libraries(${PROJECT_NAME}
 # Header only libraries 
 add_library(vma INTERFACE)
 target_include_directories(vma INTERFACE VulkanMemoryAllocator/include)
+
+# Imgui Library
+find_package(Vulkan REQUIRED)
+add_library(imgui STATIC)
+target_include_directories(imgui PUBLIC imgui)
+target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL2::SDL2)
+file(GLOB IMGUI_SOURCES "imgui/*.cpp")
+file(GLOB IMGUI_HEADERS "imgui/*.h")
+target_sources(imgui PRIVATE 
+${IMGUI_SOURCES}
+${IMGUI_HEADERS}
+    )
