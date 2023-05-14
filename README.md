@@ -31,7 +31,7 @@ Run configure.bat or build manual build using cmake -S ./ -B ./build
 ### Features 
 
 <center>
-	<img src="demo_gifs/template_demo.gif">
+	<img src="demo_gifs/mesh_demo.gif">
 	<h4>Mesh Rendering</h4>
 	example project : https://github.com/MokaHiko/Mars.git
 </center>
