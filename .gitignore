@@ -2,7 +2,9 @@
 .vscode/*
 [Bb]uild/*
 
-# Converted Assets
+# Assets
+*.jpg
+*.png
 *.boop_png
 *.boop_obj
 
