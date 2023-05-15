@@ -75,6 +75,7 @@ namespace mrs {
 
 		struct GlobalDescriptorData {
 			glm::mat4 view_proj;
+			glm::vec4 directional_light_position;
 		};
 
 		// Global descriptor

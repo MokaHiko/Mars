@@ -3,10 +3,6 @@
 
 #pragma once
 
-#include <cstdint>
-#include <vector>
-#include <functional>
-
 namespace util {
 
     // A timer that takes in a function to be called when out object is out of scope
