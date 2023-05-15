@@ -2,9 +2,6 @@
 .vscode/*
 [Bb]uild/*
 
-# Rover
-Rover/Assets
-
 # Assets
 *.psd
 *.jpg
