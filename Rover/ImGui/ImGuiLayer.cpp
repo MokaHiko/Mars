@@ -14,4 +14,8 @@ void mrs::ImGuiLayer::OnUpdate(float dt)
 	ImGui_ImplSDL2_NewFrame(_window_handle);
 
 	ImGui::NewFrame();
+
+	//imgui commands
+	static bool show = true;
+	ImGui::ShowDemoWindow(&show);
 }

@@ -43,7 +43,7 @@ add_library(${PROJECT_NAME}
 			Engine/ImGui/MarsImGui.h
 			Engine/ImGui/MarsImGui.cpp
 			)
-target_precompile_headers(${PROJECT_NAME} PUBLIC mrspch.h)
+
 target_include_directories(${PROJECT_NAME} PUBLIC
 			Engine
 			$ENV{VULKAN_SDK}/include

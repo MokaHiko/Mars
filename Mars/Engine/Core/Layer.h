@@ -3,6 +3,10 @@
 
 #pragma once
 
+
+#include <vector>
+#include <cstdint>
+
 namespace mrs {
 
     class Layer

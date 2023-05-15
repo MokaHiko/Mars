@@ -145,7 +145,7 @@ namespace vkutil {
 		VkDevice _device_h;
 	};
 
-	// Handles Allococation of descriptor pools, for a single set, set layout and its bindings
+	// Handles Allococation of descriptor pools, sets, set layouts 
 	// then binds buffer/images to descriptors
 	class DescriptorBuilder
 	{

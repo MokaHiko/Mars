@@ -32,12 +32,6 @@ namespace mrs {
         std::shared_ptr<Mesh> mesh;
         std::shared_ptr<Material> material;
     };
-
-    // [Component]
-    struct DirectionalLight
-    {
-        float intensity = 0.0f;
-    };
 }
 
 #endif
