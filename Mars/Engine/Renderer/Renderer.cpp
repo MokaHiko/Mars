@@ -119,13 +119,25 @@ namespace mrs
 	{
 		uint32_t n_frame = GetCurrentFrame();
 
-		// Update camera descriptor
+		// Update global descriptor
 		_camera->UpdateViewProj();
-		void* camera_data;
-		vmaMapMemory(_allocator, global_descriptor_buffer.allocation, &camera_data);
+		void* global_data;
+		vmaMapMemory(_allocator, global_descriptor_buffer.allocation, &global_data);
+
+		// Camera
 		GlobalDescriptorData global_info = {};
 		global_info.view_proj = _camera->GetViewProj();
-		memcpy(camera_data, &_camera->GetViewProj(), sizeof(GlobalDescriptorData));
+
+		// Lights
+		auto lights_view = scene->Registry()->view<Transform, DirectionalLight>();
+		for (auto entity : lights_view) {
+			Transform& transform = Entity(entity, scene).GetComponent<Transform>();
+			global_info.directional_light_position = glm::vec4(transform.position, 0.0f);
+			break;
+		}
+
+		// Renderable Objects
+		memcpy(global_data, &global_info, sizeof(GlobalDescriptorData));
 		vmaUnmapMemory(_allocator, global_descriptor_buffer.allocation);
 
 		// Bind object data storage buffer
@@ -155,7 +167,7 @@ namespace mrs
 		}
 		vmaUnmapMemory(_allocator, object_descriptor_buffer[n_frame].allocation);
 
-		// Bind global descriptors
+		// Bind descriptors
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 0, 1, &global_descriptor_set, 0, nullptr);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 1, 1, &object_descriptor_set[n_frame], 0, nullptr);
@@ -167,23 +179,38 @@ namespace mrs
 		{
 			auto& renderable = Entity(entity, scene).GetComponent<RenderableObject>();
 
-			// Bind mesh if different
-			if (renderable.mesh.get() != last_mesh) {
-				VkDeviceSize offset = 0;
-				vkCmdBindVertexBuffers(cmd, 0, 1, &renderable.mesh->_buffer.buffer, &offset);
-
-				last_mesh = renderable.mesh.get();
-			}
-
 			// Bind material if different
 			if (renderable.material.get() != last_material) {
 				vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &renderable.material->texture_set, 0, nullptr);
 				last_material = renderable.material.get();
 			}
 
-			vkCmdDraw(cmd, renderable.mesh->_vertex_count, 1, 0, ctr);
+			// Bind vertex and index buffer if different
+			if (renderable.mesh.get() != last_mesh) {
+				VkDeviceSize offset = 0;
+				vkCmdBindVertexBuffers(cmd, 0, 1, &renderable.mesh->_buffer.buffer, &offset);
+
+				if (renderable.mesh->_index_count > 0) {
+					vkCmdBindIndexBuffer(cmd, renderable.mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+				}
+
+				last_mesh = renderable.mesh.get();
+			}
+
+			if (renderable.mesh->_index_count > 0) {
+				vkCmdDrawIndexed(cmd, renderable.mesh->_index_count, 1, 0, 0, ctr);
+			}
+			else {
+				vkCmdDraw(cmd, renderable.mesh->_vertex_count, 1, 0, ctr);
+			}
+
 			ctr++;
 		}
+
+		// [Profiling]
+		ImGui::Begin("Renderer Stats");
+		ImGui::Text("Draw Calls: %d", ctr);
+		ImGui::End();
 	}
 
 	void Renderer::UploadTexture(std::shared_ptr<Texture> texture)
@@ -300,6 +327,29 @@ namespace mrs
 			vkCmdCopyBuffer(cmd, staging_buffer.buffer, mesh->_buffer.buffer, 1, &region);
 			});
 
+		// Create index buffer if indices available
+		if (mesh->_index_count > 0) {
+			const size_t index_buffer_size = mesh->_index_count * sizeof(uint32_t);
+			AllocatedBuffer index_staging_buffer = CreateBuffer(index_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+
+			void* index_data;
+			vmaMapMemory(_allocator, index_staging_buffer.allocation, &index_data);
+			memcpy(index_data, mesh->_indices.data(), index_buffer_size);
+			vmaUnmapMemory(_allocator, index_staging_buffer.allocation);
+
+			mesh->_index_buffer = CreateBuffer(index_buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0);
+
+			ImmediateSubmit([=](VkCommandBuffer cmd) {
+				VkBufferCopy region = {};
+				region.dstOffset = 0;
+				region.size = index_buffer_size;
+				region.srcOffset = 0;
+				vkCmdCopyBuffer(cmd, index_staging_buffer.buffer, mesh->_index_buffer.buffer, 1, &region);
+				});
+
+			vmaDestroyBuffer(_allocator, index_staging_buffer.buffer, index_staging_buffer.allocation);
+		}
+
 		// Clean up staging buffer and queue vertex buffer for deletion
 		mesh->_vertices.clear();
 		mesh->_vertices.shrink_to_fit();
@@ -310,6 +360,10 @@ namespace mrs
 
 		_deletion_queue.Push([=]() {
 			vmaDestroyBuffer(_allocator, mesh->_buffer.buffer, mesh->_buffer.allocation);
+
+			if (mesh->_index_count > 0) {
+				vmaDestroyBuffer(_allocator, mesh->_index_buffer.buffer, mesh->_index_buffer.allocation);
+			}
 			});
 	}
 
@@ -735,6 +789,7 @@ namespace mrs
 
 			GlobalDescriptorData global_descriptor_data = {};
 			global_descriptor_data.view_proj = _camera->GetViewProj();
+			global_descriptor_data.directional_light_position = glm::vec4(0.0f);
 
 			void* data;
 			vmaMapMemory(_allocator, global_descriptor_buffer.allocation, &data);
@@ -749,7 +804,7 @@ namespace mrs
 
 			// Build descriptors
 			vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
-				.BindBuffer(0, &global_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+				.BindBuffer(0, &global_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
 				.Build(&global_descriptor_set, &global_descriptor_set_layout);
 
 			// Clean descriptor resources
@@ -828,9 +883,6 @@ namespace mrs
 		auto& frame = _frame_data[GetCurrentFrame()];
 		VkCommandBuffer cmd = frame.command_buffer;
 
-		// Set up ImGui to Draw
-		ImGui::Render();
-
 		// Wait till render fence has been flagged
 		VK_CHECK(vkWaitForFences(_device.device, 1, &frame.render_fence, VK_TRUE, time_out));
 		vkResetFences(_device.device, 1, &frame.render_fence);
@@ -863,6 +915,9 @@ namespace mrs
 
 		// Draw all renderable objects
 		DrawObjects(cmd, scene);
+
+		// Set up ImGui to Draw
+		ImGui::Render();
 	}
 
 	void Renderer::End()
