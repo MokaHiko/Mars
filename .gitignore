@@ -5,6 +5,7 @@
 # Assets
 *.jpg
 *.png
+*.boop_jpg
 *.boop_png
 *.boop_obj
 
