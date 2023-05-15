@@ -6,6 +6,7 @@
 Rover/Assets
 
 # Assets
+*.psd
 *.jpg
 *.png
 *.boop_jpg
