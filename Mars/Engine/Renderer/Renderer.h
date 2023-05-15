@@ -42,6 +42,7 @@ namespace mrs {
 	class Renderer
 	{
 	public:
+		const uint32_t max_objects = 100000;
 		Renderer(RendererInitInfo& info);
 		~Renderer();
 
@@ -134,7 +135,24 @@ namespace mrs {
 		void UploadMesh(std::shared_ptr<Mesh> mesh);
 
 	private:
+		// Creates indirect command buffers
+		void InitIndirectCommands();
+
 		void DrawObjects(VkCommandBuffer cmd, Scene* scene);
+		
+		// ~ INDIRECT DRAWING
+		struct IndirectBatch 
+		{
+			Mesh* mesh;
+			Material* material;
+
+			uint32_t first; // batches first instance in draw indirect buffer
+			uint32_t count; // batch member count
+		};
+
+		// Returns vector if indirect batches from renderables from scene
+		std::vector<IndirectBatch> GetRenderablesAsBatches(Scene* scene);
+
 	private:
 		// Vulkan Structures
 		VkInstance _instance = {};

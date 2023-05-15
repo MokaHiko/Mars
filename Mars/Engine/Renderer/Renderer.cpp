@@ -43,8 +43,11 @@ namespace mrs
 
 		// Select physical device 
 		vkb::PhysicalDeviceSelector device_selector(vkb_instance);
+		VkPhysicalDeviceFeatures required_features = {};
+		required_features.multiDrawIndirect = VK_TRUE;
 		auto physical_device_result = device_selector
 			.set_minimum_version(1, 1)
+			.set_required_features(required_features)
 			.set_surface(_surface)
 			.select()
 			.value();
@@ -60,6 +63,7 @@ namespace mrs
 		shader_draw_parameters_features.shaderDrawParameters = VK_TRUE;
 
 		vkb::Device vkb_device = device_builder.add_pNext(&shader_draw_parameters_features).build().value();
+		auto yes = vkb_device.physical_device.features.multiDrawIndirect;
 
 		_device.device = vkb_device.device;
 
@@ -94,9 +98,11 @@ namespace mrs
 		InitSwapchain();
 		InitDefaultRenderPass();
 		InitFramebuffers();
-		InitCommands();
-		InitSyncStructures();
 
+		InitCommands();
+		InitIndirectCommands();
+
+		InitSyncStructures();
 		InitDescriptors();
 
 		// TODO: Make optional 
@@ -113,6 +119,21 @@ namespace mrs
 		_descriptor_allocator->CleanUp();
 
 		_deletion_queue.Flush();
+	}
+
+	void Renderer::InitIndirectCommands()
+	{
+		size_t max_indirect_commands = 1000;
+
+		// Create indirect buffer per frame
+		for (int i = 0; i < frame_overlaps; i++)
+		{
+			_frame_data[i].indirect_buffer = CreateBuffer(max_indirect_commands * sizeof(VkDrawIndexedIndirectCommand), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, 0);
+
+			_deletion_queue.Push([=]() {
+				vmaDestroyBuffer(_allocator, _frame_data[i].indirect_buffer.buffer, _frame_data[i].indirect_buffer.allocation);
+				});
+		}
 	}
 
 	void Renderer::DrawObjects(VkCommandBuffer cmd, Scene* scene)
@@ -147,8 +168,8 @@ namespace mrs
 		ObjectData obj_info = {};
 
 		auto view = scene->Registry()->view<Transform, RenderableObject>();
-		uint32_t ctr = 0;
 
+		uint32_t ctr = 0;
 		for (auto entity : view) {
 			auto& game_object = Entity(entity, scene);
 			Transform& transform = game_object.GetComponent<Transform>();
@@ -167,50 +188,96 @@ namespace mrs
 		}
 		vmaUnmapMemory(_allocator, object_descriptor_buffer[n_frame].allocation);
 
-		// Bind descriptors
+		// Bind global and object descriptors
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 0, 1, &global_descriptor_set, 0, nullptr);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 1, 1, &object_descriptor_set[n_frame], 0, nullptr);
 
-		ctr = 0;
-		Mesh* last_mesh = nullptr;
-		Material* last_material = nullptr;
-		for (auto entity : view)
+		// Draw Indirect
+		static bool recorded = false;
+		if (!recorded)
 		{
-			auto& renderable = Entity(entity, scene).GetComponent<RenderableObject>();
+			for (int i = 0; i < frame_overlaps; i++) {
+				VkDrawIndexedIndirectCommand* draw_commands;
+				vmaMapMemory(_allocator, _frame_data[i].indirect_buffer.allocation, (void**)&draw_commands);
 
-			// Bind material if different
-			if (renderable.material.get() != last_material) {
-				vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &renderable.material->texture_set, 0, nullptr);
-				last_material = renderable.material.get();
-			}
-
-			// Bind vertex and index buffer if different
-			if (renderable.mesh.get() != last_mesh) {
-				VkDeviceSize offset = 0;
-				vkCmdBindVertexBuffers(cmd, 0, 1, &renderable.mesh->_buffer.buffer, &offset);
-
-				if (renderable.mesh->_index_count > 0) {
-					vkCmdBindIndexBuffer(cmd, renderable.mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+				// Encode draw commands for each renderable ahead of time
+				ctr = 0;
+				for (auto entity : view) {
+					auto& renderable = Entity(entity, scene).GetComponent<RenderableObject>();
+					draw_commands[ctr].vertexOffset = 0;
+					draw_commands[ctr].indexCount = renderable.mesh->_index_count;
+					draw_commands[ctr].instanceCount = 1;
+					draw_commands[ctr].firstInstance = ctr;
+					ctr++;
 				}
-
-				last_mesh = renderable.mesh.get();
+				vmaUnmapMemory(_allocator, _frame_data[i].indirect_buffer.allocation);
 			}
-
-			if (renderable.mesh->_index_count > 0) {
-				vkCmdDrawIndexed(cmd, renderable.mesh->_index_count, 1, 0, 0, ctr);
-			}
-			else {
-				vkCmdDraw(cmd, renderable.mesh->_vertex_count, 1, 0, ctr);
-			}
-
-			ctr++;
+			recorded = true;
 		}
 
-		// [Profiling]
+		// Sort rederables into batches
+		std::vector<IndirectBatch> batches = GetRenderablesAsBatches(scene);
+
+		for (auto& batch : batches) {
+			// Bind batch vertex and index buffer
+			VkDeviceSize offset = 0;
+			vkCmdBindVertexBuffers(cmd, 0, 1, &batch.mesh->_buffer.buffer, &offset);
+
+			if (batch.mesh->_index_count > 0) {
+				vkCmdBindIndexBuffer(cmd, batch.mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+			}
+
+			// Bind batch material
+			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &batch.material->texture_set, 0, nullptr);
+
+			// Draw batch
+			VkDeviceSize batch_stride = sizeof(VkDrawIndexedIndirectCommand);
+			uint32_t indirect_offset = batch.first * batch_stride;
+
+			vkCmdDrawIndexedIndirect(cmd, _frame_data[n_frame].indirect_buffer.buffer, indirect_offset, batch.count, batch_stride);
+		}
+		//// [Profiling]
 		ImGui::Begin("Renderer Stats");
-		ImGui::Text("Draw Calls: %d", ctr);
+		ImGui::Text("Objects: %d", ctr);
+		ImGui::Text("Draw Calls: %d", batches.size());
 		ImGui::End();
+	}
+
+	std::vector<Renderer::IndirectBatch> Renderer::GetRenderablesAsBatches(Scene* scene)
+	{
+		std::vector<IndirectBatch> batches;
+
+		auto renderables = scene->Registry()->view<RenderableObject>();
+
+		Material* last_material = nullptr;
+		Mesh* last_mesh = nullptr;
+
+		for (auto entity : renderables)
+		{
+			Entity e(entity, scene);
+			auto& renderable = e.GetComponent<RenderableObject>();
+
+			// Check if new batch
+			bool new_batch = renderable.material.get() != last_material || renderable.mesh.get() != last_mesh;
+			last_mesh = renderable.mesh.get();
+			last_material = renderable.material.get();
+
+			if (new_batch) {
+				IndirectBatch batch = {};
+				batch.first = 0;
+				batch.count = 1;
+				batch.material = renderable.material.get();
+				batch.mesh = renderable.mesh.get();
+
+				batches.push_back(batch);
+			}
+			else {
+				batches.back().count++;
+			}
+		}
+
+		return batches;
 	}
 
 	void Renderer::UploadTexture(std::shared_ptr<Texture> texture)
@@ -815,7 +882,6 @@ namespace mrs
 
 		// ~ Object Data
 		{
-			const uint32_t max_objects = 100000;
 			object_descriptor_buffer.resize(frame_overlaps);
 			object_descriptor_set.resize(frame_overlaps);
 			for (uint32_t i = 0; i < frame_overlaps; i++) {
