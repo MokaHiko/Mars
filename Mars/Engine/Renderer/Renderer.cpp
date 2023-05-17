@@ -100,7 +100,10 @@ namespace mrs
 		InitFramebuffers();
 
 		InitCommands();
+
+		// DEMO: 
 		InitIndirectCommands();
+		CreateOffScreenFramebuffer();
 
 		InitSyncStructures();
 		InitDescriptors();
@@ -154,6 +157,7 @@ namespace mrs
 		for (auto entity : lights_view) {
 			Transform& transform = Entity(entity, scene).GetComponent<Transform>();
 			global_info.directional_light_position = glm::vec4(transform.position, 0.0f);
+			global_info.view_proj_light = _camera->GetProj() * glm::translate(glm::mat4(1.0f), transform.position);
 			break;
 		}
 
@@ -231,13 +235,17 @@ namespace mrs
 			// Bind batch material
 			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &batch.material->texture_set, 0, nullptr);
 
+			// DEMO: If Model Has shadows
+			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 3, 1, &_shadow_map_descriptor, 0, nullptr);
+
 			// Draw batch
 			VkDeviceSize batch_stride = sizeof(VkDrawIndexedIndirectCommand);
 			uint32_t indirect_offset = batch.first * batch_stride;
 
 			vkCmdDrawIndexedIndirect(cmd, _frame_data[n_frame].indirect_buffer.buffer, indirect_offset, batch.count, batch_stride);
 		}
-		//// [Profiling]
+
+		// [Profiling]
 		ImGui::Begin("Renderer Stats");
 		ImGui::Text("Objects: %d", ctr);
 		ImGui::Text("Draw Calls: %d", batches.size());
@@ -448,7 +456,7 @@ namespace mrs
 
 		// ~ Materials
 		{
-			// Create Sampler 
+			// Create Texture Sampler 
 			VkSamplerCreateInfo default_sampler_info = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 			VK_CHECK(vkCreateSampler(_device.device, &default_sampler_info, nullptr, &_default_image_sampler));
 
@@ -464,9 +472,301 @@ namespace mrs
 					.Build(&it.second->texture_set, &_default_image_set_layout);
 			}
 
+			// DEMO: Create shadow descriptor and layout
+			VkDescriptorImageInfo shadow_map_image_info = {};
+			shadow_map_image_info.sampler = _shadow_map_sampler;
+			shadow_map_image_info.imageView = _offscreen_depth_image_view;
+			shadow_map_image_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+
+			vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
+				.BindImage(0, &shadow_map_image_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+				.Build(&_shadow_map_descriptor, &_shadow_map_descriptor_layout);
+
 			_deletion_queue.Push([=]() {
 				vkDestroySampler(_device.device, _default_image_sampler, nullptr);
 				});
+		}
+	}
+
+	void Renderer::CreateOffScreenFramebuffer()
+	{
+		// Create frame buffer attachment
+		VkExtent3D extent = {};
+		extent.depth = 1;
+		extent.width = _window->GetWidth();
+		extent.height = _window->GetHeight();
+
+		VkFormat depth_format = VK_FORMAT_D32_SFLOAT;
+		VkImageCreateInfo depth_image_info = vkinit::image_create_info(depth_format, extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+
+		VmaAllocationCreateInfo vmaaloc_info = {};
+		vmaaloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		vmaaloc_info.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		VK_CHECK(vmaCreateImage(_allocator, &depth_image_info, &vmaaloc_info, &_offscreen_depth_image.image, &_offscreen_depth_image.allocation, nullptr));
+
+		// Create offscreen attachment view
+		VkImageViewCreateInfo depth_image_view_info = vkinit::image_view_create_info(_offscreen_depth_image.image, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT);
+		VK_CHECK(vkCreateImageView(_device.device, &depth_image_view_info, nullptr, &_offscreen_depth_image_view));
+
+		// Create render pass
+		VkAttachmentDescription depth_attachment = {};
+		depth_attachment.format = VK_FORMAT_D32_SFLOAT;
+		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+
+		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+
+		VkAttachmentReference depth_attachment_reference = {};
+		depth_attachment_reference.attachment = 0;
+		depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpass = {};
+		subpass.pDepthStencilAttachment = &depth_attachment_reference;
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 0;
+
+		std::array<VkSubpassDependency, 2> dependencies = {};
+
+		// Between external subpass and current subpass
+		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;;
+		dependencies[0].dstSubpass = 0;
+		dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;	// reading of last frame
+		dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		dependencies[1].srcSubpass = 0;
+		dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL; // our color render pass
+		dependencies[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT; // after depth testing has finished 
+		dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT; // before shader reads data
+		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		VkRenderPassCreateInfo _offscreen_render_pass_info = {};
+		_offscreen_render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+
+		_offscreen_render_pass_info.attachmentCount = 1;
+		_offscreen_render_pass_info.pAttachments = &depth_attachment;
+
+		// subpasses
+		_offscreen_render_pass_info.subpassCount = 1;
+		_offscreen_render_pass_info.pSubpasses = &subpass;
+
+		// dependencies between subpasses
+		_offscreen_render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
+		_offscreen_render_pass_info.pDependencies = dependencies.data();
+
+		VK_CHECK(vkCreateRenderPass(_device.device, &_offscreen_render_pass_info, nullptr, &_offscreen_render_pass));
+
+		// Create Frame buffer
+		VkFramebufferCreateInfo offscreen_framebuffer_info = {};
+		offscreen_framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+
+		offscreen_framebuffer_info.renderPass = _offscreen_render_pass;
+
+		offscreen_framebuffer_info.attachmentCount = 1;
+		offscreen_framebuffer_info.width = _window->GetWidth();
+		offscreen_framebuffer_info.height = _window->GetHeight();
+		offscreen_framebuffer_info.pAttachments = &_offscreen_depth_image_view;
+		offscreen_framebuffer_info.layers = 1;
+
+		VK_CHECK(vkCreateFramebuffer(_device.device, &offscreen_framebuffer_info, nullptr, &_offscreen_framebuffer));
+
+		// DEMO: Create Image Sampelr
+		VkSamplerCreateInfo shadow_map_sampler_info = vkinit::sampler_create_info(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+		shadow_map_sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+		shadow_map_sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		shadow_map_sampler_info.mipLodBias = 0.0f;
+		shadow_map_sampler_info.maxAnisotropy = 1.0f;
+		shadow_map_sampler_info.minLod = 0.0f;
+		shadow_map_sampler_info.maxLod = 1.0f;
+
+		VK_CHECK(vkCreateSampler(_device.device, &shadow_map_sampler_info, nullptr, &_shadow_map_sampler));
+
+		_deletion_queue.Push([=]() {
+			vkDestroySampler(_device.device, _shadow_map_sampler, nullptr);
+			vkDestroyFramebuffer(_device.device, _offscreen_framebuffer, nullptr);
+			vkDestroyRenderPass(_device.device, _offscreen_render_pass, nullptr);
+			vkDestroyImageView(_device.device, _offscreen_depth_image_view, nullptr);
+			vmaDestroyImage(_allocator, _offscreen_depth_image.image, _offscreen_depth_image.allocation);
+			});
+	}
+
+	void Renderer::InitOffScreenPipeline()
+	{
+		vkutil::PipelineBuilder pipeline_builder = {};
+
+		// Pipeline view port
+		pipeline_builder._scissor.extent = { _window->GetWidth(), _window->GetHeight() };
+		pipeline_builder._scissor.offset = { 0, 0 };
+
+		pipeline_builder._viewport.x = 0.0f;
+		pipeline_builder._viewport.y = 0.0f;
+		pipeline_builder._viewport.width = (float)(_window->GetWidth());
+		pipeline_builder._viewport.height = (float)(_window->GetHeight());
+		pipeline_builder._viewport.minDepth = 0.0f;
+		pipeline_builder._viewport.maxDepth = 1.0f;
+
+		// Shaders modules
+		bool loaded = false;
+		VkShaderModule vertex_shader_module;
+		loaded = LoadShaderModule("Assets/Shaders/offscreen_shader.vert.spv", &vertex_shader_module);
+		pipeline_builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader_module));
+
+		// Vertex input (Primitives and Vertex Input Descriptions
+		pipeline_builder._input_assembly = vkinit::pipeline_input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+		VertexInputDescription& vb_desc = Vertex::GetDescription();
+
+		pipeline_builder._vertex_input_info = vkinit::pipeline_vertex_input_state_create_info();
+
+		pipeline_builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(vb_desc.bindings.size());
+		pipeline_builder._vertex_input_info.pVertexBindingDescriptions = vb_desc.bindings.data();
+
+		pipeline_builder._vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(vb_desc.attributes.size());
+		pipeline_builder._vertex_input_info.pVertexAttributeDescriptions = vb_desc.attributes.data();
+
+		// Graphics Settings
+
+		// Disable cull so all faces contribute to shadows
+		pipeline_builder._rasterizer = vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
+		pipeline_builder._rasterizer.cullMode = VK_CULL_MODE_NONE;
+
+		pipeline_builder._multisampling = vkinit::pipeline_mulitisample_state_create_info();
+		pipeline_builder._color_blend_attachment = {};
+		pipeline_builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+
+		// Offscreen specific
+
+		// Create pipeline layout
+		VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
+
+		std::vector<VkDescriptorSetLayout> descriptor_layouts = { global_descriptor_set_layout , object_descriptor_set_layout, _default_image_set_layout };
+		pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
+		pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
+
+		pipeline_builder._pipeline_layout = _default_pipeline_layout;
+
+		_offscreen_render_pipeline = pipeline_builder.Build(_device.device, _offscreen_render_pass, true);
+
+		if (_offscreen_render_pipeline == VK_NULL_HANDLE) {
+			printf("Failed to create pipeline!");
+		}
+
+		// Clean Up
+		vkDestroyShaderModule(_device.device, vertex_shader_module, nullptr);
+		_deletion_queue.Push([=]() {
+			vkDestroyPipeline(_device.device, _offscreen_render_pipeline, nullptr);
+			});
+	}
+
+	void Renderer::DrawShadowMap(VkCommandBuffer cmd, Scene* scene)
+	{
+		uint32_t n_frame = GetCurrentFrame();
+
+		// Update global descriptor
+		_camera->UpdateViewProj();
+		void* global_data;
+		vmaMapMemory(_allocator, global_descriptor_buffer.allocation, &global_data);
+
+		// Update Camera
+		GlobalDescriptorData global_info = {};
+		global_info.view_proj = _camera->GetViewProj();
+
+		// Set up Lights
+		auto lights_view = scene->Registry()->view<Transform, DirectionalLight>();
+		for (auto entity : lights_view) {
+			Transform& transform = Entity(entity, scene).GetComponent<Transform>();
+			global_info.directional_light_position = glm::vec4(transform.position, 0.0f);
+			global_info.view_proj_light = _camera->GetProj() * glm::translate(glm::mat4(1.0f), transform.position);
+			break;
+		}
+
+		// Renderable Objects
+		memcpy(global_data, &global_info, sizeof(GlobalDescriptorData));
+		vmaUnmapMemory(_allocator, global_descriptor_buffer.allocation);
+
+		// Bind object data storage buffer
+		void* objectData;
+		vmaMapMemory(_allocator, object_descriptor_buffer[n_frame].allocation, &objectData);
+		ObjectData* s_data = (ObjectData*)(objectData);
+		ObjectData obj_info = {};
+
+		auto view = scene->Registry()->view<Transform, RenderableObject>();
+
+		uint32_t ctr = 0;
+		for (auto entity : view) {
+			auto& game_object = Entity(entity, scene);
+			Transform& transform = game_object.GetComponent<Transform>();
+
+			glm::mat4 model(1.0f);
+			glm::vec3 pos = transform.position;
+
+			model = glm::translate(model, pos);
+			model = glm::rotate(model, (float)glm::radians(glm::sin(SDL_GetTicks() * 0.0001) * 360), glm::vec3(0.4f, 0.2f, 0.4f));
+			model = glm::scale(model, transform.scale);
+
+			obj_info.model_matrix = model;
+			s_data[ctr] = obj_info;
+
+			ctr++;
+		}
+		vmaUnmapMemory(_allocator, object_descriptor_buffer[n_frame].allocation);
+
+		// Bind global and object descriptors
+		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _offscreen_render_pipeline);
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 0, 1, &global_descriptor_set, 0, nullptr);
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 1, 1, &object_descriptor_set[n_frame], 0, nullptr);
+
+		// Draw Indirect
+		static bool recorded = false;
+		if (!recorded)
+		{
+			for (int i = 0; i < frame_overlaps; i++) {
+				VkDrawIndexedIndirectCommand* draw_commands;
+				vmaMapMemory(_allocator, _frame_data[i].indirect_buffer.allocation, (void**)&draw_commands);
+
+				// Encode draw commands for each renderable ahead of time
+				ctr = 0;
+				for (auto entity : view) {
+					auto& renderable = Entity(entity, scene).GetComponent<RenderableObject>();
+					draw_commands[ctr].vertexOffset = 0;
+					draw_commands[ctr].indexCount = renderable.mesh->_index_count;
+					draw_commands[ctr].instanceCount = 1;
+					draw_commands[ctr].firstInstance = ctr;
+					ctr++;
+				}
+				vmaUnmapMemory(_allocator, _frame_data[i].indirect_buffer.allocation);
+			}
+			recorded = true;
+		}
+
+		// Sort rederables into batches
+		std::vector<IndirectBatch> batches = GetRenderablesAsBatches(scene);
+
+		for (auto& batch : batches) {
+			// Bind batch vertex and index buffer
+			VkDeviceSize offset = 0;
+			vkCmdBindVertexBuffers(cmd, 0, 1, &batch.mesh->_buffer.buffer, &offset);
+
+			if (batch.mesh->_index_count > 0) {
+				vkCmdBindIndexBuffer(cmd, batch.mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+			}
+
+			// Bind batch material
+			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &batch.material->texture_set, 0, nullptr);
+
+			// Draw batch
+			VkDeviceSize batch_stride = sizeof(VkDrawIndexedIndirectCommand);
+			uint32_t indirect_offset = batch.first * batch_stride;
+
+			vkCmdDrawIndexedIndirect(cmd, _frame_data[n_frame].indirect_buffer.buffer, indirect_offset, batch.count, batch_stride);
 		}
 	}
 
@@ -816,7 +1116,8 @@ namespace mrs
 		// Create pipeline layout
 		VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
 
-		std::vector<VkDescriptorSetLayout> descriptor_layouts = { global_descriptor_set_layout , object_descriptor_set_layout, _default_image_set_layout };
+		// DEMO: Added Shadow Descriptor
+		std::vector<VkDescriptorSetLayout> descriptor_layouts = { global_descriptor_set_layout , object_descriptor_set_layout, _default_image_set_layout, _shadow_map_descriptor_layout };
 		pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
 		pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
 
@@ -836,6 +1137,10 @@ namespace mrs
 			vkDestroyPipelineLayout(_device.device, _default_pipeline_layout, nullptr);
 			vkDestroyPipeline(_device.device, _default_pipeline, nullptr);
 			});
+
+
+		// DEMO: 
+		InitOffScreenPipeline();
 	}
 
 	void Renderer::InitDescriptors()
@@ -967,13 +1272,21 @@ namespace mrs
 		area.extent = { _window->GetWidth(), _window->GetHeight() };
 		area.offset = { 0,0 };
 
-		VkClearValue clear_value = {};
-		clear_value.color = { (float)sin(_frame_count / 120.0f), 0.1f, 0.1f };
-
 		VkClearValue depth_value = {};
 		depth_value.depthStencil = { 1.0f, 0 };
 
+		// DEMO: Draw offscreen frame buffer for shadow map 
+		VkRenderPassBeginInfo offscreen_render_pass_begin_info = vkinit::render_pass_begin_info(_offscreen_framebuffer, _offscreen_render_pass, area, &depth_value, 1);
+		vkCmdBeginRenderPass(cmd, &offscreen_render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+		DrawShadowMap(cmd, scene);
+		vkCmdEndRenderPass(cmd);
+
+		// Draw scene
+
 		// clear values are per attachment 
+		VkClearValue clear_value = {};
+		clear_value.color = { (float)sin(_frame_count / 120.0f), 0.1f, 0.1f };
+		depth_value.depthStencil = { 1.0f, 0 };
 		VkClearValue clear_values[2] = { clear_value, depth_value };
 
 		VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(_framebuffers[_current_swapchain_image], _render_pass, area, clear_values, 2);

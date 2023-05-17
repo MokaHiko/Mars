@@ -37,7 +37,7 @@ namespace mrs {
 			light.GetComponent<mrs::Transform>().position = { 10, 10, -10.0f };
 
 			// Crate
-			int s = 5;
+			int s = 2;
 			float spacing = 180.0f;
 			for (int i = -s/2; i < s /2; i++) {
 				for (int j = -s/2 ; j < s/2; j++) {
@@ -110,7 +110,15 @@ namespace mrs {
 
 		void ProcessInput(float dt)
 		{
-			float movement_speed = 20.0f;
+			float movement_speed = 100.0f;
+
+			if (Input::IsKeyPressed(SDLK_SPACE)) {
+				_main_camera->GetPosition() += glm::vec3(0.0, movement_speed, 0.0) * dt;
+			} 
+			else if (Input::IsKeyPressed(SDLK_LCTRL)) {
+				_main_camera->GetPosition() -= glm::vec3(0.0, movement_speed, 0.0) * dt;
+			}
+
 			if (Input::IsKeyPressed(SDLK_w)) {
 				_main_camera->GetPosition() += glm::vec3(0.0, 0.0, movement_speed) * dt;
 			}

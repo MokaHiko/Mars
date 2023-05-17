@@ -62,6 +62,23 @@ namespace mrs {
 		inline VulkanQueues& GetQueues() { return _queues; }
 
 	public:
+		// DEMO: SHADOW MAPS
+		void CreateOffScreenFramebuffer();
+		void InitOffScreenPipeline();
+
+		void DrawShadowMap(VkCommandBuffer cmd, Scene* scene);
+
+		VkFramebuffer _offscreen_framebuffer;
+		AllocatedImage _offscreen_depth_image;
+		VkImageView _offscreen_depth_image_view;
+
+		VkRenderPass _offscreen_render_pass;
+		VkPipeline _offscreen_render_pipeline;
+
+		VkSampler _shadow_map_sampler;
+		VkDescriptorSetLayout _shadow_map_descriptor_layout;
+		VkDescriptorSet _shadow_map_descriptor;
+	public:
 		// Handle to window being rendered to
 		const std::shared_ptr<Window> _window;
 
@@ -76,6 +93,7 @@ namespace mrs {
 
 		struct GlobalDescriptorData {
 			glm::mat4 view_proj;
+			glm::mat4 view_proj_light;
 			glm::vec4 directional_light_position;
 		};
 

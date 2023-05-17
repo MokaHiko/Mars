@@ -38,6 +38,12 @@ namespace mrs {
     {
         float intensity = 0.0f;
     };
+
+    // [Component]
+    struct PointLight
+    {
+        float intensity = 0.0f;
+    };
 }
 
 #endif

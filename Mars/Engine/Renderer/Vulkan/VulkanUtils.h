@@ -64,7 +64,7 @@ namespace vkutil {
 		VkRect2D _scissor = {};
 
 	public:
-		VkPipeline Build(VkDevice device, VkRenderPass renderPass);
+		VkPipeline Build(VkDevice device, VkRenderPass renderPass, bool offscreen = false);
 	};
 
 	// Handles the allocation descriptors and descriptor pools

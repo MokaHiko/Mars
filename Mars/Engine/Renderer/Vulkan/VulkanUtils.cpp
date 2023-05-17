@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-VkPipeline vkutil::PipelineBuilder::Build(VkDevice device, VkRenderPass renderPass)
+VkPipeline vkutil::PipelineBuilder::Build(VkDevice device, VkRenderPass renderPass, bool offscreen)
 {
 	VkPipelineViewportStateCreateInfo view_port_state = {};
 	view_port_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -16,7 +16,7 @@ VkPipeline vkutil::PipelineBuilder::Build(VkDevice device, VkRenderPass renderPa
 	color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	color_blending.logicOpEnable = VK_FALSE;
 	color_blending.logicOp = VK_LOGIC_OP_COPY;
-	color_blending.attachmentCount = 1;
+	color_blending.attachmentCount = offscreen ? 0 : 1;
 	color_blending.pAttachments = &_color_blend_attachment;
 
 	VkGraphicsPipelineCreateInfo pipeline_info = {};
@@ -335,3 +335,4 @@ bool vkutil::DescriptorBuilder::Build(VkDescriptorSet* set, VkDescriptorSetLayou
 
 	return true;
 }
+
