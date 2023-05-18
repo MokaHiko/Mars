@@ -153,11 +153,17 @@ namespace mrs
 		global_info.view_proj = _camera->GetViewProj();
 
 		// Lights
+
+		// ~ Directional light
 		auto lights_view = scene->Registry()->view<Transform, DirectionalLight>();
 		for (auto entity : lights_view) {
 			Transform& transform = Entity(entity, scene).GetComponent<Transform>();
 			global_info.directional_light_position = glm::vec4(transform.position, 0.0f);
-			global_info.view_proj_light = _camera->GetProj() * glm::translate(glm::mat4(1.0f), transform.position);
+
+			//global_info.view_proj_light = _camera->GetProj() * glm::translate(glm::mat4(1.0f), transform.position);
+			glm::mat4 dir_light_view = glm::lookAt(transform.position, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+			glm::mat4 dir_light_proj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 1000.0f);
+			global_info.view_proj_light = dir_light_proj * dir_light_view;
 			break;
 		}
 
@@ -182,7 +188,7 @@ namespace mrs
 			glm::vec3 pos = transform.position;
 
 			model = glm::translate(model, pos);
-			model = glm::rotate(model, (float)glm::radians(glm::sin(SDL_GetTicks() * 0.0001) * 360), glm::vec3(0.4f, 0.2f, 0.4f));
+			model = glm::rotate(model, transform.rotation.z, glm::vec3(0.0, 0.0, 1.0));
 			model = glm::scale(model, transform.scale);
 
 			obj_info.model_matrix = model;
@@ -201,6 +207,7 @@ namespace mrs
 		static bool recorded = false;
 		if (!recorded)
 		{
+			// Record commands for each frame
 			for (int i = 0; i < frame_overlaps; i++) {
 				VkDrawIndexedIndirectCommand* draw_commands;
 				vmaMapMemory(_allocator, _frame_data[i].indirect_buffer.allocation, (void**)&draw_commands);
@@ -224,16 +231,16 @@ namespace mrs
 		std::vector<IndirectBatch> batches = GetRenderablesAsBatches(scene);
 
 		for (auto& batch : batches) {
-			// Bind batch vertex and index buffer
+			// Bind batch material
+			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &batch.material->texture_set, 0, nullptr);
+
+			// Bind batch mesh and index buffers
 			VkDeviceSize offset = 0;
 			vkCmdBindVertexBuffers(cmd, 0, 1, &batch.mesh->_buffer.buffer, &offset);
 
 			if (batch.mesh->_index_count > 0) {
 				vkCmdBindIndexBuffer(cmd, batch.mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 			}
-
-			// Bind batch material
-			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &batch.material->texture_set, 0, nullptr);
 
 			// DEMO: If Model Has shadows
 			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 3, 1, &_shadow_map_descriptor, 0, nullptr);
@@ -261,6 +268,8 @@ namespace mrs
 		Material* last_material = nullptr;
 		Mesh* last_mesh = nullptr;
 
+		int batch_first = 0;
+
 		for (auto entity : renderables)
 		{
 			Entity e(entity, scene);
@@ -268,17 +277,24 @@ namespace mrs
 
 			// Check if new batch
 			bool new_batch = renderable.material.get() != last_material || renderable.mesh.get() != last_mesh;
-			last_mesh = renderable.mesh.get();
-			last_material = renderable.material.get();
-
 			if (new_batch) {
 				IndirectBatch batch = {};
-				batch.first = 0;
+
 				batch.count = 1;
 				batch.material = renderable.material.get();
 				batch.mesh = renderable.mesh.get();
 
+				// Increment batch first by entiteis in last batch
+				if (!batches.empty()) {
+					batch_first += batches.back().count;
+				}
+
+				batch.first = batch_first;
 				batches.push_back(batch);
+				
+				last_mesh = renderable.mesh.get();
+				last_material = renderable.material.get();
+
 			}
 			else {
 				batches.back().count++;
@@ -462,9 +478,10 @@ namespace mrs
 
 			for (auto& it : ResourceManager::Get()._materials) {
 
+				// Diffuse texture
 				VkDescriptorImageInfo image_buffer_info = {};
 				image_buffer_info.sampler = _default_image_sampler;
-				image_buffer_info.imageView = Texture::Get("default_texture")->_image_view;
+				image_buffer_info.imageView = Texture::Get(it.second->diffuse_texture_path)->_image_view;
 				image_buffer_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 				vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
@@ -670,82 +687,10 @@ namespace mrs
 	{
 		uint32_t n_frame = GetCurrentFrame();
 
-		// Update global descriptor
-		_camera->UpdateViewProj();
-		void* global_data;
-		vmaMapMemory(_allocator, global_descriptor_buffer.allocation, &global_data);
-
-		// Update Camera
-		GlobalDescriptorData global_info = {};
-		global_info.view_proj = _camera->GetViewProj();
-
-		// Set up Lights
-		auto lights_view = scene->Registry()->view<Transform, DirectionalLight>();
-		for (auto entity : lights_view) {
-			Transform& transform = Entity(entity, scene).GetComponent<Transform>();
-			global_info.directional_light_position = glm::vec4(transform.position, 0.0f);
-			global_info.view_proj_light = _camera->GetProj() * glm::translate(glm::mat4(1.0f), transform.position);
-			break;
-		}
-
-		// Renderable Objects
-		memcpy(global_data, &global_info, sizeof(GlobalDescriptorData));
-		vmaUnmapMemory(_allocator, global_descriptor_buffer.allocation);
-
-		// Bind object data storage buffer
-		void* objectData;
-		vmaMapMemory(_allocator, object_descriptor_buffer[n_frame].allocation, &objectData);
-		ObjectData* s_data = (ObjectData*)(objectData);
-		ObjectData obj_info = {};
-
-		auto view = scene->Registry()->view<Transform, RenderableObject>();
-
-		uint32_t ctr = 0;
-		for (auto entity : view) {
-			auto& game_object = Entity(entity, scene);
-			Transform& transform = game_object.GetComponent<Transform>();
-
-			glm::mat4 model(1.0f);
-			glm::vec3 pos = transform.position;
-
-			model = glm::translate(model, pos);
-			model = glm::rotate(model, (float)glm::radians(glm::sin(SDL_GetTicks() * 0.0001) * 360), glm::vec3(0.4f, 0.2f, 0.4f));
-			model = glm::scale(model, transform.scale);
-
-			obj_info.model_matrix = model;
-			s_data[ctr] = obj_info;
-
-			ctr++;
-		}
-		vmaUnmapMemory(_allocator, object_descriptor_buffer[n_frame].allocation);
-
 		// Bind global and object descriptors
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _offscreen_render_pipeline);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 0, 1, &global_descriptor_set, 0, nullptr);
 		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 1, 1, &object_descriptor_set[n_frame], 0, nullptr);
-
-		// Draw Indirect
-		static bool recorded = false;
-		if (!recorded)
-		{
-			for (int i = 0; i < frame_overlaps; i++) {
-				VkDrawIndexedIndirectCommand* draw_commands;
-				vmaMapMemory(_allocator, _frame_data[i].indirect_buffer.allocation, (void**)&draw_commands);
-
-				// Encode draw commands for each renderable ahead of time
-				ctr = 0;
-				for (auto entity : view) {
-					auto& renderable = Entity(entity, scene).GetComponent<RenderableObject>();
-					draw_commands[ctr].vertexOffset = 0;
-					draw_commands[ctr].indexCount = renderable.mesh->_index_count;
-					draw_commands[ctr].instanceCount = 1;
-					draw_commands[ctr].firstInstance = ctr;
-					ctr++;
-				}
-				vmaUnmapMemory(_allocator, _frame_data[i].indirect_buffer.allocation);
-			}
-			recorded = true;
-		}
 
 		// Sort rederables into batches
 		std::vector<IndirectBatch> batches = GetRenderablesAsBatches(scene);
@@ -1285,7 +1230,7 @@ namespace mrs
 
 		// clear values are per attachment 
 		VkClearValue clear_value = {};
-		clear_value.color = { (float)sin(_frame_count / 120.0f), 0.1f, 0.1f };
+		clear_value.color = { 0.1f, 0.1f, 0.1f, 0.1f };
 		depth_value.depthStencil = { 1.0f, 0 };
 		VkClearValue clear_values[2] = { clear_value, depth_value };
 

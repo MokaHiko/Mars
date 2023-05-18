@@ -31,22 +31,27 @@ namespace mrs {
 			_scene = std::make_shared<Scene>();
 
 			// Light source
-			mrs::Entity light = _scene->Instantiate();
-			light.AddComponent<mrs::RenderableObject>(Mesh::Get("cube"), Material::Get("default_material"));
-			light.AddComponent<mrs::DirectionalLight>();
-			light.GetComponent<mrs::Transform>().position = { 10, 10, -10.0f };
+			_directional_light = _scene->Instantiate();
+			_directional_light.AddComponent<mrs::RenderableObject>(Mesh::Get("monkey"), Material::Get("default_material"));
+			_directional_light.AddComponent<mrs::DirectionalLight>();
+			_directional_light.GetComponent<mrs::Transform>().position = { 0, 0, 15.0f };
 
 			// Crate
 			int s = 2;
 			float spacing = 180.0f;
-			for (int i = -s/2; i < s /2; i++) {
-				for (int j = -s/2 ; j < s/2; j++) {
+			for (int i = 0; i < s; i++) {
+				for (int j = 0; j < s; j++) {
 					mrs::Entity e = _scene->Instantiate();
 					e.AddComponent<mrs::RenderableObject>(Mesh::Get("default_mesh"), Material::Get("default_material"));
-					e.GetComponent<mrs::Transform>().position = { j * spacing, i * spacing, -250.0f };
+					e.AddComponent<mrs::Rigidbody>();
+					e.GetComponent<mrs::Transform>().position = { j * spacing, i * spacing + 50, 0.0f };
 					e.GetComponent<mrs::Transform>().scale = { 0.25f, 0.25f, 0.25f };
 				}
 			}
+
+			mrs::Entity e = _scene->Instantiate();
+			e.AddComponent<mrs::RenderableObject>(Mesh::Get("minecraft_world"), Material::Get("minecraft_world"));
+
 
 			// Upload gpu resources and create pipeline
 			_renderer->UploadResources();
@@ -60,8 +65,21 @@ namespace mrs {
 			ImGui::Text("Delta time: %0.8f ms", dt * 1000.0f);
 			ImGui::End();
 
+			// Inspector
+			Transform& dir_transform = _directional_light.GetComponent<Transform>();
+			ImGui::Begin("Application Stats");
+			ImGui::DragFloat3("Position: ", &dir_transform.position.x);
+			ImGui::End();
+
 			// Process user input
 			ProcessInput(dt);
+
+			// Game Logic
+			auto rbs = _scene->Registry()->view<mrs::Transform, mrs::Rigidbody>();
+			for (auto entity : rbs) {
+				Entity e = { entity, _scene.get()};
+				e.GetComponent<Transform>().rotation.z = glm::sin(glm::radians((float)(SDL_GetTicks() * 0.001)));
+			}
 
 			// Render
 			_renderer->Begin(_scene.get());
@@ -72,11 +90,16 @@ namespace mrs {
 		void LoadResources()
 		{
 			// Load app resources
-			//Mesh::LoadFromAsset("Assets/Models/lost_empire.boop_obj", "default_mesh");
-			//Texture::LoadFromAsset("Assets/Models/lost_empire-RGBA.boop_png", "default_texture");
 			Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "default_mesh");
 			Texture::LoadFromAsset("Assets/Models/textures_container/Container_DiffuseMap.boop_jpg", "default_texture");
 			Material::Create("default_material");
+
+			Mesh::LoadFromAsset("Assets/Models/lost_empire.boop_obj", "minecraft_world");
+			Texture::LoadFromAsset("Assets/Models/lost_empire-RGBA.boop_png", "minecraft_world_texture");
+			Material::Create("minecraft_world", "minecraft_world_texture");
+
+			Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj", "monkey");
+
 
 			// Creatae default shapes
 
@@ -115,7 +138,7 @@ namespace mrs {
 			if (Input::IsKeyPressed(SDLK_SPACE)) {
 				_main_camera->GetPosition() += glm::vec3(0.0, movement_speed, 0.0) * dt;
 			} 
-			else if (Input::IsKeyPressed(SDLK_LCTRL)) {
+			else if (Input::IsKeyPressed(SDLK_q)) {
 				_main_camera->GetPosition() -= glm::vec3(0.0, movement_speed, 0.0) * dt;
 			}
 
@@ -142,13 +165,16 @@ namespace mrs {
 
 		// Application Scene
 		std::shared_ptr<Scene> _scene;
+
+		// Lights
+		Entity _directional_light = {};
 	};
 
 
 	class Rover : public Application
 	{
 	public:
-		Rover() : Application("Rover: Mars Editor", 1080, 720)
+		Rover() : Application("Rover: Mars Editor", 1920, 1080)
 		{
 			PushLayer(new ImGuiLayer);
 			PushLayer(new EditorLayer);

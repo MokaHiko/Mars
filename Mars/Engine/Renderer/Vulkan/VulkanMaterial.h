@@ -15,9 +15,11 @@ namespace mrs {
 		VkPipeline pipeline;
 		VkDescriptorSetLayout layout;
 
-		static std::shared_ptr<Material> Create(const std::string& alias)
+		static std::shared_ptr<Material> Create(const std::string& alias, const std::string& texture_name = "default_texture")
 		{
 			ResourceManager::Get()._materials[alias] = std::make_shared<Material>();
+			ResourceManager::Get()._materials[alias]->diffuse_texture_path = texture_name;
+
 			return ResourceManager::Get()._materials[alias];
 		}
 
@@ -32,7 +34,7 @@ namespace mrs {
 			return nullptr;
 		}
 
-
+		std::string diffuse_texture_path;
 	};
 }
 #endif

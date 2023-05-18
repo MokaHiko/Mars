@@ -8,7 +8,9 @@ layout(location = 3) in vec2 _uv;
 layout(location = 0) out vec3 v_position_world_space;
 layout(location = 1) out vec3 v_color;
 layout(location = 2) out vec2 v_uv;
+
 layout(location = 3) out vec3 v_normal_world_space;
+layout(location = 4) out vec4 v_uv_world_space;
 
 struct ObjectData {
 	vec4 color;
@@ -25,15 +27,27 @@ layout(std140, set = 1, binding = 0) readonly buffer ObjectBuffer{
 	ObjectData s_objects[];
 } _object_buffer;
 
+
+// Bias to convert 
+const mat4 bias = mat4(
+ 0.5, 0.0, 0.0, 0.0,
+ 0.0, 0.5, 0.0, 0.0,
+ 0.0, 0.0, 1.0, 0.0,
+ 0.5, 0.5, 0.0, 1.0 );
+
 void main()
 {
+	
 	mat4 model_matrix = _object_buffer.s_objects[gl_BaseInstance].model_matrix;
 
-	// Scaling must be uniform
-	v_position_world_space = mat3(model_matrix) * _position;
+	// Direct values
 	v_color = _color;
-	v_normal_world_space = normalize(mat3(model_matrix) * _normal);
 	v_uv = _uv;
+
+	// Converted to world space
+	v_position_world_space = mat3(model_matrix) * _position; // position in world space
+	v_normal_world_space = normalize(mat3(model_matrix) * _normal); // Scaling must be uniform
+	v_uv_world_space = bias * _global_buffer.view_proj_light * model_matrix * vec4(_position, 1.0f); // uv in clip space
 
 	gl_Position = _global_buffer.view_proj * model_matrix * vec4(_position, 1.0f);
 }

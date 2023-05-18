@@ -18,10 +18,7 @@ mrs::Camera::Camera(CameraType type, uint32_t aspect_w, uint32_t aspect_h, const
 	_view_proj = _projection * _view;
 }
 
-mrs::Camera::~Camera()
-{
-
-}
+mrs::Camera::~Camera() {}
 
 void mrs::Camera::UpdateViewProj()
 {
