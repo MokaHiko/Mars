@@ -24,10 +24,10 @@ namespace mrs {
         }
         
         // Create and returns entity
-        Entity Instantiate() {
+        Entity Instantiate(const std::string& name = "", const glm::vec3& position = {}) {
             Entity e = Entity(_registry.create(), this);
 
-            e.AddComponent<Tag>();
+            e.AddComponent<Tag>(name);
             e.AddComponent<Transform>();
 
             return e;

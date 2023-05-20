@@ -13,7 +13,6 @@
 
 #include "Layer.h"
 
-
 namespace mrs {
 	class Application
 	{

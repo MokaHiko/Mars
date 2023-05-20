@@ -7,11 +7,14 @@
 #include "Renderer/Vulkan/VulkanMaterial.h"
 
 #include <glm/glm.hpp>
+#include <Astro.h>
 
 namespace mrs {
     // [Component]
     struct Tag
     {
+        Tag(const std::string& name )
+            :tag(name){}
         std::string tag = "";
     };
 
@@ -48,7 +51,19 @@ namespace mrs {
     // [Component]
     struct Rigidbody
     {
-        bool use_gravity = true;
+        ast::Body body;
+    };
+
+    // [Component]
+    struct SphereCollider
+    {
+        ast::SphereCollider sphere_collider;
+    };
+
+    // [Component]
+    struct PlaneCollider
+    {
+        ast::PlaneCollider plane_collider;
     };
 }
 

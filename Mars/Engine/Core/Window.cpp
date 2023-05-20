@@ -30,6 +30,7 @@ namespace mrs {
 			if (_event.type == SDL_QUIT) {
 				return false;
 			}
+			ImGui_ImplSDL2_ProcessEvent(&_event);
 
 			int32_t key = (int32_t)_event.key.keysym.sym;
 			switch (_event.type) {
@@ -45,7 +46,6 @@ namespace mrs {
 			default:
 				break;
 			}
-			ImGui_ImplSDL2_ProcessEvent(&_event);
 		}
 
 		return true;

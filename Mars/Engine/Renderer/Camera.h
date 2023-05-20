@@ -29,6 +29,9 @@ namespace mrs {
 		// Returns reference to position
 		inline glm::vec3& GetPosition() { return _position; }
 		void UpdateViewProj();
+
+		// Changes camera type
+		void SetType(CameraType type);
 	private:
 		CameraType _type;
 

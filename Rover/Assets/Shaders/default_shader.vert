@@ -27,17 +27,8 @@ layout(std140, set = 1, binding = 0) readonly buffer ObjectBuffer{
 	ObjectData s_objects[];
 } _object_buffer;
 
-
-// Bias to convert 
-const mat4 bias = mat4(
- 0.5, 0.0, 0.0, 0.0,
- 0.0, 0.5, 0.0, 0.0,
- 0.0, 0.0, 1.0, 0.0,
- 0.5, 0.5, 0.0, 1.0 );
-
 void main()
 {
-	
 	mat4 model_matrix = _object_buffer.s_objects[gl_BaseInstance].model_matrix;
 
 	// Direct values
@@ -47,7 +38,7 @@ void main()
 	// Converted to world space
 	v_position_world_space = mat3(model_matrix) * _position; // position in world space
 	v_normal_world_space = normalize(mat3(model_matrix) * _normal); // Scaling must be uniform
-	v_uv_world_space = bias * _global_buffer.view_proj_light * model_matrix * vec4(_position, 1.0f); // uv in clip space
+	v_uv_world_space = _global_buffer.view_proj_light * vec4(v_position_world_space, 1.0f); // fragment uv in clip space
 
 	gl_Position = _global_buffer.view_proj * model_matrix * vec4(_position, 1.0f);
 }

@@ -11,7 +11,7 @@ layout(location = 4) in vec4 v_uv_world_space;
 
 layout(set = 0, binding = 0) uniform GlobalBuffer{
 	mat4 view_proj;
-	mat4 view_proj_camera;
+	mat4 view_proj_light;
 	vec4 direction_light_position;
 } _global_buffer;
 
@@ -27,17 +27,23 @@ void main()
 {
 	// ~ Shadow shadow
 	float shadow_factor = 1.0f;
-	vec4 shadow_coords = v_uv_world_space / v_uv_world_space.w; // to turn coords into screen space manually
+	vec3 shadow_coords = v_uv_world_space.xyz / v_uv_world_space.w; // to turn coords into screen space manually
+
+	// Remap to [0.0 to 1.0] 
+	shadow_coords.xy = shadow_coords.xy * 0.5 + 0.5;
 
 	// Comparing shadow_map z is closer than current frag z
-	float bias = 0.0005f;
+	float bias = 0.005f;
+	float shadow_map_value = texture(_shadow_map_texture, shadow_coords.xy).r;
 	if(texture(_shadow_map_texture, shadow_coords.xy).r < shadow_coords.z - bias) {
-		shadow_factor = 0.15f;
+		shadow_factor = 0.5f;
 	}
+	
 	//  ~ Diffuse
 	vec3 color = texture(_diffuse_texture, v_uv).xyz;
 
 	// ~ Directional
-	color *= vec3(max(dot(v_normal_world_space, _global_buffer.direction_light_position.xyz), 0));
+	float diff = max(dot(v_normal_world_space, normalize(_global_buffer.direction_light_position.xyz)), 0);
+	color *= diff;
 	frag_color = shadow_factor * vec4(color, 1);
 }

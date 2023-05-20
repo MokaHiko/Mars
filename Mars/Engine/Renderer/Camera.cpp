@@ -23,5 +23,10 @@ mrs::Camera::~Camera() {}
 void mrs::Camera::UpdateViewProj()
 {
 	_view = glm::translate(glm::mat4(1.0f), _position);
-	_view_proj = _projection * _view;
+	_view_proj = _projection * glm::inverse(_view);
+}
+
+void mrs::Camera::SetType(CameraType type)
+{
+	_type = type;
 }

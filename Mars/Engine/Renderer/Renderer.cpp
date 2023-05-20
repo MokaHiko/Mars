@@ -151,7 +151,6 @@ namespace mrs
 		// Camera
 		GlobalDescriptorData global_info = {};
 		global_info.view_proj = _camera->GetViewProj();
-
 		// Lights
 
 		// ~ Directional light
@@ -160,10 +159,27 @@ namespace mrs
 			Transform& transform = Entity(entity, scene).GetComponent<Transform>();
 			global_info.directional_light_position = glm::vec4(transform.position, 0.0f);
 
-			//global_info.view_proj_light = _camera->GetProj() * glm::translate(glm::mat4(1.0f), transform.position);
+			static bool use_ortho = false;
+			static float aspect_w = 150;
+			static float aspect_h = 100;
+			static float aspect_far = 1000;
+			ImGui::Begin("Debug");
+			ImGui::Checkbox("Ortho", &use_ortho);
+			ImGui::SliderFloat("Aspect w", &aspect_w, 0.0, 1000);
+			ImGui::SliderFloat("Aspect h", &aspect_h, 0.0, 1000);
+			ImGui::SliderFloat("Aspect z", &aspect_far, 0.0, 1000);
+			ImGui::End();
+
+			glm::mat4 dir_light_proj = glm::ortho(-aspect_w, aspect_w, -aspect_h, aspect_h, 0.1f, aspect_far);
+			dir_light_proj[1][1] *= -1; // Reconfigure y values as positive for vulkan
 			glm::mat4 dir_light_view = glm::lookAt(transform.position, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-			glm::mat4 dir_light_proj = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 1000.0f);
 			global_info.view_proj_light = dir_light_proj * dir_light_view;
+
+			if (use_ortho) {
+				global_info.view_proj = dir_light_proj * dir_light_view;
+			}
+
+			//global_info.view_proj_light = _camera->GetProj() * glm::translate(glm::mat4(1.0f), transform.position);
 			break;
 		}
 
@@ -703,9 +719,6 @@ namespace mrs
 			if (batch.mesh->_index_count > 0) {
 				vkCmdBindIndexBuffer(cmd, batch.mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 			}
-
-			// Bind batch material
-			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &batch.material->texture_set, 0, nullptr);
 
 			// Draw batch
 			VkDeviceSize batch_stride = sizeof(VkDrawIndexedIndirectCommand);
