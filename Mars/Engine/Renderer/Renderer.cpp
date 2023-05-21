@@ -160,8 +160,8 @@ namespace mrs
 			global_info.directional_light_position = glm::vec4(transform.position, 0.0f);
 
 			static bool use_ortho = false;
-			static float aspect_w = 150;
-			static float aspect_h = 100;
+			static float aspect_w = 100;
+			static float aspect_h = 60;
 			static float aspect_far = 1000;
 			ImGui::Begin("Debug");
 			ImGui::Checkbox("Ortho", &use_ortho);
@@ -179,7 +179,6 @@ namespace mrs
 				global_info.view_proj = dir_light_proj * dir_light_view;
 			}
 
-			//global_info.view_proj_light = _camera->GetProj() * glm::translate(glm::mat4(1.0f), transform.position);
 			break;
 		}
 
@@ -204,7 +203,7 @@ namespace mrs
 			glm::vec3 pos = transform.position;
 
 			model = glm::translate(model, pos);
-			model = glm::rotate(model, transform.rotation.z, glm::vec3(0.0, 0.0, 1.0));
+			model = glm::rotate(model, glm::radians(transform.rotation.z), glm::vec3(0.0, 0.0, 1.0));
 			model = glm::scale(model, transform.scale);
 
 			obj_info.model_matrix = model;
@@ -1031,6 +1030,12 @@ namespace mrs
 
 	void Renderer::InitPipelines()
 	{
+		InitDefaultPipeline();
+		InitOffScreenPipeline();
+	}
+
+	void Renderer::InitDefaultPipeline()
+	{
 		vkutil::PipelineBuilder pipeline_builder = {};
 
 		// Pipeline view port
@@ -1095,10 +1100,6 @@ namespace mrs
 			vkDestroyPipelineLayout(_device.device, _default_pipeline_layout, nullptr);
 			vkDestroyPipeline(_device.device, _default_pipeline, nullptr);
 			});
-
-
-		// DEMO: 
-		InitOffScreenPipeline();
 	}
 
 	void Renderer::InitDescriptors()

@@ -42,7 +42,7 @@ namespace mrs {
 	class Renderer
 	{
 	public:
-		const uint32_t max_objects = 100000;
+		const uint32_t max_objects = 11000;
 		Renderer(RendererInitInfo& info);
 		~Renderer();
 
@@ -62,10 +62,14 @@ namespace mrs {
 		inline VulkanQueues& GetQueues() { return _queues; }
 
 	public:
-		// DEMO: SHADOW MAPS
-		void CreateOffScreenFramebuffer();
-		void InitOffScreenPipeline();
+		// Grass/Foliage Rendering
 
+		// New Pipeline, Gpu
+	public:
+		// Shadow Mapping
+		void CreateOffScreenFramebuffer();
+
+		void InitOffScreenPipeline();
 		void DrawShadowMap(VkCommandBuffer cmd, Scene* scene);
 
 		VkFramebuffer _offscreen_framebuffer;
@@ -119,6 +123,8 @@ namespace mrs {
 		// Creates and allocates buffer with given size
 		AllocatedBuffer CreateBuffer(size_t size, VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, VkMemoryPropertyFlags memory_props = 0);
 
+		// Creates graphics all application pipelines
+		void InitPipelines();
 	private:
 		// Creates swapchain and gets handle to image s/views
 		void InitSwapchain();
@@ -137,10 +143,11 @@ namespace mrs {
 
 		// Creates and allocates descriptors 
 		void InitDescriptors();
-	public:
-		// Creates graphics pipelines based of parameters
-		void InitPipelines();
 	private:
+		// Default Graphics Pipeline of Renderer
+		void InitDefaultPipeline();
+		void DrawObjects(VkCommandBuffer cmd, Scene* scene);
+
 		inline uint32_t GetCurrentFrame() const { return _frame_count % frame_overlaps; }
 
 		// Pads size to be compatible with minimum unifrom buffer alignment of physical device
@@ -151,12 +158,9 @@ namespace mrs {
 
 		// Upload mesh to GPU via immediate command buffers
 		void UploadMesh(std::shared_ptr<Mesh> mesh);
-
 	private:
 		// Creates indirect command buffers
 		void InitIndirectCommands();
-
-		void DrawObjects(VkCommandBuffer cmd, Scene* scene);
 		
 		// ~ INDIRECT DRAWING
 		struct IndirectBatch 
@@ -170,9 +174,7 @@ namespace mrs {
 
 		// Returns vector if indirect batches from renderables from scene
 		std::vector<IndirectBatch> GetRenderablesAsBatches(Scene* scene);
-
 	private:
-		// Vulkan Structures
 		VkInstance _instance = {};
 		VkSurfaceKHR _surface = {};
 		VkDebugUtilsMessengerEXT _debug_messenger = {};

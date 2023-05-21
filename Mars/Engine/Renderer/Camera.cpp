@@ -22,8 +22,17 @@ mrs::Camera::~Camera() {}
 
 void mrs::Camera::UpdateViewProj()
 {
-	_view = glm::translate(glm::mat4(1.0f), _position);
-	_view_proj = _projection * glm::inverse(_view);
+	glm::vec3 front{};
+	front.x = cos(glm::radians(_yaw)) * glm::cos(glm::radians(_pitch));
+	front.y = sin(glm::radians(_pitch));
+	front.z = sin(glm::radians(_yaw)) * glm::cos(glm::radians(_pitch));
+	_front = glm::normalize(front);
+
+	_right = glm::normalize(glm::cross(_front, _worldup));
+	_up = glm::normalize(glm::cross(_right, _front));
+
+	_view = glm::lookAt(_position, _position + _front, _up);
+	_view_proj = _projection * _view;
 }
 
 void mrs::Camera::SetType(CameraType type)

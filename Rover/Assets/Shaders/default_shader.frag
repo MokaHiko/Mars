@@ -38,7 +38,7 @@ void main()
 	if(texture(_shadow_map_texture, shadow_coords.xy).r < shadow_coords.z - bias) {
 		shadow_factor = 0.5f;
 	}
-	
+
 	//  ~ Diffuse
 	vec3 color = texture(_diffuse_texture, v_uv).xyz;
 

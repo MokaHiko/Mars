@@ -14,6 +14,16 @@ namespace mrs {
 		Perspective
 	};
 
+	enum class Camera_Movement
+    {
+        FORWARD,
+        BACKWARD,
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT,
+    };
+
 	class Camera
 	{
 	public:
@@ -26,12 +36,33 @@ namespace mrs {
 		// Returns view projection as reference
 		inline const glm::mat4& GetProj() const { return _projection; }
 
+		inline const glm::vec3& GetFront() const { return _front; }
+		inline const glm::vec3& GetRight() const { return _right; }
+		inline const glm::vec3& GetUp() const { return _up; }
+
 		// Returns reference to position
 		inline glm::vec3& GetPosition() { return _position; }
+
 		void UpdateViewProj();
 
 		// Changes camera type
 		void SetType(CameraType type);
+
+	public:
+        // Camera Settings
+        float _yaw = -90.0f;
+        float _pitch = 0.0f;
+
+        float _speed = 2.5f;
+        float _zoom = 45.0f;
+        float _sensitivity = 0.1f;
+
+    private:
+        // Camera Relative Position Attributes
+        glm::vec3 _front;
+        glm::vec3 _right;
+        glm::vec3 _up;
+        glm::vec3 _worldup = glm::vec3(0, 1, 0);
 	private:
 		CameraType _type;
 

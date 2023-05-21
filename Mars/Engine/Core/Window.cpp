@@ -30,8 +30,8 @@ namespace mrs {
 			if (_event.type == SDL_QUIT) {
 				return false;
 			}
-			ImGui_ImplSDL2_ProcessEvent(&_event);
 
+			ImGui_ImplSDL2_ProcessEvent(&_event);
 			int32_t key = (int32_t)_event.key.keysym.sym;
 			switch (_event.type) {
 			case SDL_QUIT:
@@ -42,6 +42,16 @@ namespace mrs {
 				break;
 			case SDL_KEYUP:
 				if (key < 322) { Input::Keys[_event.key.keysym.sym] = false; }
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				if (_event.button.button < 4) { Input::MouseButtons[_event.button.button] = true; }
+				break;
+			case SDL_MOUSEBUTTONUP:
+				if (_event.button.button < 4) { Input::MouseButtons[_event.button.button] = false; }
+				break;
+			case SDL_MOUSEMOTION:
+				Input::x_relative = _event.motion.xrel;
+				Input::y_relative = _event.motion.yrel;
 				break;
 			default:
 				break;
