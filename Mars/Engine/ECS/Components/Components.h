@@ -7,64 +7,66 @@
 #include "Renderer/Vulkan/VulkanMaterial.h"
 
 #include <glm/glm.hpp>
-#include <Astro.h>
 
-namespace mrs {
-    // [Component]
+#include "ECS/ScriptableEntity.h"
+
+namespace mrs
+{
     struct Tag
     {
-        Tag(const std::string& name )
-            :tag(name){}
+        Tag(const std::string &name)
+            : tag(name) {}
         std::string tag = "";
     };
 
-    // [Component]
     struct Transform
     {
-        glm::vec3 position{ 0.0f };
-        glm::vec3 rotation{ 0.0f };
-        glm::vec3 scale{ 1.0f };
+        glm::vec3 position{0.0f};
+        glm::vec3 rotation{0.0f};
+        glm::vec3 scale{1.0f};
     };
 
-    // [Component]
+    // Base renderer class component that makes an object appear on the screen. Inherited by all game object renderers
     struct RenderableObject
     {
         RenderableObject(std::shared_ptr<Mesh> mesh_, std::shared_ptr<Material> material_)
-            :mesh(mesh_), material(material_) {}
+            : mesh(mesh_), material(material_) {}
 
         std::shared_ptr<Mesh> mesh;
         std::shared_ptr<Material> material;
     };
 
-    // [Component]
     struct DirectionalLight
     {
         float intensity = 0.0f;
     };
 
-    // [Component]
     struct PointLight
     {
         float intensity = 0.0f;
     };
 
-    // [Component]
-    struct Rigidbody
+    struct Script
     {
-        ast::Body body;
-    };
+        ScriptableEntity *script = nullptr;
 
-    // [Component]
-    struct SphereCollider
-    {
-        ast::SphereCollider sphere_collider;
-    };
+        std::function<ScriptableEntity *()> InstantiateScript;
+        std::function<void(ScriptableEntity *script)> DestroyScript;
 
-    // [Component]
-    struct PlaneCollider
-    {
-        ast::PlaneCollider plane_collider;
+        template <typename T>
+        void Bind()
+        {
+            InstantiateScript = []()
+            {
+                return static_cast<ScriptableEntity *>(new T());
+            };
+
+            DestroyScript = [](ScriptableEntity *script)
+            {
+                delete script;
+                script = nullptr;
+            };
+        };
     };
 }
-
 #endif

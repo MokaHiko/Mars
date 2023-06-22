@@ -63,9 +63,6 @@ struct VulkanFrameContext
 	// Main command pool for frame
 	VkCommandPool command_pool;
 	VkCommandBuffer command_buffer;
-
-	// Buffer for indirect render commands
-	AllocatedBuffer indirect_buffer;
 };
 
 #endif

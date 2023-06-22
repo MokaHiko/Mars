@@ -3,19 +3,20 @@
 #include <Core/Input.h>
 #include <imgui_impl_sdl2.h>
 
-namespace mrs {
+namespace mrs
+{
 
-	Window::Window(const std::string& window_title, int width, int height)
-		:_width(width), _height(height)
+	Window::Window(const std::string &window_title, int width, int height)
+		: _width(width), _height(height)
 	{
 		SDL_Init(SDL_INIT_VIDEO);
 
 		_window = SDL_CreateWindow(window_title.c_str(),
-			SDL_WINDOWPOS_UNDEFINED,
-			SDL_WINDOWPOS_UNDEFINED,
-			width,
-			height,
-			SDL_WINDOW_VULKAN);
+								   SDL_WINDOWPOS_UNDEFINED,
+								   SDL_WINDOWPOS_UNDEFINED,
+								   width,
+								   height,
+								   SDL_WINDOW_VULKAN);
 	}
 
 	Window::~Window()
@@ -26,32 +27,43 @@ namespace mrs {
 
 	bool Window::Update()
 	{
-		while (SDL_PollEvent(&_event)) {
-			if (_event.type == SDL_QUIT) {
+		while (SDL_PollEvent(&_event))
+		{
+			if (_event.type == SDL_QUIT)
+			{
 				return false;
 			}
 
 			ImGui_ImplSDL2_ProcessEvent(&_event);
 			int32_t key = (int32_t)_event.key.keysym.sym;
-			switch (_event.type) {
+			switch (_event.type)
+			{
 			case SDL_QUIT:
 				return false;
 				break;
 			case SDL_KEYDOWN:
-				if (key < 322) { Input::Keys[_event.key.keysym.sym] = true; }
+				if (key < 322)
+				{
+					Input::Keys[_event.key.keysym.sym] = true;
+				}
 				break;
 			case SDL_KEYUP:
-				if (key < 322) { Input::Keys[_event.key.keysym.sym] = false; }
+				if (key < 322)
+				{
+					Input::Keys[_event.key.keysym.sym] = false;
+				}
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				if (_event.button.button < 4) { Input::MouseButtons[_event.button.button] = true; }
+				if (_event.button.button < 4)
+				{
+					Input::MouseButtons[_event.button.button] = true;
+				}
 				break;
 			case SDL_MOUSEBUTTONUP:
-				if (_event.button.button < 4) { Input::MouseButtons[_event.button.button] = false; }
-				break;
-			case SDL_MOUSEMOTION:
-				Input::x_relative = _event.motion.xrel;
-				Input::y_relative = _event.motion.yrel;
+				if (_event.button.button < 4)
+				{
+					Input::MouseButtons[_event.button.button] = false;
+				}
 				break;
 			default:
 				break;
@@ -61,8 +73,8 @@ namespace mrs {
 		return true;
 	}
 
-	void* Window::GetNativeWindow()
+	void *Window::GetNativeWindow()
 	{
-		return (void*)_window;
+		return (void *)_window;
 	}
 }

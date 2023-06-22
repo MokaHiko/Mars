@@ -47,7 +47,6 @@ namespace mrs {
 
 		// Changes camera type
 		void SetType(CameraType type);
-
 	public:
         // Camera Settings
         float _yaw = -90.0f;
@@ -59,9 +58,9 @@ namespace mrs {
 
     private:
         // Camera Relative Position Attributes
-        glm::vec3 _front;
-        glm::vec3 _right;
-        glm::vec3 _up;
+		glm::vec3 _front{ 0.0f };
+		glm::vec3 _right{ 0.0f };
+		glm::vec3 _up{ 0.0f };
         glm::vec3 _worldup = glm::vec3(0, 1, 0);
 	private:
 		CameraType _type;

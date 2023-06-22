@@ -1,6 +1,5 @@
 #include "Layer.h"
 
-
 mrs::LayerStack::LayerStack()
 	:_insert_index(0) {}
 

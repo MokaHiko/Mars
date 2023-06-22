@@ -21,6 +21,8 @@ add_library(${PROJECT_NAME}
 			Engine/ECS/Scene.cpp
 			Engine/ECS/Entity.h
 			Engine/ECS/Entity.cpp
+			Engine/ECS/ScriptableEntity.h
+			Engine/ECS/ScriptableEntity.cpp
 			Engine/ECS/Components/Components.h
 			Engine/ECS/Components/Components.cpp
 			Engine/Util/Utils.h
@@ -40,8 +42,22 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/Vulkan/VulkanUtils.cpp
 			Engine/Renderer/Vulkan/VulkanInitializers.h
 			Engine/Renderer/Vulkan/VulkanInitializers.cpp
-			Engine/ImGui/MarsImGui.h
-			Engine/ImGui/MarsImGui.cpp
+
+			Engine/Physics/Physics2DLayer.cpp
+			Engine/Physics/Physics2DLayer.h
+			Engine/Physics/Physics.h
+			Engine/Physics/Physics.cpp
+
+			Engine/Renderer/RenderPipelineLayers/IRenderPipeline.h
+			Engine/Renderer/RenderPipelineLayers/IRenderPipeline.cpp
+			Engine/Renderer/RenderPipelineLayers/IRenderPipelineLayer.h
+			Engine/Renderer/RenderPipelineLayers/IRenderPipelineLayer.cpp
+			Engine/Renderer/RenderPipelineLayers/DefaultRenderPipelineLayer/DefaultRenderPipelineLayer.h
+			Engine/Renderer/RenderPipelineLayers/DefaultRenderPipelineLayer/DefaultRenderPipelineLayer.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.cpp
 			)
 target_precompile_headers(${PROJECT_NAME} PUBLIC mrspch.h)
 target_include_directories(${PROJECT_NAME} PUBLIC

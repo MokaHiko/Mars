@@ -5,11 +5,13 @@
 
 #include <entt/entt.hpp>
 
-#include "Components/Components.h"
-#include "Entity.h"
+#include <glm/glm.hpp>
 
-namespace mrs {
-    // Main wrapper of wraps enTT ECS functionality 
+namespace mrs
+{
+    class Entity;
+
+    // Wraps enTT ECS functionality 
     class Scene
     {
     public:
@@ -24,18 +26,19 @@ namespace mrs {
         }
         
         // Create and returns entity
-        Entity Instantiate(const std::string& name = "", const glm::vec3& position = {}) {
-            Entity e = Entity(_registry.create(), this);
+        Entity Instantiate(const std::string& name = "", const glm::vec3& position = {});
 
-            e.AddComponent<Tag>(name);
-            e.AddComponent<Transform>();
-
-            return e;
-        }
+        // Queues entity for destruction at end of frame
+        void QueueDestroy(Entity entity);
 
     private:
+        void Destroy(Entity entity);
+
         friend class Entity;
         entt::registry _registry;
+
+        // Queue of entities to destroy
+        std::vector<Entity> _destruction_queue;
     };
 
 }

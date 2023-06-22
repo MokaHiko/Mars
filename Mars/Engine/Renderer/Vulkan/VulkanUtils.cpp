@@ -320,6 +320,12 @@ bool vkutil::DescriptorBuilder::Build(VkDescriptorSet* set, VkDescriptorSetLayou
 
 	*layout = _cache->CreateDescriptorSetLayout(&layout_create_info);
 
+	// Check if only caching layout
+	if(!set) 
+	{
+		return false;
+	}
+
 	// Allocate descriptor 
 	if (!(_allocator->Allocate(set, *layout))) {
 		return false;

@@ -1,12 +1,9 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#pragma once 
+#pragma once
 
-#include <memory>
-#include <vector>
-#include <functional>
-
+#include <limits>
 #include <vulkan/vulkan.h>
 
 #include "Core/Window.h"
@@ -18,12 +15,11 @@
 #include "Vulkan/VulkanMesh.h"
 
 #include "Camera.h"
-
 #include "ECS/Scene.h"
 
-namespace mrs {
-
-	static const uint64_t time_out = 1000000000;
+namespace mrs
+{
+	static const uint64_t time_out = std::numeric_limits<uint64_t>::max();
 	static const uint32_t frame_overlaps = 2;
 
 	struct GraphicsSettings
@@ -31,101 +27,126 @@ namespace mrs {
 		bool vsync = true;
 	};
 
-	struct RendererInitInfo
+	struct RendererInfo
 	{
 		std::shared_ptr<Window> window;
-		std::shared_ptr<Camera> camera;
-
 		GraphicsSettings graphics_settings = {};
+	};
+
+	struct ObjectData
+	{
+		glm::vec4 color{1.0f};
+		glm::mat4 model_matrix{1.0f};
+	};
+
+	struct GlobalDescriptorData
+	{
+		glm::mat4 view_proj;
+		glm::mat4 view_proj_light;
+		glm::vec4 directional_light_position;
 	};
 
 	class Renderer
 	{
 	public:
-		const uint32_t max_objects = 11000;
-		Renderer(RendererInitInfo& info);
+		const uint32_t max_objects = 1000;
+		Renderer(RendererInfo &info);
 		~Renderer();
 
-		virtual void Init();
-		virtual void Shutdown();
+		void Init();
+		void Shutdown();
 
-		virtual void Begin(Scene* scene);
-		virtual void End();
+		// Called at start of frame, starting the recording of the command buffer
+		void Begin(Scene* scene);
+
+		// Starts the main render pass
+		void MainPassStart(VkCommandBuffer cmd);
+
+		// Ends the main render pass
+		void MainPassEnd(VkCommandBuffer cmd);
+
+		// Ends the command buffer recording and submits to queue
+		void End();
 
 		void UploadResources();
 
-		// Getters
-		inline VkInstance GetInstance() { return _instance; }
-		inline VkRenderPass GetRenderPass() { return _render_pass; }
-		inline VulkanDevice& GetDevice() { return _device; }
-		inline vkutil::DeletionQueue& GetDeletionQueue() { return _deletion_queue; }
-		inline VulkanQueues& GetQueues() { return _queues; }
+		Camera *GetCamera() { return _camera; }
 
+		// Sets renderer camera
+		void SetCamera(Camera* camera) { _camera = camera; }
+
+		// Descriptor allocator and layout cache
+		std::shared_ptr<vkutil::DescriptorAllocator> _descriptor_allocator;
+		std::shared_ptr<vkutil::DescriptorLayoutCache> _descriptor_layout_cache;
 	public:
-		// Grass/Foliage Rendering
+		// Gets handle to the vulkan instance
+		const VkInstance GetInstance() const { return _instance; }
 
-		// New Pipeline, Gpu
+		// Gets handle to default render pass
+		const VkRenderPass GetRenderPass() const { return _render_pass; }
+
+		// Gets index of current frame
+		const uint32_t GetCurrentFrame() const { return _frame_count % frame_overlaps; }
+
+		// Gets index of current frame
+		const VkFramebuffer GetCurrentFrameBuffer() const { return _framebuffers[_current_swapchain_image]; }
+
+		// Get shared global descriptor set
+		const VkDescriptorSet GetGlobalDescriptorSet() const { return _global_descriptor_set; }
+
+		// Get shared global object descriptor set of current farme
+		const VkDescriptorSet GetCurrentGlobalObjectDescriptorSet() const { return _object_descriptor_set[_frame_count % frame_overlaps]; }
+
+		// Get shared global descriptor set layout
+		const VkDescriptorSetLayout GetGlobalSetLayout() const { return _global_descriptor_set_layout; }
+
+		// Get shared global object descriptor set layout
+		const VkDescriptorSetLayout GetGlobalObjectSetLayout() const { return _object_descriptor_set_layout; }
+
+		// Get shared default image descriptor set layout
+		const VkDescriptorSetLayout GetDefaultImageSetLayout() const { return _default_image_set_layout; }
+
+		// Gets index of current frame data
+		const VulkanFrameContext &GetCurrentFrameData() const { return _frame_data[_frame_count % frame_overlaps]; }
+
+		// Gets handle to vulkan device struct
+		VulkanDevice &GetDevice() { return _device; }
+
+		// Gets handle to vulkan resources deletion queue
+		vkutil::DeletionQueue &GetDeletionQueue() { return _deletion_queue; }
+
+		// Gets handle to vulkan resource allocator
+		VmaAllocator &GetAllocator() { return _allocator; }
+
+		// Gets handle to vulkan queues struct
+		VulkanQueues &GetQueues() { return _queues; }
 	public:
-		// Shadow Mapping
-		void CreateOffScreenFramebuffer();
-
-		void InitOffScreenPipeline();
-		void DrawShadowMap(VkCommandBuffer cmd, Scene* scene);
-
-		VkFramebuffer _offscreen_framebuffer;
-		AllocatedImage _offscreen_depth_image;
-		VkImageView _offscreen_depth_image_view;
-
-		VkRenderPass _offscreen_render_pass;
-		VkPipeline _offscreen_render_pipeline;
-
-		VkSampler _shadow_map_sampler;
-		VkDescriptorSetLayout _shadow_map_descriptor_layout;
-		VkDescriptorSet _shadow_map_descriptor;
-	public:
-		// Handle to window being rendered to
-		const std::shared_ptr<Window> _window;
-
-		// Cameras perspective to render to
-		std::shared_ptr<Camera> _camera;
-
-		struct ObjectData
-		{
-			glm::vec4 color;
-			glm::mat4 model_matrix;
-		};
-
-		struct GlobalDescriptorData {
-			glm::mat4 view_proj;
-			glm::mat4 view_proj_light;
-			glm::vec4 directional_light_position;
-		};
-
-		// Global descriptor
-		VkDescriptorSet global_descriptor_set;
-		VkDescriptorSetLayout global_descriptor_set_layout;
-		AllocatedBuffer global_descriptor_buffer;
-
-		// Object descriptors (per frame)
-		std::vector<VkDescriptorSet> object_descriptor_set;
-		std::vector<AllocatedBuffer> object_descriptor_buffer;
-		VkDescriptorSetLayout object_descriptor_set_layout;
-
-		VkSampler _default_image_sampler;
-		VkDescriptorSetLayout _default_image_set_layout;
-	public:
-		// Returns whether or not shader module was created succesefully
-		bool LoadShaderModule(const char* path, VkShaderModule* module);
-
-		// Used for immedaite time and blocking execution of commands 
-		void ImmediateSubmit(std::function<void(VkCommandBuffer)>&& fn);
-
 		// Creates and allocates buffer with given size
 		AllocatedBuffer CreateBuffer(size_t size, VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, VkMemoryPropertyFlags memory_props = 0);
 
-		// Creates graphics all application pipelines
-		void InitPipelines();
+		// Pads size to be compatible with minimum unifrom buffer alignment of physical device
+		size_t PadToUniformBufferSize(size_t original_size);
+
+		// Pads size to be compatible with minimum storage buffer alignment of physical device
+		size_t PadToStorageBufferSize(size_t original_size);
+
+	public:
+		// Upload texture to GPU via immediate command buffers
+		void UploadTexture(std::shared_ptr<Texture> texture);
+
+		// Upload mesh to GPU via immediate command buffers
+		void UploadMesh(std::shared_ptr<Mesh> mesh);
+
+		// Returns whether or not shader module was created succesefully
+		bool LoadShaderModule(const char *path, VkShaderModule *module);
+
+		// Used for immedaite time and blocking execution of commands
+		void ImmediateSubmit(std::function<void(VkCommandBuffer)> &&fn);
+
 	private:
+		// Initializes core vulkan structures
+		void InitVulkan();
+
 		// Creates swapchain and gets handle to image s/views
 		void InitSwapchain();
 
@@ -141,39 +162,33 @@ namespace mrs {
 		// Creates all the fences and semaphores
 		void InitSyncStructures();
 
-		// Creates and allocates descriptors 
-		void InitDescriptors();
+		// Creates and allocates descriptors
+		void InitGlobalDescriptors();
+
+		// Update Global Descriptor Sets
+		void UpdateGlobalDescriptors(Scene* scene, uint32_t frame_index);
 	private:
-		// Default Graphics Pipeline of Renderer
-		void InitDefaultPipeline();
-		void DrawObjects(VkCommandBuffer cmd, Scene* scene);
+		// Handle to window being rendered to
+		const std::shared_ptr<Window> _window;
 
-		inline uint32_t GetCurrentFrame() const { return _frame_count % frame_overlaps; }
+		// Cameras perspective to render to
+		Camera* _camera = nullptr;
 
-		// Pads size to be compatible with minimum unifrom buffer alignment of physical device
-		size_t PadToUniformBufferSize(size_t original_size);
+		// Global descriptor
+		VkDescriptorSet _global_descriptor_set;
+		VkDescriptorSetLayout _global_descriptor_set_layout;
+		AllocatedBuffer _global_descriptor_buffer;
 
-		// Upload texture to GPU via immediate command buffers
-		void UploadTexture(std::shared_ptr<Texture> texture);
+		// Object descriptors (per frame)
+		std::vector<VkDescriptorSet> _object_descriptor_set;
+		std::vector<AllocatedBuffer> _object_descriptor_buffer;
+		VkDescriptorSetLayout _object_descriptor_set_layout;
 
-		// Upload mesh to GPU via immediate command buffers
-		void UploadMesh(std::shared_ptr<Mesh> mesh);
-	private:
-		// Creates indirect command buffers
-		void InitIndirectCommands();
-		
-		// ~ INDIRECT DRAWING
-		struct IndirectBatch 
-		{
-			Mesh* mesh;
-			Material* material;
+		VkSampler _default_image_sampler;
+		VkDescriptorSetLayout _default_image_set_layout;
 
-			uint32_t first; // batches first instance in draw indirect buffer
-			uint32_t count; // batch member count
-		};
+		VulkanFrameContext _frame_data[frame_overlaps];
 
-		// Returns vector if indirect batches from renderables from scene
-		std::vector<IndirectBatch> GetRenderablesAsBatches(Scene* scene);
 	private:
 		VkInstance _instance = {};
 		VkSurfaceKHR _surface = {};
@@ -199,8 +214,6 @@ namespace mrs {
 		VkPhysicalDeviceProperties _physical_device_props = {};
 		VulkanQueueFamilyIndices _queue_indices = {};
 
-		// Number of frame contexts
-		VulkanFrameContext _frame_data[frame_overlaps];
 		uint32_t _current_swapchain_image = -1;
 
 		// Main upload struct
@@ -209,15 +222,8 @@ namespace mrs {
 		vkutil::DeletionQueue _deletion_queue;
 		uint32_t _frame_count = 0;
 
-	private:
-		// ~ Vulkan resource management
-
 		// Main gpu upload resource allocator
 		VmaAllocator _allocator;
-
-		// Desccriptor allocator and layout cache
-		std::shared_ptr<vkutil::DescriptorAllocator> _descriptor_allocator;
-		std::shared_ptr<vkutil::DescriptorLayoutCache> _descriptor_layout_cache;
 	};
 }
 

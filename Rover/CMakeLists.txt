@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(Rover VERSION 0.1.0)
 
-add_executable(Rover main.cpp ImGui/ImGuiLayer.cpp ImGui/ImGuiLayer.h)
+add_executable(Rover main.cpp) 
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Mars Vendor imgui vulkan-1)
 

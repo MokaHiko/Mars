@@ -58,8 +58,6 @@ namespace mrs {
 
 		std::vector<Vertex> _vertices;
 		std::vector<uint32_t> _indices;
-	private:
-		friend class Renderer;
 
 		AllocatedBuffer _buffer = {};
 		AllocatedBuffer _index_buffer = {};

@@ -16,3 +16,6 @@
 [submodule "Vendor/entt"]
 	path = Vendor/entt
 	url = https://github.com/skypjack/entt.git
+[submodule "box2d"]
+	path = Vendor/box2d
+	url = https://github.com/erincatto/box2d.git

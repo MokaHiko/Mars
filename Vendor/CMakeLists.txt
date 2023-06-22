@@ -4,18 +4,22 @@ project(Vendor)
 add_subdirectory(SDL)
 add_subdirectory(vkboostrap)
 add_subdirectory(glm)
-add_subdirectory(astro)
-add_subdirectory(boop)
 add_subdirectory(entt)
+
+set(BOX2D_BUILD_TESTBED OFF)
+set(BOX2D_BUILD_UNIT_TESTS OFF)
+add_subdirectory(box2d)
+
+add_subdirectory(boop)
 
 add_library(${PROJECT_NAME} INTERFACE)
 target_link_libraries(${PROJECT_NAME} 
-					INTERFACE boop
-					INTERFACE astro
 					INTERFACE SDL2::SDL2
 					INTERFACE vk-bootstrap::vk-bootstrap
 					INTERFACE glm::glm
 					INTERFACE EnTT
+					INTERFACE box2d
+					INTERFACE boop
 					)
 
 # Header only libraries 

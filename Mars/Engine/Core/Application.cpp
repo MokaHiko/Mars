@@ -2,6 +2,7 @@
 
 #include "Input.h"
 #include "Util/Utils.h"
+#include "Renderer/RenderPipelineLayers/DefaultRenderPipelineLayer/DefaultRenderPipelineLayer.h"
 
 namespace mrs {
 	Application* Application::_instance = nullptr;
@@ -13,12 +14,20 @@ namespace mrs {
 
 		// Create window
 		_window = std::make_shared<Window>(app_name.c_str(), width, height);
+
+		// Create scene
+		_scene = std::make_shared<Scene>();
 	}
 
-	Application::~Application() {}
+	Application::~Application() 
+	{
+	}
 
 	void Application::Run()
 	{
+		// Push default layers
+		PushLayer(new DefaultRenderPipelineLayer());
+
 		while(_running = _window->Update())
 		{
 			// Calculate delta time
@@ -26,15 +35,10 @@ namespace mrs {
 					_dt = timer.delta_;
 				});
 
-			// Updating layer stack
-			OnUpdate();
-		}
-	}
-
-	void Application::OnUpdate()
-	{
-		for (Layer* layer : _layer_stack) {
-			layer->OnUpdate(_dt);
+			for (Layer* layer : _layer_stack) 
+			{
+				layer->OnUpdate(_dt);
+			}
 		}
 	}
 
@@ -48,5 +52,18 @@ namespace mrs {
 	{
 		_layer_stack.PopLayer(layer);
 		layer->OnDetatch();
+	}
+
+	Layer *Application::FindLayer(const std::string &layer_name)
+	{
+		for(Layer* layer: _layer_stack)
+		{
+			if(layer->GetName() == layer_name) 
+			{
+				return layer;
+			}
+		}
+
+		throw std::runtime_error("Layer not found");
 	}
 }

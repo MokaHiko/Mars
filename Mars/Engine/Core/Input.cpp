@@ -7,9 +7,6 @@
 bool mrs::Input::Keys[322] = {false};
 bool mrs::Input::MouseButtons[4] = {false};
 
-int mrs::Input::x_relative = 0;
-int mrs::Input::y_relative = 0;
-
 bool mrs::Input::IsKeyPressed(int key_code)
 {
 	if (key_code < 322) {
