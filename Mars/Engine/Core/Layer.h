@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "Events/Events.h"
+
 namespace mrs {
     class Layer
     {
@@ -16,13 +18,16 @@ namespace mrs {
         virtual void OnUpdate(float dt) {};
         virtual void OnImGuiRender() {};
 
+        virtual void OnEvent(Event& event) {};
+
         inline const std::string& GetName() const {return _name;}
 
-        bool _enabled = true;
     private:
         std::string _name;
+        bool _enabled = true;
     };
 
+    // Manages layers and their lifetimes
     class LayerStack
     {
     public:

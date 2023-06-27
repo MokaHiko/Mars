@@ -11,12 +11,26 @@ add_library(${PROJECT_NAME}
 			Engine/Core/Application.cpp
 			Engine/Core/Layer.h
 			Engine/Core/Layer.cpp
+			Engine/Core/Memory.h
+			Engine/Core/Memory.cpp
+			Engine/Core/Log.h
+			Engine/Core/Log.cpp
 			Engine/Core/Window.h
 			Engine/Core/Window.cpp
 			Engine/Core/Input.h
 			Engine/Core/Input.cpp
+			Engine/Core/InputLayer.h
+			Engine/Core/InputLayer.cpp
 			Engine/Core/ResourceManager.h
 			Engine/Core/ResourceManager.cpp
+			Engine/Core/Platform/Platform.h
+			Engine/Core/Platform/Platform.cpp
+			Engine/Core/Platform/Win32/PlatformWin32.h
+			Engine/Core/Platform/Win32/PlatformWin32.cpp
+
+			Engine/Events/Events.h
+			Engine/Events/Events.cpp
+
 			Engine/ECS/Scene.h
 			Engine/ECS/Scene.cpp
 			Engine/ECS/Entity.h
@@ -25,8 +39,16 @@ add_library(${PROJECT_NAME}
 			Engine/ECS/ScriptableEntity.cpp
 			Engine/ECS/Components/Components.h
 			Engine/ECS/Components/Components.cpp
-			Engine/Util/Utils.h
-			Engine/Util/Utils.cpp
+
+			Engine/Toolbox/FileToolBox.h
+			Engine/Toolbox/FileToolBox.cpp
+			Engine/Toolbox/TimeToolBox.h
+			Engine/Toolbox/TimeToolBox.cpp
+			Engine/Toolbox/RandomToolBox.h
+			Engine/Toolbox/RandomToolBox.cpp
+			Engine/Toolbox/PathFindingToolBox.h
+			Engine/Toolbox/PathFindingToolBox.cpp
+
 			Engine/Renderer/Renderer.h
 			Engine/Renderer/Renderer.cpp
 			Engine/Renderer/Camera.h
@@ -43,11 +65,6 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/Vulkan/VulkanInitializers.h
 			Engine/Renderer/Vulkan/VulkanInitializers.cpp
 
-			Engine/Physics/Physics2DLayer.cpp
-			Engine/Physics/Physics2DLayer.h
-			Engine/Physics/Physics.h
-			Engine/Physics/Physics.cpp
-
 			Engine/Renderer/RenderPipelineLayers/IRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/IRenderPipeline.cpp
 			Engine/Renderer/RenderPipelineLayers/IRenderPipelineLayer.h
@@ -58,6 +75,15 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleRenderPipeline.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleRenderPipeline.cpp
+
+			Engine/Physics/Physics2DLayer.cpp
+			Engine/Physics/Physics2DLayer.h
+			Engine/Physics/Physics.h
+			Engine/Physics/Physics.cpp
 			)
 target_precompile_headers(${PROJECT_NAME} PUBLIC mrspch.h)
 target_include_directories(${PROJECT_NAME} PUBLIC

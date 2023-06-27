@@ -16,7 +16,6 @@ namespace mrs {
 		Window(const std::string& window_title, int width, int height);
 		~Window();
 
-		bool Update();
 		void* GetNativeWindow();
 
 		inline uint32_t GetWidth() const { return _width; }

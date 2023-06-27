@@ -1,0 +1,91 @@
+#version 460
+
+struct Particle
+{
+    vec2 position;
+    vec2 velocity;
+    vec4 color;
+
+    float time_elapsed;
+};
+
+struct ParticleParameters 
+{
+    //dela time in second
+    float life_time;
+    float dt;
+
+    // emission rate in seconds 
+    float emission_rate;
+    uint live_particles;
+
+    // Offset into global particle buffer
+    uint buffer_offset;
+
+    // Offset into global particle buffer array
+    uint buffer_index;
+
+    // set to 1 if reset
+    uint reset;
+};
+
+layout(std140, set = 0, binding = 0) readonly buffer ParticleParametersUBO {
+    ParticleParameters[] parameters;
+} _particle_parameters_array;
+
+layout(std140, set = 0, binding = 1) readonly buffer ParticlesIn{
+    Particle particles[];
+} _particles_in;
+
+layout(std140, set = 0, binding = 2) buffer ParticlesOut{
+    Particle particles[];
+} _particles_out;
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+//push constants block
+layout( push_constant ) uniform constants {
+    uint count; // index into particle system buffer
+} p_particle_system_count;
+
+void main()
+{
+    ParticleParameters _particle_parameters = _particle_parameters_array.parameters[p_particle_system_count.count];
+
+    uint local_index = gl_GlobalInvocationID.x;
+    uint global_index = gl_GlobalInvocationID.x + _particle_parameters.buffer_index;
+
+    Particle particle_in = _particles_in.particles[global_index];
+
+    // [IF] (Particle is live || Particle within range) :
+    float particle_live = min(int(float(_particle_parameters.live_particles) / float(local_index)), 1.0f); 
+    //float particle_live = local_index < _particle_parameters.live_particles ? 1.0f : 0.0f;
+
+        // Increment elapsed_time by dt
+        _particles_out.particles[global_index].time_elapsed += particle_live * (_particle_parameters.dt);
+
+        // Gravity
+        _particles_out.particles[global_index].position += particle_live * (vec2(0, -9.8f) * pow(_particle_parameters.dt, 2));
+
+        // Velocity
+        _particles_out.particles[global_index].position += particle_live * (particle_in.velocity.xy * _particle_parameters.dt);
+
+    // [IF] (Life time elapsed elapse) :
+    float life_time_elapsed = particle_live * min(floor(_particles_out.particles[global_index].time_elapsed / _particle_parameters.life_time), 1.0f);
+
+        // Reset position
+        _particles_out.particles[global_index].position *= (1 - life_time_elapsed);
+
+        // Reset time
+        _particles_out.particles[global_index].time_elapsed *= (1 - life_time_elapsed);
+
+
+    // [IF] (Reset flag set) :
+    uint reset = _particle_parameters.reset;
+        
+        // Reset position
+        _particles_out.particles[global_index].position *= (1 - reset);
+
+        // Reset time 
+        _particles_out.particles[global_index].time_elapsed *= (1 - reset);
+}

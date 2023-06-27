@@ -15,6 +15,7 @@
 
 namespace mrs
 {
+    // Manages render pipelines and their lifetimes
     class RenderPipelineStack
     {
     public:

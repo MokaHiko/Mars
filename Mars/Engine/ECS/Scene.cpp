@@ -5,6 +5,24 @@
 
 namespace mrs
 {
+	Scene::~Scene()
+	{
+		auto view = Registry()->view<Transform, Script>();
+
+		// Destroy scripts
+		for (auto entity : view)
+		{
+			Entity e(entity, this);
+			Script &script_component = e.GetComponent<Script>();
+			script_component.script = script_component.InstantiateScript();
+			script_component.DestroyScript(script_component.script);
+		}
+	}
+
+	Scene::Scene()
+	{
+	}
+
 	Entity Scene::Instantiate(const std::string &name, const glm::vec3 &position)
 	{
 

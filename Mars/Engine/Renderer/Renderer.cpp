@@ -3,7 +3,7 @@
 #include <SDL2/SDL.h>
 #include <VkBootstrap.h>
 
-#include "Util/Utils.h"
+#include "Toolbox/FileToolBox.h"
 #include "Vulkan/VulkanUtils.h"
 #include "Vulkan/VulkanInitializers.h"
 
@@ -74,55 +74,55 @@ namespace mrs
 
 		// Copy data to texture via immediate mode submit
 		ImmediateSubmit([&](VkCommandBuffer cmd)
-						{
+			{
 
-			// ~ Transition to transfer optimal
-			VkImageSubresourceRange range = {};
-			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			range.layerCount = 1;
-			range.baseArrayLayer = 0;
-			range.levelCount = 1;
-			range.baseMipLevel = 0;
+				// ~ Transition to transfer optimal
+				VkImageSubresourceRange range = {};
+				range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				range.layerCount = 1;
+				range.baseArrayLayer = 0;
+				range.levelCount = 1;
+				range.baseMipLevel = 0;
 
-			VkImageMemoryBarrier image_to_transfer_barrier = {};
-			image_to_transfer_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			image_to_transfer_barrier.pNext = nullptr;
+				VkImageMemoryBarrier image_to_transfer_barrier = {};
+				image_to_transfer_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+				image_to_transfer_barrier.pNext = nullptr;
 
-			image_to_transfer_barrier.image = texture->_image.image;
-			image_to_transfer_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			image_to_transfer_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+				image_to_transfer_barrier.image = texture->_image.image;
+				image_to_transfer_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+				image_to_transfer_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-			image_to_transfer_barrier.srcAccessMask = 0;
-			image_to_transfer_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				image_to_transfer_barrier.srcAccessMask = 0;
+				image_to_transfer_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
-			image_to_transfer_barrier.subresourceRange = range;
+				image_to_transfer_barrier.subresourceRange = range;
 
-			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_to_transfer_barrier);
+				vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_to_transfer_barrier);
 
-			// ~ Copy to from staging to texture
-			VkBufferImageCopy region = {};
-			region.bufferImageHeight = 0;
-			region.bufferRowLength = 0;
-			region.bufferOffset = 0;
+				// ~ Copy to from staging to texture
+				VkBufferImageCopy region = {};
+				region.bufferImageHeight = 0;
+				region.bufferRowLength = 0;
+				region.bufferOffset = 0;
 
-			region.imageExtent = extent;
-			region.imageOffset = { 0 };
-			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			region.imageSubresource.baseArrayLayer = 0;
-			region.imageSubresource.layerCount = 1;
-			region.imageSubresource.mipLevel = 0;
+				region.imageExtent = extent;
+				region.imageOffset = { 0 };
+				region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				region.imageSubresource.baseArrayLayer = 0;
+				region.imageSubresource.layerCount = 1;
+				region.imageSubresource.mipLevel = 0;
 
-			vkCmdCopyBufferToImage(cmd, staging_buffer.buffer, texture->_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+				vkCmdCopyBufferToImage(cmd, staging_buffer.buffer, texture->_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-			// ~ Transition to from shader read only 
-			VkImageMemoryBarrier image_to_shader_barrier = image_to_transfer_barrier;
-			image_to_shader_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			image_to_shader_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				// ~ Transition to from shader read only 
+				VkImageMemoryBarrier image_to_shader_barrier = image_to_transfer_barrier;
+				image_to_shader_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+				image_to_shader_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-			image_to_shader_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			image_to_shader_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+				image_to_shader_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				image_to_shader_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-			vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_to_shader_barrier); });
+				vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_to_shader_barrier); });
 
 		// Create iamge view
 		VkImageViewCreateInfo image_view_info = vkinit::image_view_create_info(texture->_image.image, texture->_format, VK_IMAGE_ASPECT_COLOR_BIT);
@@ -131,9 +131,9 @@ namespace mrs
 		// Clean up
 		vmaDestroyBuffer(_allocator, staging_buffer.buffer, staging_buffer.allocation);
 		_deletion_queue.Push([=]()
-							 {
-			vkDestroyImageView(_device.device, texture->_image_view, nullptr);
-			vmaDestroyImage(_allocator, texture->_image.image, texture->_image.allocation); });
+			{
+				vkDestroyImageView(_device.device, texture->_image_view, nullptr);
+				vmaDestroyImage(_allocator, texture->_image.image, texture->_image.allocation); });
 	}
 
 	void Renderer::UploadMesh(std::shared_ptr<Mesh> mesh)
@@ -152,12 +152,12 @@ namespace mrs
 
 		// Copy data to vertex buffer via immediate commands
 		ImmediateSubmit([=](VkCommandBuffer cmd)
-						{
-			VkBufferCopy region = {};
-			region.dstOffset = 0;
-			region.size = buffer_size;
-			region.srcOffset = 0;
-			vkCmdCopyBuffer(cmd, staging_buffer.buffer, mesh->_buffer.buffer, 1, &region); });
+			{
+				VkBufferCopy region = {};
+				region.dstOffset = 0;
+				region.size = buffer_size;
+				region.srcOffset = 0;
+				vkCmdCopyBuffer(cmd, staging_buffer.buffer, mesh->_buffer.buffer, 1, &region); });
 
 		// Create index buffer if indices available
 		if (mesh->_index_count > 0)
@@ -173,12 +173,12 @@ namespace mrs
 			mesh->_index_buffer = CreateBuffer(index_buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0);
 
 			ImmediateSubmit([=](VkCommandBuffer cmd)
-							{
-				VkBufferCopy region = {};
-				region.dstOffset = 0;
-				region.size = index_buffer_size;
-				region.srcOffset = 0;
-				vkCmdCopyBuffer(cmd, index_staging_buffer.buffer, mesh->_index_buffer.buffer, 1, &region); });
+				{
+					VkBufferCopy region = {};
+					region.dstOffset = 0;
+					region.size = index_buffer_size;
+					region.srcOffset = 0;
+					vkCmdCopyBuffer(cmd, index_staging_buffer.buffer, mesh->_index_buffer.buffer, 1, &region); });
 
 			vmaDestroyBuffer(_allocator, index_staging_buffer.buffer, index_staging_buffer.allocation);
 		}
@@ -192,12 +192,12 @@ namespace mrs
 		vmaDestroyBuffer(_allocator, staging_buffer.buffer, staging_buffer.allocation);
 
 		_deletion_queue.Push([=]()
-							 {
-			vmaDestroyBuffer(_allocator, mesh->_buffer.buffer, mesh->_buffer.allocation);
+			{
+				vmaDestroyBuffer(_allocator, mesh->_buffer.buffer, mesh->_buffer.allocation);
 
-			if (mesh->_index_count > 0) {
-				vmaDestroyBuffer(_allocator, mesh->_index_buffer.buffer, mesh->_index_buffer.allocation);
-			} });
+				if (mesh->_index_count > 0) {
+					vmaDestroyBuffer(_allocator, mesh->_index_buffer.buffer, mesh->_index_buffer.allocation);
+				} });
 	}
 
 	void Renderer::UploadResources()
@@ -234,14 +234,14 @@ namespace mrs
 			}
 
 			_deletion_queue.Push([=]()
-								 { vkDestroySampler(_device.device, _default_image_sampler, nullptr); });
+				{ vkDestroySampler(_device.device, _default_image_sampler, nullptr); });
 		}
 	}
 
 	bool Renderer::LoadShaderModule(const char *path, VkShaderModule *module)
 	{
 		std::vector<char> shader_code;
-		util::read_file(path, shader_code);
+		tbx::read_file(path, shader_code);
 
 		if (shader_code.data() == nullptr)
 		{
@@ -300,6 +300,7 @@ namespace mrs
 
 		buffer_info.usage = buffer_usage;
 		buffer_info.size = (VkDeviceSize)size;
+		buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		VmaAllocationCreateInfo alloc_info = {};
 		alloc_info.usage = memory_usage;
@@ -316,10 +317,10 @@ namespace mrs
 		// Instance
 		vkb::InstanceBuilder builder;
 		auto intance_result = builder.set_app_name("First App")
-								  .request_validation_layers(true)
-								  .require_api_version(1, 2, 0)
-								  .use_default_debug_messenger()
-								  .build();
+			.request_validation_layers(true)
+			.require_api_version(1, 2, 0)
+			.use_default_debug_messenger()
+			.build();
 
 		vkb::Instance vkb_instance = intance_result.value();
 		_instance = vkb_instance.instance;
@@ -335,16 +336,16 @@ namespace mrs
 		VkPhysicalDeviceFeatures required_features = {};
 		required_features.multiDrawIndirect = VK_TRUE;
 		auto physical_device_result = device_selector
-										  .set_minimum_version(1, 1)
-										  .set_required_features(required_features)
-										  .set_surface(_surface)
-										  .select()
-										  .value();
+			.set_minimum_version(1, 1)
+			.set_required_features(required_features)
+			.set_surface(_surface)
+			.select()
+			.value();
 		_device.physical_device = physical_device_result.physical_device;
 		_physical_device_props = physical_device_result.properties;
 
 		// Create device and get queue and queue family indices
-		vkb::DeviceBuilder device_builder{physical_device_result};
+		vkb::DeviceBuilder device_builder{ physical_device_result };
 
 		VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters_features = {};
 		shader_draw_parameters_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
@@ -375,24 +376,24 @@ namespace mrs
 		vmaCreateAllocator(&allocator_info, &_allocator);
 
 		_deletion_queue.Push([=]()
-							 {
-			vmaDestroyAllocator(_allocator);
+			{
+				vmaDestroyAllocator(_allocator);
 
-			vkDestroyDevice(_device.device, nullptr);
-			vkb::destroy_debug_utils_messenger(_instance, _debug_messenger, nullptr);
+				vkDestroyDevice(_device.device, nullptr);
+				vkb::destroy_debug_utils_messenger(_instance, _debug_messenger, nullptr);
 
-			vkDestroySurfaceKHR(_instance, _surface, nullptr);
-			vkDestroyInstance(_instance, nullptr); });
+				vkDestroySurfaceKHR(_instance, _surface, nullptr);
+				vkDestroyInstance(_instance, nullptr); });
 	}
 
 	void Renderer::InitSwapchain()
 	{
-		vkb::SwapchainBuilder builder{_device.physical_device, _device.device, _surface};
+		vkb::SwapchainBuilder builder{ _device.physical_device, _device.device, _surface };
 		vkb::Swapchain vkb_swapchain = builder.use_default_format_selection()
-										   .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
-										   .set_desired_extent(_window->GetWidth(), _window->GetHeight())
-										   .build()
-										   .value();
+			.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+			.set_desired_extent(_window->GetWidth(), _window->GetHeight())
+			.build()
+			.value();
 
 		_swapchain = vkb_swapchain.swapchain;
 		_swapchain_image_format = vkb_swapchain.image_format;
@@ -420,12 +421,12 @@ namespace mrs
 		VK_CHECK(vkCreateImageView(_device.device, &depth_image_view_info, nullptr, &_depth_image_view));
 
 		_deletion_queue.Push([=]()
-							 {
-			vmaDestroyImage(_allocator, _depth_image.image, _depth_image.allocation);
-			vkDestroyImageView(_device.device, _depth_image_view, nullptr);
-			for (auto image_view : _swapchain_image_views) {
-				vkDestroyImageView(_device.device, image_view, nullptr);
-			} });
+			{
+				vmaDestroyImage(_allocator, _depth_image.image, _depth_image.allocation);
+				vkDestroyImageView(_device.device, _depth_image_view, nullptr);
+				for (auto image_view : _swapchain_image_views) {
+					vkDestroyImageView(_device.device, image_view, nullptr);
+				} });
 	}
 
 	void Renderer::InitCommands()
@@ -442,7 +443,7 @@ namespace mrs
 			vkAllocateCommandBuffers(_device.device, &alloc_info, &_frame_data[i].command_buffer);
 
 			_deletion_queue.Push([=]()
-								 { vkDestroyCommandPool(_device.device, _frame_data[i].command_pool, nullptr); });
+				{ vkDestroyCommandPool(_device.device, _frame_data[i].command_pool, nullptr); });
 		}
 
 		// Create one commmand pool & buffer for all upload/transfer operations
@@ -451,7 +452,7 @@ namespace mrs
 		vkAllocateCommandBuffers(_device.device, &alloc_info, &_upload_context.command_buffer);
 
 		_deletion_queue.Push([=]()
-							 { vkDestroyCommandPool(_device.device, _upload_context.command_pool, nullptr); });
+			{ vkDestroyCommandPool(_device.device, _upload_context.command_pool, nullptr); });
 	}
 
 	void Renderer::InitDefaultRenderPass()
@@ -485,7 +486,7 @@ namespace mrs
 		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		std::vector<VkAttachmentDescription> attachments = {color_attachment, depth_attachment};
+		std::vector<VkAttachmentDescription> attachments = { color_attachment, depth_attachment };
 
 		VkAttachmentReference color_attachment_reference = {};
 		color_attachment_reference.attachment = 0;
@@ -529,7 +530,7 @@ namespace mrs
 		depth_dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 		depth_dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-		std::vector<VkSubpassDependency> dependencies = {color_dependency, depth_dependency};
+		std::vector<VkSubpassDependency> dependencies = { color_dependency, depth_dependency };
 
 		VkRenderPassCreateInfo render_pass_info = {};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -547,7 +548,7 @@ namespace mrs
 		VK_CHECK(vkCreateRenderPass(_device.device, &render_pass_info, nullptr, &_render_pass));
 
 		_deletion_queue.Push([=]()
-							 { vkDestroyRenderPass(_device.device, _render_pass, nullptr); });
+			{ vkDestroyRenderPass(_device.device, _render_pass, nullptr); });
 	}
 
 	void Renderer::InitFramebuffers()
@@ -561,7 +562,7 @@ namespace mrs
 			frame_buffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			frame_buffer_info.pNext = nullptr;
 
-			std::vector<VkImageView> attachments = {_swapchain_image_views[i], _depth_image_view};
+			std::vector<VkImageView> attachments = { _swapchain_image_views[i], _depth_image_view };
 			frame_buffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
 			frame_buffer_info.pAttachments = attachments.data();
 
@@ -574,7 +575,7 @@ namespace mrs
 			VK_CHECK(vkCreateFramebuffer(_device.device, &frame_buffer_info, nullptr, &_framebuffers[i]));
 
 			_deletion_queue.Push([=]()
-								 { vkDestroyFramebuffer(_device.device, _framebuffers[i], nullptr); });
+				{ vkDestroyFramebuffer(_device.device, _framebuffers[i], nullptr); });
 		}
 	}
 
@@ -599,18 +600,18 @@ namespace mrs
 			vkCreateSemaphore(_device.device, &semaphore_info, nullptr, &frame.render_semaphore);
 
 			_deletion_queue.Push([=]()
-								 {
-				vkDestroyFence(_device.device, frame.render_fence, nullptr);
+				{
+					vkDestroyFence(_device.device, frame.render_fence, nullptr);
 
-				vkDestroySemaphore(_device.device, frame.present_semaphore, nullptr);
-				vkDestroySemaphore(_device.device, frame.render_semaphore, nullptr); });
+					vkDestroySemaphore(_device.device, frame.present_semaphore, nullptr);
+					vkDestroySemaphore(_device.device, frame.render_semaphore, nullptr); });
 		}
 
 		// Create sync structures for upload
 		fence_info.flags = 0;
 		vkCreateFence(_device.device, &fence_info, nullptr, &_upload_context.upload_fence);
 		_deletion_queue.Push([=]()
-							 { vkDestroyFence(_device.device, _upload_context.upload_fence, nullptr); });
+			{ vkDestroyFence(_device.device, _upload_context.upload_fence, nullptr); });
 	}
 
 	void Renderer::InitGlobalDescriptors()
@@ -640,7 +641,7 @@ namespace mrs
 
 			// Clean descriptor resources
 			_deletion_queue.Push([=]()
-								 { vmaDestroyBuffer(_allocator, _global_descriptor_buffer.buffer, _global_descriptor_buffer.allocation); });
+				{ vmaDestroyBuffer(_allocator, _global_descriptor_buffer.buffer, _global_descriptor_buffer.allocation); });
 		}
 
 		// ~ Object Data
@@ -680,7 +681,7 @@ namespace mrs
 
 				// Clean descriptor resources
 				_deletion_queue.Push([=]()
-									 { vmaDestroyBuffer(_allocator, _object_descriptor_buffer[i].buffer, _object_descriptor_buffer[i].allocation); });
+					{ vmaDestroyBuffer(_allocator, _object_descriptor_buffer[i].buffer, _object_descriptor_buffer[i].allocation); });
 			}
 		}
 
@@ -692,22 +693,27 @@ namespace mrs
 
 	void Renderer::UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index)
 	{
+		// Search for camera if none found each frame
 		if (!_camera)
 		{
 			auto cam_view = scene->Registry()->view<Transform, Camera>();
 			for (auto entity : cam_view)
 			{
 				_camera = &Entity(entity, scene).GetComponent<Camera>();
-				break;
 			}
 		}
 
-		_camera->UpdateViewProj();
 		void *global_data;
 		vmaMapMemory(_allocator, _global_descriptor_buffer.allocation, &global_data);
 
 		GlobalDescriptorData global_info = {};
-		global_info.view_proj = _camera->GetViewProj();
+
+		// ~ Camera
+		if (_camera)
+		{
+			_camera->UpdateViewProj();
+			global_info.view_proj = _camera->GetViewProj();
+		}
 
 		// ~ Directional light
 		auto lights_view = scene->Registry()->view<Transform, DirectionalLight>();
@@ -794,7 +800,7 @@ namespace mrs
 	{
 		// Get current frame index, current frame data, current cmd bufffer
 		uint32_t frame_index = GetCurrentFrame();
-		auto &frame = _frame_data[frame_index];
+		auto &frame = GetCurrentFrameData();
 		VkCommandBuffer cmd = frame.command_buffer;
 
 		// Wait till render fence has been flagged
@@ -805,40 +811,40 @@ namespace mrs
 		// Make sure image has been acquired before submitting
 		vkAcquireNextImageKHR(_device.device, _swapchain, time_out, frame.present_semaphore, VK_NULL_HANDLE, &_current_swapchain_image);
 
+		// Update global descriptors
+		UpdateGlobalDescriptors(scene, frame_index);
+
 		// ~ Begin Recording
 		VK_CHECK(vkResetCommandBuffer(cmd, 0));
 		VkCommandBufferBeginInfo cmd_begin_info = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 		VK_CHECK(vkBeginCommandBuffer(cmd, &cmd_begin_info));
-
-		// Update global descriptors
-		UpdateGlobalDescriptors(scene, frame_index);
 	}
 
 	void Renderer::MainPassStart(VkCommandBuffer cmd)
 	{
 		VkRect2D area = {};
-		area.extent = {_window->GetWidth(), _window->GetHeight()};
-		area.offset = {0, 0};
+		area.extent = { _window->GetWidth(), _window->GetHeight() };
+		area.offset = { 0, 0 };
 
 		// Begin main render pass
 		VkClearValue clear_value = {};
-		clear_value.color = {0.1f, 0.1f, 0.1f, 0.1f};
+		clear_value.color = { 0.1f, 0.1f, 0.1f, 0.1f };
 
 		VkClearValue depth_value = {};
-		depth_value.depthStencil = {1.0f, 0};
+		depth_value.depthStencil = { 1.0f, 0 };
 
-		VkClearValue clear_values[2] = {clear_value, depth_value};
+		VkClearValue clear_values[2] = { clear_value, depth_value };
 
 		VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(
 			GetCurrentFrameBuffer(), _render_pass, area,
 			clear_values, 2);
 		vkCmdBeginRenderPass(cmd, &render_pass_begin_info,
-							 VK_SUBPASS_CONTENTS_INLINE);
+			VK_SUBPASS_CONTENTS_INLINE);
 	}
 
 	void Renderer::MainPassEnd(VkCommandBuffer cmd)
 	{
-    	vkCmdEndRenderPass(cmd);
+		vkCmdEndRenderPass(cmd);
 	}
 
 	void Renderer::End()
@@ -847,6 +853,7 @@ namespace mrs
 		VkCommandBuffer cmd = frame.command_buffer;
 
 		VK_CHECK(vkEndCommandBuffer(cmd));
+
 		// Submit commands
 		VkSubmitInfo submit_info = {};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

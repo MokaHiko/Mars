@@ -5,6 +5,7 @@
 
 #include <entt/entt.hpp>
 
+#include "Core/Log.h"
 #include "Scene.h"
 namespace mrs
 {
@@ -42,6 +43,7 @@ namespace mrs
                 return _scene->_registry.get<T>(_id);
             }
 
+            MRS_ERROR("Entity has no such component!");
             throw std::runtime_error("Entity has no such component!");
         }
 

@@ -10,8 +10,8 @@ namespace mrs
     class ImGuiRenderPipeline : public IRenderPipeline
     {
     public:
-        ImGuiRenderPipeline(){};
-        ~ImGuiRenderPipeline(){};
+        ImGuiRenderPipeline() {};
+        ~ImGuiRenderPipeline() {};
 
         virtual void Init() override;
 

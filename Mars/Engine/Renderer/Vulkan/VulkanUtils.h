@@ -11,13 +11,15 @@
 #include <vulkan/vulkan.h>
 #include <unordered_map>
 
+#include "Core/Log.h"
+
 #define VK_CHECK(x)                                                     \
 	do                                                                  \
 	{                                                                   \
 		VkResult err = x;                                               \
 		if (err)                                                        \
 		{                                                               \
-			std::cout << "Detected Vulkan error: " << err << std::endl; \
+			MRS_ERROR("Detected Vulkan error: " + err); 				\
 			abort();                                                    \
 		}                                                               \
 	} while (0)
@@ -28,7 +30,7 @@ namespace vkutil {
 	struct DeletionQueue
 	{
 		// Pushes and takes ownership of callback in deletion queue for clean up in FIFO order
-		void Push(std::function<void()>&& fn)
+		void Push(std::function<void()> &&fn)
 		{
 			clean_functions.push_back(fn);
 		}
@@ -73,7 +75,7 @@ namespace vkutil {
 	public:
 
 		struct PoolSizes {
-			std::vector<std::pair<VkDescriptorType,float>> sizes =
+			std::vector<std::pair<VkDescriptorType, float>> sizes =
 			{
 				{ VK_DESCRIPTOR_TYPE_SAMPLER, 0.5f },
 				{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4.f },
@@ -93,12 +95,12 @@ namespace vkutil {
 		void CleanUp();
 
 		// Allocates single descriptor set
-		bool Allocate(VkDescriptorSet* set, VkDescriptorSetLayout layout);
+		bool Allocate(VkDescriptorSet *set, VkDescriptorSetLayout layout);
 
 		// Gets free descripor pool if available and allocates new ones when needed
 		// Pools are created with a factor of n * 1000 descriptor set sizes
 		VkDescriptorPool GetPool();
-		
+
 		// Rests all pools and stores in to free pools vector
 		void Reset();
 
@@ -125,18 +127,18 @@ namespace vkutil {
 			// DescriptorSets are indentified by bindings
 			std::vector<VkDescriptorSetLayoutBinding> bindings;
 
-			bool operator==(const DescriptorLayoutInfo& other) const;
+			bool operator==(const DescriptorLayoutInfo &other) const;
 
 			size_t Hash() const;
 		};
 
-		VkDescriptorSetLayout CreateDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo* info);
+		VkDescriptorSetLayout CreateDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *info);
 	private:
 
 		// Hash for Descriptor Set Layout
 		struct DescriptorLayoutHash
 		{
-			std::size_t operator()(const DescriptorLayoutInfo& k) const {
+			std::size_t operator()(const DescriptorLayoutInfo &k) const {
 				return k.Hash();
 			}
 		};
@@ -152,7 +154,7 @@ namespace vkutil {
 	public:
 
 		// Creates and returns builder with reference to cache and descriptor allocator
-		static DescriptorBuilder Begin(DescriptorLayoutCache* layout_cache, DescriptorAllocator* _descriptor_allocator) {
+		static DescriptorBuilder Begin(DescriptorLayoutCache *layout_cache, DescriptorAllocator *_descriptor_allocator) {
 			DescriptorBuilder builder = {};
 			builder._cache = layout_cache;
 			builder._allocator = _descriptor_allocator;
@@ -161,21 +163,21 @@ namespace vkutil {
 		};
 
 		// Queues buffer to descriptor binding
-		DescriptorBuilder& BindBuffer(uint32_t binding, VkDescriptorBufferInfo* buffer_info, VkDescriptorType type, VkShaderStageFlags shader_stage);
+		DescriptorBuilder &BindBuffer(uint32_t binding, VkDescriptorBufferInfo *buffer_info, VkDescriptorType type, VkShaderStageFlags shader_stage);
 
 		// Queues image to descriptor binding
-		DescriptorBuilder& BindImage(uint32_t binding, VkDescriptorImageInfo* image_info, VkDescriptorType type, VkShaderStageFlags shader_stage);
+		DescriptorBuilder &BindImage(uint32_t binding, VkDescriptorImageInfo *image_info, VkDescriptorType type, VkShaderStageFlags shader_stage);
 
-		bool Build(VkDescriptorSet* set, VkDescriptorSetLayout* layout);
+		bool Build(VkDescriptorSet *set, VkDescriptorSetLayout *layout);
 	private:
 		std::vector<VkWriteDescriptorSet> _writes;
 		std::vector<VkDescriptorSetLayoutBinding> _bindings;
 
-		DescriptorLayoutCache* _cache;
-		DescriptorAllocator* _allocator;
+		DescriptorLayoutCache *_cache;
+		DescriptorAllocator *_allocator;
 	};
 
 	// Creates descriptor pool given sizes. Should only be used by DescriptorAllocator type
-	VkDescriptorPool create_pool(VkDevice device, const DescriptorAllocator::PoolSizes& pool_sizes, uint32_t count, VkDescriptorPoolCreateFlags create_flags);
+	VkDescriptorPool create_pool(VkDevice device, const DescriptorAllocator::PoolSizes &pool_sizes, uint32_t count, VkDescriptorPoolCreateFlags create_flags);
 }
 #endif

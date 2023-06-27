@@ -15,18 +15,19 @@ namespace mrs
     class Scene
     {
     public:
-        Scene& operator=(const Scene& other) = delete;
-        Scene(const Scene& other) = delete;
+        Scene &operator=(const Scene &other) = delete;
+        Scene(const Scene &other) = delete;
 
-        Scene() {};
-        ~Scene() {};
+        Scene();
+        ~Scene();
 
-        entt::registry* Registry() {
+        entt::registry *Registry()
+        {
             return &_registry;
         }
-        
+
         // Create and returns entity
-        Entity Instantiate(const std::string& name = "", const glm::vec3& position = {});
+        Entity Instantiate(const std::string &name = "", const glm::vec3 &position = {});
 
         // Queues entity for destruction at end of frame
         void QueueDestroy(Entity entity);

@@ -16,6 +16,14 @@
 #include "Layer.h"
 
 namespace mrs {
+
+	struct ApplicationRequirements
+	{
+		size_t virtual_memory = 0;
+		size_t physical_memory = 0;
+	};
+
+	// Base class to be inherited by Mars applications
 	class Application
 	{
 	public:
@@ -23,6 +31,9 @@ namespace mrs {
 		virtual ~Application();
 
 		void Run();
+
+		// Polls events and dispatches to layers return false if quit
+		bool PollEvents();
 
 		void PushLayer(Layer* layer);
 		void PopLayer(Layer* layer);
@@ -52,6 +63,7 @@ namespace mrs {
 		// Controller layers
 		LayerStack _layer_stack;
 
+		// Application singleton instance
 		static Application* _instance;
 	};
 

@@ -11,33 +11,28 @@ void mrs::MeshRenderPipeline::InitDescriptors()
     VkDescriptorImageInfo shadow_map_image_info = {};
     shadow_map_image_info.sampler = _shadow_map_sampler;
     shadow_map_image_info.imageView = _offscreen_depth_image_view;
-    shadow_map_image_info.imageLayout =
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    shadow_map_image_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
-    vkutil::DescriptorBuilder::Begin(_renderer->_descriptor_layout_cache.get(),
-                                     _renderer->_descriptor_allocator.get())
-        .BindImage(0, &shadow_map_image_info,
-                   VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                   VK_SHADER_STAGE_FRAGMENT_BIT)
+    vkutil::DescriptorBuilder::Begin(_renderer->_descriptor_layout_cache.get(), _renderer->_descriptor_allocator.get())
+        .BindImage(0, &shadow_map_image_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .Build(&_shadow_map_descriptor, &_shadow_map_descriptor_layout);
 }
 
 void mrs::MeshRenderPipeline::InitPipelineLayout()
 {
     // Create pipeline layout
-    VkPipelineLayoutCreateInfo pipeline_layout_info =
-        vkinit::pipeline_layout_create_info();
+    VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
 
     // Shadow Descriptor
     std::vector<VkDescriptorSetLayout> descriptor_layouts = {
         _global_descriptor_set_layout, _object_descriptor_set_layout,
-        _default_image_set_layout, _shadow_map_descriptor_layout};
-    pipeline_layout_info.setLayoutCount =
-        static_cast<uint32_t>(descriptor_layouts.size());
+        _default_image_set_layout, _shadow_map_descriptor_layout };
+
+    pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
     pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
 
     VK_CHECK(vkCreatePipelineLayout(_device->device, &pipeline_layout_info,
-                                    nullptr, &_default_pipeline_layout));
+        nullptr, &_default_pipeline_layout));
 }
 
 void mrs::MeshRenderPipeline::Init()
@@ -56,11 +51,8 @@ void mrs::MeshRenderPipeline::InitPipelines()
     InitMeshPipeline();
 }
 
-void mrs::MeshRenderPipeline::Compute(VkCommandBuffer cmd,
-                                      uint32_t current_frame) {}
-
 void mrs::MeshRenderPipeline::Begin(VkCommandBuffer cmd,
-                                    uint32_t current_frame)
+    uint32_t current_frame)
 {
     DrawObjects(cmd, _scene);
 }
@@ -69,22 +61,18 @@ void mrs::MeshRenderPipeline::End(VkCommandBuffer cmd)
 {
 }
 
-void mrs::MeshRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd) 
+void mrs::MeshRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd)
 {
     // Draw to offscreen frame buffer for shadow map
     VkRect2D area = {};
-    area.extent = {_window->GetWidth(), _window->GetHeight()};
-    area.offset = {0, 0};
+    area.extent = { _window->GetWidth(), _window->GetHeight() };
+    area.offset = { 0, 0 };
 
     VkClearValue depth_value = {};
-    depth_value.depthStencil = {1.0f, 0};
+    depth_value.depthStencil = { 1.0f, 0 };
 
-    VkRenderPassBeginInfo offscreen_render_pass_begin_info =
-        vkinit::render_pass_begin_info(_offscreen_framebuffer,
-                                       _offscreen_render_pass, area, &depth_value,
-                                       1);
-    vkCmdBeginRenderPass(cmd, &offscreen_render_pass_begin_info,
-                         VK_SUBPASS_CONTENTS_INLINE);
+    VkRenderPassBeginInfo offscreen_render_pass_begin_info = vkinit::render_pass_begin_info(_offscreen_framebuffer, _offscreen_render_pass, area, &depth_value, 1);
+    vkCmdBeginRenderPass(cmd, &offscreen_render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
     DrawShadowMap(cmd, _scene);
     vkCmdEndRenderPass(cmd);
 }
@@ -169,9 +157,9 @@ void mrs::MeshRenderPipeline::InitMeshPipeline()
     vkutil::PipelineBuilder pipeline_builder = {};
 
     // Pipeline view port
-    pipeline_builder._scissor.extent = {_window->GetWidth(),
-                                        _window->GetHeight()};
-    pipeline_builder._scissor.offset = {0, 0};
+    pipeline_builder._scissor.extent = { _window->GetWidth(),
+                                        _window->GetHeight() };
+    pipeline_builder._scissor.offset = { 0, 0 };
 
     pipeline_builder._viewport.x = 0.0f;
     pipeline_builder._viewport.y = 0.0f;
@@ -184,50 +172,34 @@ void mrs::MeshRenderPipeline::InitMeshPipeline()
     bool loaded = false;
     VkShaderModule vertex_shader_module, fragment_shader_module = {};
     loaded = _renderer->LoadShaderModule("Assets/Shaders/default_shader.vert.spv",
-                                         &vertex_shader_module);
+        &vertex_shader_module);
     loaded = _renderer->LoadShaderModule("Assets/Shaders/default_shader.frag.spv",
-                                         &fragment_shader_module);
+        &fragment_shader_module);
 
-    pipeline_builder._shader_stages.push_back(
-        vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT,
-                                                  vertex_shader_module));
-    pipeline_builder._shader_stages.push_back(
-        vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                  fragment_shader_module));
+    pipeline_builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader_module));
+    pipeline_builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader_module));
 
     // Vertex input (Primitives and Vertex Input Descriptions
-    pipeline_builder._input_assembly =
-        vkinit::pipeline_input_assembly_state_create_info(
-            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    pipeline_builder._input_assembly = vkinit::pipeline_input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     VertexInputDescription &vb_desc = Vertex::GetDescription();
 
-    pipeline_builder._vertex_input_info =
-        vkinit::pipeline_vertex_input_state_create_info();
+    pipeline_builder._vertex_input_info = vkinit::pipeline_vertex_input_state_create_info();
 
-    pipeline_builder._vertex_input_info.vertexBindingDescriptionCount =
-        static_cast<uint32_t>(vb_desc.bindings.size());
-    pipeline_builder._vertex_input_info.pVertexBindingDescriptions =
-        vb_desc.bindings.data();
+    pipeline_builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(vb_desc.bindings.size());
+    pipeline_builder._vertex_input_info.pVertexBindingDescriptions = vb_desc.bindings.data();
 
-    pipeline_builder._vertex_input_info.vertexAttributeDescriptionCount =
-        static_cast<uint32_t>(vb_desc.attributes.size());
-    pipeline_builder._vertex_input_info.pVertexAttributeDescriptions =
-        vb_desc.attributes.data();
+    pipeline_builder._vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(vb_desc.attributes.size());
+    pipeline_builder._vertex_input_info.pVertexAttributeDescriptions = vb_desc.attributes.data();
 
     // Graphics Settings
-    pipeline_builder._rasterizer =
-        vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
-    pipeline_builder._multisampling =
-        vkinit::pipeline_mulitisample_state_create_info();
-    pipeline_builder._color_blend_attachment =
-        vkinit::pipeline_color_blend_attachment_state();
-    pipeline_builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(
-        true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+    pipeline_builder._rasterizer = vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
+    pipeline_builder._multisampling = vkinit::pipeline_mulitisample_state_create_info();
+    pipeline_builder._color_blend_attachment = vkinit::pipeline_color_blend_attachment_state();
+    pipeline_builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
     pipeline_builder._pipeline_layout = _default_pipeline_layout;
 
-    _default_pipeline =
-        pipeline_builder.Build(_device->device, _default_render_pass);
+    _default_pipeline = pipeline_builder.Build(_device->device, _default_render_pass);
 
     if (_default_pipeline == VK_NULL_HANDLE)
     {
@@ -238,9 +210,9 @@ void mrs::MeshRenderPipeline::InitMeshPipeline()
     vkDestroyShaderModule(_device->device, fragment_shader_module, nullptr);
     vkDestroyShaderModule(_device->device, vertex_shader_module, nullptr);
     _renderer->GetDeletionQueue().Push([=]()
-                                       {
-    vkDestroyPipelineLayout(_device->device, _default_pipeline_layout, nullptr);
-    vkDestroyPipeline(_device->device, _default_pipeline, nullptr); });
+        {
+            vkDestroyPipelineLayout(_device->device, _default_pipeline_layout, nullptr);
+            vkDestroyPipeline(_device->device, _default_pipeline, nullptr); });
 }
 
 void mrs::MeshRenderPipeline::InitIndirectCommands()
@@ -253,16 +225,16 @@ void mrs::MeshRenderPipeline::InitIndirectCommands()
     {
         _indirect_buffers[i] =
             _renderer->CreateBuffer(_renderer->PadToStorageBufferSize(
-                                        _renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand))) *
-                                        max_indirect_commands,
-                                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                        VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
-                                        VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                    VMA_MEMORY_USAGE_CPU_TO_GPU, 0);
+                _renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand))) *
+                max_indirect_commands,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
+                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VMA_MEMORY_USAGE_CPU_TO_GPU, 0);
 
         _renderer->GetDeletionQueue().Push([=]()
-                                           { vmaDestroyBuffer(_renderer->GetAllocator(), _indirect_buffers[i].buffer,
-                                                              _indirect_buffers[i].allocation); });
+            { vmaDestroyBuffer(_renderer->GetAllocator(), _indirect_buffers[i].buffer,
+                _indirect_buffers[i].allocation); });
     }
 }
 
@@ -284,7 +256,7 @@ std::vector<mrs::MeshRenderPipeline::IndirectBatch> mrs::MeshRenderPipeline::Get
 
         // Check if new batch
         bool new_batch = renderable.material.get() != last_material ||
-                         renderable.mesh.get() != last_mesh;
+            renderable.mesh.get() != last_mesh;
         if (new_batch)
         {
             IndirectBatch batch = {};
@@ -319,9 +291,9 @@ void mrs::MeshRenderPipeline::InitOffScreenPipeline()
     vkutil::PipelineBuilder pipeline_builder = {};
 
     // Pipeline view port
-    pipeline_builder._scissor.extent = {_window->GetWidth(),
-                                        _window->GetHeight()};
-    pipeline_builder._scissor.offset = {0, 0};
+    pipeline_builder._scissor.extent = { _window->GetWidth(),
+                                        _window->GetHeight() };
+    pipeline_builder._scissor.offset = { 0, 0 };
 
     pipeline_builder._viewport.x = 0.0f;
     pipeline_builder._viewport.y = 0.0f;
@@ -333,61 +305,45 @@ void mrs::MeshRenderPipeline::InitOffScreenPipeline()
     // Shaders modules
     bool loaded = false;
     VkShaderModule vertex_shader_module;
-    loaded = _renderer->LoadShaderModule(
-        "Assets/Shaders/offscreen_shader.vert.spv", &vertex_shader_module);
-    pipeline_builder._shader_stages.push_back(
-        vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT,
-                                                  vertex_shader_module));
+    loaded = _renderer->LoadShaderModule("Assets/Shaders/offscreen_shader.vert.spv", &vertex_shader_module);
+    pipeline_builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader_module));
 
     // Vertex input (Primitives and Vertex Input Descriptions
-    pipeline_builder._input_assembly =
-        vkinit::pipeline_input_assembly_state_create_info(
-            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    pipeline_builder._input_assembly = vkinit::pipeline_input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     VertexInputDescription &vb_desc = Vertex::GetDescription();
 
-    pipeline_builder._vertex_input_info =
-        vkinit::pipeline_vertex_input_state_create_info();
+    pipeline_builder._vertex_input_info = vkinit::pipeline_vertex_input_state_create_info();
 
-    pipeline_builder._vertex_input_info.vertexBindingDescriptionCount =
-        static_cast<uint32_t>(vb_desc.bindings.size());
-    pipeline_builder._vertex_input_info.pVertexBindingDescriptions =
-        vb_desc.bindings.data();
+    pipeline_builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(vb_desc.bindings.size());
+    pipeline_builder._vertex_input_info.pVertexBindingDescriptions = vb_desc.bindings.data();
 
-    pipeline_builder._vertex_input_info.vertexAttributeDescriptionCount =
-        static_cast<uint32_t>(vb_desc.attributes.size());
-    pipeline_builder._vertex_input_info.pVertexAttributeDescriptions =
-        vb_desc.attributes.data();
+    pipeline_builder._vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(vb_desc.attributes.size());
+    pipeline_builder._vertex_input_info.pVertexAttributeDescriptions = vb_desc.attributes.data();
 
     // Graphics Settings
 
     // Disable cull so all faces contribute to shadows
-    pipeline_builder._rasterizer =
-        vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
+    pipeline_builder._rasterizer = vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
     pipeline_builder._rasterizer.cullMode = VK_CULL_MODE_NONE;
 
-    pipeline_builder._multisampling =
-        vkinit::pipeline_mulitisample_state_create_info();
+    pipeline_builder._multisampling = vkinit::pipeline_mulitisample_state_create_info();
     pipeline_builder._color_blend_attachment = {};
-    pipeline_builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(
-        true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+    pipeline_builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
     // Offscreen specific
 
     // Create pipeline layout
-    VkPipelineLayoutCreateInfo pipeline_layout_info =
-        vkinit::pipeline_layout_create_info();
+    VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
 
     std::vector<VkDescriptorSetLayout> descriptor_layouts = {
         _global_descriptor_set_layout, _object_descriptor_set_layout,
-        _default_image_set_layout};
-    pipeline_layout_info.setLayoutCount =
-        static_cast<uint32_t>(descriptor_layouts.size());
+        _default_image_set_layout };
+    pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
     pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
 
     pipeline_builder._pipeline_layout = _default_pipeline_layout;
 
-    _offscreen_render_pipeline =
-        pipeline_builder.Build(_device->device, _offscreen_render_pass, true);
+    _offscreen_render_pipeline = pipeline_builder.Build(_device->device, _offscreen_render_pass, true);
 
     if (_offscreen_render_pipeline == VK_NULL_HANDLE)
     {
@@ -397,7 +353,7 @@ void mrs::MeshRenderPipeline::InitOffScreenPipeline()
     // Clean Up
     vkDestroyShaderModule(_device->device, vertex_shader_module, nullptr);
     _renderer->GetDeletionQueue().Push([=]()
-                                       { vkDestroyPipeline(_device->device, _offscreen_render_pipeline, nullptr); });
+        { vkDestroyPipeline(_device->device, _offscreen_render_pipeline, nullptr); });
 }
 
 void mrs::MeshRenderPipeline::DrawShadowMap(VkCommandBuffer cmd, Scene *scene)
@@ -407,13 +363,13 @@ void mrs::MeshRenderPipeline::DrawShadowMap(VkCommandBuffer cmd, Scene *scene)
 
     // Bind global and object descriptors
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      _offscreen_render_pipeline);
+        _offscreen_render_pipeline);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            _default_pipeline_layout, 0, 1,
-                            &_global_descriptor_set, 0, nullptr);
+        _default_pipeline_layout, 0, 1,
+        &_global_descriptor_set, 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            _default_pipeline_layout, 1, 1, &_frame_object_set, 0,
-                            nullptr);
+        _default_pipeline_layout, 1, 1, &_frame_object_set, 0,
+        nullptr);
 
     // Sort rederables into batches
     std::vector<IndirectBatch> batches = GetRenderablesAsBatches(scene);
@@ -427,7 +383,7 @@ void mrs::MeshRenderPipeline::DrawShadowMap(VkCommandBuffer cmd, Scene *scene)
         if (batch.mesh->_index_count > 0)
         {
             vkCmdBindIndexBuffer(cmd, batch.mesh->_index_buffer.buffer, 0,
-                                 VK_INDEX_TYPE_UINT32);
+                VK_INDEX_TYPE_UINT32);
         }
 
         // Draw batch
@@ -435,7 +391,7 @@ void mrs::MeshRenderPipeline::DrawShadowMap(VkCommandBuffer cmd, Scene *scene)
         uint32_t indirect_offset = batch.first * batch_stride;
 
         vkCmdDrawIndexedIndirect(cmd, _indirect_buffers[n_frame].buffer,
-                                 indirect_offset, batch.count, batch_stride);
+            indirect_offset, batch.count, batch_stride);
     }
 }
 
@@ -448,24 +404,21 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
     extent.height = _window->GetHeight();
 
     VkFormat depth_format = VK_FORMAT_D32_SFLOAT;
-    VkImageCreateInfo depth_image_info = vkinit::image_create_info(
-        depth_format, extent,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    VkImageCreateInfo depth_image_info = vkinit::image_create_info(depth_format, extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
     VmaAllocationCreateInfo vmaaloc_info = {};
     vmaaloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-    vmaaloc_info.requiredFlags =
-        VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    vmaaloc_info.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     VK_CHECK(vmaCreateImage(_renderer->GetAllocator(), &depth_image_info,
-                            &vmaaloc_info, &_offscreen_depth_image.image,
-                            &_offscreen_depth_image.allocation, nullptr));
+        &vmaaloc_info, &_offscreen_depth_image.image,
+        &_offscreen_depth_image.allocation, nullptr));
 
     // Create offscreen attachment view
     VkImageViewCreateInfo depth_image_view_info = vkinit::image_view_create_info(
         _offscreen_depth_image.image, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT);
     VK_CHECK(vkCreateImageView(_device->device, &depth_image_view_info, nullptr,
-                               &_offscreen_depth_image_view));
+        &_offscreen_depth_image_view));
 
     // Create render pass
     VkAttachmentDescription depth_attachment = {};
@@ -505,7 +458,7 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
     dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL; // our color render pass
     dependencies[1].srcStageMask =
         VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT; // after depth testing has
-                                                   // finished
+    // finished
     dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     dependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     dependencies[1].dstAccessMask =
@@ -528,7 +481,7 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
     _offscreen_render_pass_info.pDependencies = dependencies.data();
 
     VK_CHECK(vkCreateRenderPass(_device->device, &_offscreen_render_pass_info,
-                                nullptr, &_offscreen_render_pass));
+        nullptr, &_offscreen_render_pass));
 
     // Create Frame buffer
     VkFramebufferCreateInfo offscreen_framebuffer_info = {};
@@ -543,7 +496,7 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
     offscreen_framebuffer_info.layers = 1;
 
     VK_CHECK(vkCreateFramebuffer(_device->device, &offscreen_framebuffer_info,
-                                 nullptr, &_offscreen_framebuffer));
+        nullptr, &_offscreen_framebuffer));
 
     // Shadow map image sampeler
     VkSamplerCreateInfo shadow_map_sampler_info = vkinit::sampler_create_info(
@@ -556,14 +509,14 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
     shadow_map_sampler_info.maxLod = 1.0f;
 
     VK_CHECK(vkCreateSampler(_device->device, &shadow_map_sampler_info, nullptr,
-                             &_shadow_map_sampler));
+        &_shadow_map_sampler));
 
     _renderer->GetDeletionQueue().Push([=]()
-                                       {
-    vkDestroySampler(_device->device, _shadow_map_sampler, nullptr);
-    vkDestroyFramebuffer(_device->device, _offscreen_framebuffer, nullptr);
-    vkDestroyRenderPass(_device->device, _offscreen_render_pass, nullptr);
-    vkDestroyImageView(_device->device, _offscreen_depth_image_view, nullptr);
-    vmaDestroyImage(_renderer->GetAllocator(), _offscreen_depth_image.image,
-                    _offscreen_depth_image.allocation); });
+        {
+            vkDestroySampler(_device->device, _shadow_map_sampler, nullptr);
+            vkDestroyFramebuffer(_device->device, _offscreen_framebuffer, nullptr);
+            vkDestroyRenderPass(_device->device, _offscreen_render_pass, nullptr);
+            vkDestroyImageView(_device->device, _offscreen_depth_image_view, nullptr);
+            vmaDestroyImage(_renderer->GetAllocator(), _offscreen_depth_image.image,
+                _offscreen_depth_image.allocation); });
 }

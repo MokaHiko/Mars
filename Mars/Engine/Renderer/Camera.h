@@ -43,25 +43,31 @@ namespace mrs {
 		// Returns reference to position
 		inline glm::vec3& GetPosition() { return _position; }
 
+		// Update camera 
 		void UpdateViewProj();
 
 		// Changes camera type
 		void SetType(CameraType type);
+
+		// Returns reference to yaw
+		float& GetYaw() {return _yaw;}
+
+		// Returns reference to pitch
+		float& GetPitch() {return _pitch;}
 	public:
         // Camera Settings
-        float _yaw = -90.0f;
-        float _pitch = 0.0f;
-
         float _speed = 2.5f;
         float _zoom = 45.0f;
         float _sensitivity = 0.1f;
-
     private:
         // Camera Relative Position Attributes
 		glm::vec3 _front{ 0.0f };
 		glm::vec3 _right{ 0.0f };
 		glm::vec3 _up{ 0.0f };
         glm::vec3 _worldup = glm::vec3(0, 1, 0);
+
+        float _yaw = -90.0f;
+        float _pitch = 0.0f;
 	private:
 		CameraType _type;
 

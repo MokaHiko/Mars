@@ -1,7 +1,6 @@
 #include "Window.h"
 
 #include <Core/Input.h>
-#include <imgui_impl_sdl2.h>
 
 namespace mrs
 {
@@ -23,54 +22,6 @@ namespace mrs
 	{
 		SDL_DestroyWindow(_window);
 		SDL_Quit();
-	}
-
-	bool Window::Update()
-	{
-		while (SDL_PollEvent(&_event))
-		{
-			if (_event.type == SDL_QUIT)
-			{
-				return false;
-			}
-
-			ImGui_ImplSDL2_ProcessEvent(&_event);
-			int32_t key = (int32_t)_event.key.keysym.sym;
-			switch (_event.type)
-			{
-			case SDL_QUIT:
-				return false;
-				break;
-			case SDL_KEYDOWN:
-				if (key < 322)
-				{
-					Input::Keys[_event.key.keysym.sym] = true;
-				}
-				break;
-			case SDL_KEYUP:
-				if (key < 322)
-				{
-					Input::Keys[_event.key.keysym.sym] = false;
-				}
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-				if (_event.button.button < 4)
-				{
-					Input::MouseButtons[_event.button.button] = true;
-				}
-				break;
-			case SDL_MOUSEBUTTONUP:
-				if (_event.button.button < 4)
-				{
-					Input::MouseButtons[_event.button.button] = false;
-				}
-				break;
-			default:
-				break;
-			}
-		}
-
-		return true;
 	}
 
 	void *Window::GetNativeWindow()

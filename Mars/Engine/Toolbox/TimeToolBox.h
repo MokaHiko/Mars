@@ -1,10 +1,10 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef TIMETOOLBOX_H
+#define TIMETOOLBOX_H
 
 #pragma once
 
-namespace util {
-
+namespace tbx
+{
     // A timer that takes in a function to be called when out object is out of scope
     class Timer
     {
@@ -18,9 +18,6 @@ namespace util {
         std::function<void(const Timer&)> callback_;
         unsigned int then_, now_;
     };
-
-	// Resizes buffer and returns raw file contents
-	void read_file(const char* file_path, std::vector<char>& buffer);
 }
 
 #endif

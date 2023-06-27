@@ -11,12 +11,11 @@ namespace mrs
     class MeshRenderPipeline : public IRenderPipeline
     {
     public:
-        MeshRenderPipeline(){};
-        ~MeshRenderPipeline(){};
+        MeshRenderPipeline() {};
+        ~MeshRenderPipeline() {};
 
         virtual void Init() override;
 
-        virtual void Compute(VkCommandBuffer cmd, uint32_t current_frame) override;
         virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame) override;
         virtual void End(VkCommandBuffer cmd) override;
 

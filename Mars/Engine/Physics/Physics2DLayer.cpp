@@ -62,10 +62,14 @@ namespace mrs
 
 			Transform &transform = e.GetComponent<Transform>();
 
+			// Get physics transform components
 			b2Vec2 new_pos = rb.body->GetPosition();
 			float rot_z = rb.body->GetAngle();
-			transform.position = glm::vec3(new_pos.x, new_pos.y, 0.0f);
-			transform.rotation = glm::vec3(0, 0, rot_z);
+
+			// Update transform
+			transform.position.x = new_pos.x;
+			transform.position.y = new_pos.y;
+			transform.rotation.z = rot_z;
 		}
 	}
 
@@ -100,7 +104,7 @@ namespace mrs
 		}
 		else
 		{
-			throw std::runtime_error("Uknown Rigidbody type!");
+			MRS_ERROR("Uknown rigidbody type!");
 		}
 	}
 

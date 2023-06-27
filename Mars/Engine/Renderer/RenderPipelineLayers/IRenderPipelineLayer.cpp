@@ -48,22 +48,15 @@ namespace mrs
 		{
 			IRenderPipeline* pipeline = (*it);
 
-			// Get scene handle
+			// Get scene handles
 			pipeline->_scene = Application::GetInstance().GetScene();
 			pipeline->_window = Application::GetInstance().GetWindow().get();
-
-			// Acquire default pipeline handles
 			pipeline->_renderer = _renderer.get();
 			pipeline->_device = &_renderer->GetDevice();
-
-			// Get default render pass
 			pipeline->_default_render_pass = _renderer->GetRenderPass();
-
-			// Get global descriptors
 			pipeline->_global_descriptor_set_layout = _renderer->GetGlobalSetLayout();
 			pipeline->_object_descriptor_set_layout = _renderer->GetGlobalObjectSetLayout();
 			pipeline->_default_image_set_layout = _renderer->GetDefaultImageSetLayout();
-
 			pipeline->_global_descriptor_set = _renderer->GetGlobalDescriptorSet();
 
 			pipeline->Init();
@@ -72,6 +65,7 @@ namespace mrs
 
 	void IRenderPipelineLayer::OnDetatch()
 	{
+		_renderer->Shutdown();
 	}
 
 	void IRenderPipelineLayer::OnUpdate(float dt)
@@ -86,7 +80,7 @@ namespace mrs
 		// Compute shaders
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
-			(*it)->Compute(cmd, current_frame_index);
+			(*it)->Compute(cmd, current_frame_index, dt);
 		}
 
 		// Pre passes

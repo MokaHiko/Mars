@@ -19,7 +19,10 @@
 
 namespace mrs
 {
+	// Time out for render commands and fences 
 	static const uint64_t time_out = std::numeric_limits<uint64_t>::max();
+
+	// Maximum allowable frames in flight
 	static const uint32_t frame_overlaps = 2;
 
 	struct GraphicsSettings
@@ -33,12 +36,14 @@ namespace mrs
 		GraphicsSettings graphics_settings = {};
 	};
 
+	// Common object data unique to each entity (Model matrix, ...)
 	struct ObjectData
 	{
-		glm::vec4 color{1.0f};
-		glm::mat4 model_matrix{1.0f};
+		glm::vec4 color{ 1.0f };
+		glm::mat4 model_matrix{ 1.0f };
 	};
 
+	// Global shared scene data
 	struct GlobalDescriptorData
 	{
 		glm::mat4 view_proj;
@@ -56,8 +61,8 @@ namespace mrs
 		void Init();
 		void Shutdown();
 
-		// Called at start of frame, starting the recording of the command buffer
-		void Begin(Scene* scene);
+		// Starts the current frame and the recording of the command buffer
+		void Begin(Scene *scene);
 
 		// Starts the main render pass
 		void MainPassStart(VkCommandBuffer cmd);
@@ -68,12 +73,14 @@ namespace mrs
 		// Ends the command buffer recording and submits to queue
 		void End();
 
+		// Uploads resources stored in resource manager
 		void UploadResources();
 
+		// Gets handle to main renderpass camera
 		Camera *GetCamera() { return _camera; }
 
 		// Sets renderer camera
-		void SetCamera(Camera* camera) { _camera = camera; }
+		void SetCamera(Camera *camera) { _camera = camera; }
 
 		// Descriptor allocator and layout cache
 		std::shared_ptr<vkutil::DescriptorAllocator> _descriptor_allocator;
@@ -166,20 +173,20 @@ namespace mrs
 		void InitGlobalDescriptors();
 
 		// Update Global Descriptor Sets
-		void UpdateGlobalDescriptors(Scene* scene, uint32_t frame_index);
+		void UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index);
 	private:
 		// Handle to window being rendered to
 		const std::shared_ptr<Window> _window;
 
 		// Cameras perspective to render to
-		Camera* _camera = nullptr;
+		Camera *_camera = nullptr;
 
 		// Global descriptor
 		VkDescriptorSet _global_descriptor_set;
 		VkDescriptorSetLayout _global_descriptor_set_layout;
 		AllocatedBuffer _global_descriptor_buffer;
 
-		// Object descriptors (per frame)
+		// Global Object descriptors (per frame)
 		std::vector<VkDescriptorSet> _object_descriptor_set;
 		std::vector<AllocatedBuffer> _object_descriptor_buffer;
 		VkDescriptorSetLayout _object_descriptor_set_layout;
@@ -188,7 +195,6 @@ namespace mrs
 		VkDescriptorSetLayout _default_image_set_layout;
 
 		VulkanFrameContext _frame_data[frame_overlaps];
-
 	private:
 		VkInstance _instance = {};
 		VkSurfaceKHR _surface = {};
