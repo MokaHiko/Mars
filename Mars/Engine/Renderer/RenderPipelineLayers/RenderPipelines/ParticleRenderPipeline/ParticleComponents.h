@@ -19,50 +19,59 @@ namespace mrs
     struct ParticleSystem
     {
     public:
-        // Particle Properties
-        uint32_t max_particles = 256;
-        uint32_t live_particles = 0;
+        ParticleSystem()
+        {
+            texture = Material::Get("default_material");
+        };
 
+        // Color Gradient
+        glm::vec4 color_1 = glm::vec4(1.0f);
+        glm::vec4 color_2 = glm::vec4(1.0f);
+
+        // Shape
+        EmissionShape emission_shape = EmissionShape::Cone;
+        std::shared_ptr<Material> texture; 
+        float particle_size = 0.15f;
+
+        // Emission properties
+        uint32_t max_particles = 48;
+        uint32_t live_particles = 0;
         float life_time = 1.0f;
         float emission_rate = 10.0f;
-        float particle_size = 1.0f;
+        glm::vec2 velocity{ 10.0f, 25.0f };
 
-        EmissionShape emission_shape = EmissionShape::Cone;
-        std::shared_ptr<Material> texture;
-    public:
         bool running = true;
-        bool repeating = false;
-
-        // Duration of particle system if not repeating
-        float duration = 2.0f;
-
-        // initial velocity multiplier
-        glm::vec2 velocity{ 1.0f };
-        glm::vec3 color{ 1.0f };
-
-        // Time particle simulation has been running
-        float time = 0.0f;
+        bool repeating = true;
+        float duration = 2.0f; // Duration of particle system if not repeating
+        float time = 0.0f;  // Time particle simulation has been running
 
         void Play()
         {
+            if(running)
+            {
+                return;
+            }
+
             running = true;
             time = 0.0f;
         }
+
         void Stop()
         {
-            running = false;
-            live_particles = 0;
+            stop = true;
         }
+
         void Pause()
         {
             running = false;
             live_particles = 0;
         }
 
-        // Sets reset flag to true
-        void Reset() {
+        void Reset() 
+        {
             reset = true;
         };
+
     public:
         friend class ParticleRenderPipeline;
 
@@ -80,6 +89,9 @@ namespace mrs
 
         // Indicates whether or not particle system positins and velocities must be reset
         bool reset = false;
+
+        // Indiactes whether or not particles to stop 
+        bool stop = false;
 
         // Pipeline handle to cache offset when destroyed
         ParticleRenderPipeline *pipeline;

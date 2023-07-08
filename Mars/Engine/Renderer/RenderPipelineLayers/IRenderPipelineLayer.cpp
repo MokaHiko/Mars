@@ -75,13 +75,14 @@ namespace mrs
 
 		Scene* scene = Application::GetInstance().GetScene();
 
-		_renderer->Begin(scene);
-
-		// Compute shaders
+		// Compute Begin
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
-			(*it)->Compute(cmd, current_frame_index, dt);
+			(*it)->Compute(_renderer->GetCurrentFrameData().compute_command_buffer, current_frame_index, dt);
 		}
+
+		// Graphics Begin
+		_renderer->Begin(scene);
 
 		// Pre passes
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)

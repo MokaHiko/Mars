@@ -20,16 +20,20 @@ void mrs::InputLayer::OnEvent(Event &event)
 	case SDL_WINDOWEVENT_SHOWN:
 		break;
 	case SDL_KEYDOWN:
+		Input::LastKeys[event._event.key.keysym.scancode] = Input::Keys[event._event.key.keysym.scancode];
 		Input::Keys[event._event.key.keysym.scancode] = true;
 		break;
 	case SDL_KEYUP:
+		Input::LastKeys[event._event.key.keysym.scancode] = Input::Keys[event._event.key.keysym.scancode];
 		key = (int32_t)event._event.key.keysym.scancode;
 		Input::Keys[event._event.key.keysym.scancode] = false;
 		break;
 	case SDL_MOUSEBUTTONDOWN:
+		Input::LastMouseButtons[event._event.button.button] = Input::MouseButtons[event._event.button.button];
 		Input::MouseButtons[event._event.button.button] = true;
 		break;
 	case SDL_MOUSEBUTTONUP:
+		Input::LastMouseButtons[event._event.button.button] = Input::MouseButtons[event._event.button.button];
 		Input::MouseButtons[event._event.button.button] = false;
 		break;
 	case SDL_MOUSEMOTION:

@@ -13,6 +13,7 @@ namespace mrs
         ScriptableEntity();
         virtual ~ScriptableEntity();
 
+        virtual void OnCreate() {}
         virtual void OnStart() {}
         virtual void OnUpdate(float dt) {}
 
@@ -25,6 +26,13 @@ namespace mrs
             return _game_object.GetComponent<T>();
         }
 
+        // Finds first entity with the component type
+        template<typename T>
+        Entity FindEntityWithComponent()
+        {
+            return _game_object._scene->FindEntityWithComponent<T>();
+        }
+
         // Insantiates new entity
         Entity Insantiate(const std::string &name = "")
         {
@@ -35,6 +43,23 @@ namespace mrs
         void QueueDestroy()
         {
             _game_object._scene->QueueDestroy(_game_object);
+        }
+
+        template<typename ScriptType>
+        Entity FindEntityWithScript()
+        {
+            for(auto e: _game_object._scene->Registry()->view<Transform, Script>())
+            {
+                Entity entity{e, _game_object._scene};
+                auto& script_component = entity.GetComponent<Script>();
+
+                if(script_component.binding == typeid(ScriptType).name())
+                {
+                    return entity;
+                }
+            }
+
+            return {};
         }
 
         Entity _game_object = {};

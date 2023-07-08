@@ -12,7 +12,9 @@ namespace mrs {
 		static uint32_t window_size_x;
 		static uint32_t window_size_y;
 
+		static bool LastKeys[322];
 		static bool Keys[322];
+		static bool LastMouseButtons[4];
 		static bool MouseButtons[4];
 
 		static int last_x; // mouse position relative to window x 
@@ -29,8 +31,14 @@ namespace mrs {
 		// Returns true if key(key_code) is pressed
 		static bool IsKeyPressed(int key_code);
 
+		// Returns true if key (key_code) is pressed on the frame it is caleld
+		static bool IsKeyDown(int key_code);
+
 		// Returns true if mouse button (key_code) is pressed
 		static bool IsMouseButtonPressed(int key_code);
+
+		// Returns true if mouse button (key_code) is pressed on the frame it is caleld
+		static bool IsMouseButtonDown(int key_code);
 
 		// The value will be in the range -1 to 1 for keyboard and joystick input devices.
 		// If value is mouse it will be mouse delta

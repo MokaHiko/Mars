@@ -19,3 +19,6 @@
 [submodule "box2d"]
 	path = Vendor/box2d
 	url = https://github.com/erincatto/box2d.git
+[submodule "Vendor/yaml"]
+	path = Vendor/yaml
+	url = https://github.com/jbeder/yaml-cpp.git

@@ -39,6 +39,8 @@ namespace mrs {
 		static std::shared_ptr<Mesh> Create(const std::string& alias)
 		{
 			ResourceManager::Get()._meshes[alias] = std::make_shared<Mesh>();
+
+			ResourceManager::Get()._meshes[alias]->_mesh_name = alias;
 			return ResourceManager::Get()._meshes[alias];
 		}
 
@@ -52,6 +54,8 @@ namespace mrs {
 
 			return nullptr;
 		}
+
+		std::string _mesh_name;
 
 		uint32_t _index_count = 0;
 		uint32_t _vertex_count = 0;

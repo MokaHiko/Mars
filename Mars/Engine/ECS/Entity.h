@@ -27,6 +27,20 @@ namespace mrs
             return _scene->_registry.emplace<T>(_id, std::forward<Args>(args)...);
         }
 
+        // Removes component <T> from entity returns true if succeseful 
+        template <typename T, typename... Args>
+        bool RemoveComponent(Args &&...args)
+        {
+            if (HasComponent<T>())
+            {
+                return false;
+            }
+
+            // TODO: Event manager on remove compoenent/entity
+            _scene->_registry.remove<T>(_id);
+            return true;
+        }
+
         // Returns true if entity has component <T>
         template <typename T>
         bool HasComponent()
@@ -54,6 +68,7 @@ namespace mrs
         operator bool() const { return _id != entt::null; }
 
     private:
+        friend class Scene;
         friend class ScriptableEntity;
 
         // Entity handle

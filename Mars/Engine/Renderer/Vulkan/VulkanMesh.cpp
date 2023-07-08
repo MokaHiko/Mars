@@ -53,11 +53,13 @@ mrs::VertexInputDescription& mrs::Vertex::GetDescription()
 
 std::shared_ptr<mrs::Mesh> mrs::Mesh::LoadFromAsset(const std::string& path, const std::string& alias = "")
 {
+	// Check if already loaded
 	if (Mesh::Get(path) != nullptr) {
 		return Mesh::Get(path);
 	}
 
 	auto mesh = std::make_shared<Mesh>();
+	mesh->_mesh_name = alias;
 
 	if (!alias.empty()) {
 		ResourceManager::Get()._meshes[alias] = mesh;

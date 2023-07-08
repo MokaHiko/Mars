@@ -19,16 +19,22 @@ namespace mrs
 		}
 	}
 
-	Scene::Scene()
-	{
-	}
+	Scene::Scene(){}
 
 	Entity Scene::Instantiate(const std::string &name, const glm::vec3 &position)
 	{
+		Entity e;
+		if (!_free_queue.empty())
+		{
+			e = _free_queue.back();
+			_free_queue.pop_back();
+		}
+		else
+		{
+			e = Entity(_registry.create(), this);
+		}
 
-		Entity e = Entity(_registry.create(), this);
-
-		e.AddComponent<Tag>(name);
+		e.AddComponent<Tag>().tag = name;
 		e.AddComponent<Transform>();
 
 		return e;
@@ -36,11 +42,31 @@ namespace mrs
 
 	void Scene::QueueDestroy(Entity entity)
 	{
-        _destruction_queue.push_back(entity);
+		_destruction_queue.push_back(entity);
+	}
+
+	void Scene::FlushDestructionQueue()
+	{
+		for (Entity e : _destruction_queue)
+		{
+			Destroy(e);
+		};
+
+		if (!_destruction_queue.empty())
+		{
+			_destruction_queue.clear();
+		}
 	}
 
 	void Scene::Destroy(Entity entity)
 	{
+		// Remove all components from entity
+		for (auto [id, storage] : _registry.storage())
+		{
+			storage.remove(entity._id);
+		}
 
+		// Add to free to be recycled
+		_free_queue.push_back(entity);
 	}
 }

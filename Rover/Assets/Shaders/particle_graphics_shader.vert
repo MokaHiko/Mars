@@ -24,22 +24,23 @@ struct Particle
 
 struct ParticleParameters 
 {
-    //dela time in second
-    float life_time;
-    float dt;
+    // Color Gradient
+    vec4 color_1;
+    vec4 color_2;
 
-    // emission rate in seconds 
+    // Shape
+    float scale;
+
+    // Emission
+    float life_time; // particles lifetiem in seconds;
+    float dt; // delta time this frame in seconds
     float emission_rate;
     uint live_particles;
+    uint reset; // set to 1 if reset
 
-    // Offset into global particle buffer
-    uint buffer_offset;
-
-    // Offset into global particle buffer array
-    uint buffer_index;
-
-    // set to 1 if reset
-    uint reset;
+    // Buffer offsets
+    uint buffer_offset; // Offset into global particle buffer
+    uint buffer_index; // Offset into global particle buffer array
 };
 
 layout(set = 0, binding = 0) uniform GlobalBuffer{
@@ -69,17 +70,19 @@ void main()
 {
     const mat4 view_proj = _global_buffer.view_proj;
 
+    ParticleParameters particle_parameters = _particle_parameters_array.parameters[p_particle_system_count.count];
+    uint global_particle_index = (gl_InstanceIndex - gl_BaseInstance) + particle_parameters.buffer_index;
+
     mat4 model_matrix = _object_buffer.s_objects[gl_BaseInstance].model_matrix;
 
-    ParticleParameters _particle_parameters = _particle_parameters_array.parameters[p_particle_system_count.count];
-    uint global_particle_index = (gl_InstanceIndex - gl_BaseInstance) + _particle_parameters.buffer_index;
+    model_matrix[0][0] *= particle_parameters.scale;
+    model_matrix[1][1] *= particle_parameters.scale;
+    model_matrix[2][2] *= particle_parameters.scale;
 
-    float distance = length(_particles.particles[global_particle_index].position);
-    float drop_off_factor = 1.0f / (clamp(distance, 0.2f, 5.0f) * 0.5f);
-    v_color = _particles.particles[global_particle_index].color * drop_off_factor;
+    Particle particle = _particles.particles[global_particle_index];
+    v_color = particle.color;
     v_uv = _uv;
 
-    vec3 offset = vec3(_particles.particles[global_particle_index].position, 0.0f);
-    vec4 position = vec4(_position + offset, 1.0f);
-    gl_Position = view_proj * model_matrix * position;
+    vec4 pos = vec4(_position + vec3(particle.position, 0.0f), 1.0f);
+    gl_Position = view_proj * model_matrix * pos;
 }

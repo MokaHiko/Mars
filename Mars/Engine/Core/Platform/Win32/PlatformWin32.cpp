@@ -4,17 +4,54 @@
 #include <windows.h>
 
 #include "Core/Log.h"
+#include <stdarg.h>
+#include <stdio.h>
 
 namespace mrs
 {
-	void Platform::Log(const char *msg, LogLevel level)
+	void Platform::ConsoleWrite(const char *message, uint8_t color)
 	{
-		HANDLE h_console = GetStdHandle(STD_OUTPUT_HANDLE);
+		// Set color
+		HANDLE console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+		static uint8_t levels[6] = { 64, 2, 1, 8, 5, 5}; // FATAL, INFO, DEBUG, TRACE, WARN, ERROR
+		SetConsoleTextAttribute(console_handle, levels[color]);
 
-		WORD w_attribute = (int16_t)level;
-		SetConsoleTextAttribute(h_console, w_attribute);
+		// Output to debug console
+		OutputDebugStringA(message);
 
-		printf("%s\n", msg);
+		// Output to application console
+		uint64_t length = strlen(message);
+		LPDWORD number_written = 0;
+		WriteConsoleA(console_handle, message, (DWORD)length, number_written, 0);
+	}
+
+	void Platform::Log(LogLevel level, const char *msg, ...)
+	{
+		static const char* level_strings[6] =
+		{
+			"[Unknown]: ",
+			"[INFO]: ",
+			"[SUCCESS]: ",
+			"[TRACE]: ",
+			"[ERROR]: ",
+			"[WARN]: ",
+		};
+
+		// Buffer for log entries
+		const uint32_t msg_length = 32000;
+		char out_message[msg_length];
+		memset(out_message, 0, sizeof(out_message));
+
+		va_list arg_ptr;
+		va_start(arg_ptr, msg);
+		vsnprintf(out_message, msg_length, msg, arg_ptr);
+		va_end(arg_ptr);
+
+		// Format with level_string log name
+		char fout_message[msg_length];
+		sprintf(fout_message, "%s%s\n", level_strings[(uint8_t)level], out_message);
+
+		ConsoleWrite(fout_message, (uint8_t)level);
 	}
 
 	bool Platform::CheckStorage(size_t required_size)

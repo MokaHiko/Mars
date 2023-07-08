@@ -6,32 +6,10 @@
 
 namespace mrs
 {
-	Physics2DLayer::Physics2DLayer()
-	{
-	}
-
-	Physics2DLayer::~Physics2DLayer()
-	{
-	}
-
 	void Physics2DLayer::OnAttach()
 	{
-		// Get scene handle
+		_name = "Physics2DLayer";
 		_scene = Application::GetInstance().GetScene();
-
-		// Init world
-		b2Vec2 gravity = {0.0f, -10.0f};
-		_physics_world = new b2World(gravity);
-
-		auto view = _scene->Registry()->view<Transform, RigidBody2D>();
-		for (auto entity : view)
-		{
-			Entity e(entity, _scene);
-			AddBody(e);
-		}
-
-		_contact_listener = new ContactListener(_scene);
-		_physics_world->SetContactListener(_contact_listener);
 	}
 
 	void Physics2DLayer::OnDetatch()
@@ -64,7 +42,7 @@ namespace mrs
 
 			// Get physics transform components
 			b2Vec2 new_pos = rb.body->GetPosition();
-			float rot_z = rb.body->GetAngle();
+			float rot_z = glm::degrees(rb.body->GetAngle());
 
 			// Update transform
 			transform.position.x = new_pos.x;
@@ -75,6 +53,16 @@ namespace mrs
 
 	void Physics2DLayer::OnImGuiRender()
 	{
+	}
+
+	void Physics2DLayer::OnEnable()
+	{
+		InitWorld();
+	}
+
+	void Physics2DLayer::OnDisable()
+	{
+		ShutdownWorld();
 	}
 
 	void Physics2DLayer::AddBody(Entity entity)
@@ -91,7 +79,6 @@ namespace mrs
 
 			CreateFixture(entity, BodyType::STATIC);
 		}
-
 		else if (rb.type == BodyType::DYNAMIC)
 		{
 			b2BodyDef dynamic_body_def = {};
@@ -99,6 +86,11 @@ namespace mrs
 			dynamic_body_def.position = b2Vec2(transform.position.x, transform.position.y);
 			rb.body = _physics_world->CreateBody(&dynamic_body_def);
 			rb.body->GetUserData().pointer = entity.Id();
+
+			if(!rb.use_gravity)
+			{
+				rb.body->SetGravityScale(0.0f);
+			}
 
 			CreateFixture(entity, BodyType::DYNAMIC);
 		}
@@ -133,6 +125,42 @@ namespace mrs
 				rb.body->CreateFixture(&static_box, 0.0f);
 			}
 		}
+	}
+
+	void Physics2DLayer::InitWorld()
+	{
+		// Prevent instantiate of world without shutdown
+		if (_physics_world != nullptr)
+		{
+			ShutdownWorld();
+		}
+
+		// Init world
+		b2Vec2 gravity = {0.0f, -10.0f};
+		_physics_world = new b2World(gravity);
+
+		auto view = _scene->Registry()->view<Transform, RigidBody2D>();
+		for (auto entity : view)
+		{
+			Entity e(entity, _scene);
+			AddBody(e);
+		}
+
+		// Get scene handle
+		_scene = Application::GetInstance().GetScene();
+
+		// Init contact listeners
+		_contact_listener = new ContactListener(_scene);
+		_physics_world->SetContactListener(_contact_listener);
+	}
+
+	void Physics2DLayer::ShutdownWorld()
+	{
+		delete _contact_listener; 
+		_contact_listener = nullptr;
+
+		delete _physics_world;
+		_physics_world = nullptr;
 	}
 
 	void ContactListener::BeginContact(b2Contact *contact)

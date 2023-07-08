@@ -3,18 +3,15 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 mrs::Camera::Camera(CameraType type, uint32_t aspect_w, uint32_t aspect_h, const glm::vec3 &pos)
-	:_type(type), _position(pos)
+	:_type(type), _position(pos), _aspect_w(aspect_w), _aspect_h(aspect_h)
 {
 	_view_proj = glm::mat4(1.0f);
-
-	// TODO: Move camera to its own class
 	_view = glm::translate(glm::mat4(1.0f), _position);
 	_projection = glm::perspective(glm::radians(70.0f),
 		static_cast<float>(aspect_w) / static_cast<float>(aspect_h),
-		0.1f,
-		1000.0f);
+		_near,
+		_far);
 	_projection[1][1] *= -1; // Reconfigure y values as positive for vulkan
-
 	_view_proj = _projection * _view;
 }
 
@@ -37,5 +34,19 @@ void mrs::Camera::UpdateViewProj()
 
 void mrs::Camera::SetType(CameraType type)
 {
+	switch (type)
+	{
+	case CameraType::Perspective:
+		_projection = glm::perspective(glm::radians(70.0f), static_cast<float>(_aspect_w) / static_cast<float>(_aspect_h), _near, _far);
+		_projection[1][1] *= -1; // Reconfigure y values as positive for vulkan
+		break;
+	case CameraType::Orthographic:
+		_projection = glm::ortho(0.0f, static_cast<float>(_aspect_w), 0.0f, static_cast<float>(_aspect_h), _near, _far);
+		_projection[1][1] *= -1; // Reconfigure y values as positive for vulkan
+		break;
+	default:
+		break;
+	}
+
 	_type = type;
 }

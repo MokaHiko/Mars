@@ -82,6 +82,9 @@ namespace mrs
 		// Sets renderer camera
 		void SetCamera(Camera *camera) { _camera = camera; }
 
+		// Adds semaphore for graphics queue to wait during submission
+		void PushGraphicsSemaphore(VkPipelineStageFlags wait_stage,  VkSemaphore semaphore) {_graphics_wait_stages.push_back(wait_stage), _graphics_wait_semaphores.push_back(semaphore);}
+
 		// Descriptor allocator and layout cache
 		std::shared_ptr<vkutil::DescriptorAllocator> _descriptor_allocator;
 		std::shared_ptr<vkutil::DescriptorLayoutCache> _descriptor_layout_cache;
@@ -127,6 +130,9 @@ namespace mrs
 
 		// Gets handle to vulkan queues struct
 		VulkanQueues &GetQueues() { return _queues; }
+
+		// Gets handle to vulkan queues struct
+		VulkanQueueFamilyIndices &GetQueueIndices() { return _queue_indices; }
 	public:
 		// Creates and allocates buffer with given size
 		AllocatedBuffer CreateBuffer(size_t size, VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, VkMemoryPropertyFlags memory_props = 0);
@@ -230,6 +236,10 @@ namespace mrs
 
 		// Main gpu upload resource allocator
 		VmaAllocator _allocator;
+
+		// Semaphores the graphics queue will wait for during submission
+		std::vector<VkPipelineStageFlags> _graphics_wait_stages = {};
+		std::vector<VkSemaphore> _graphics_wait_semaphores = {};
 	};
 }
 

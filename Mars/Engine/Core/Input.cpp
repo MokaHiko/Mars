@@ -7,7 +7,9 @@ uint32_t mrs::Input::window_size_x = 0;
 uint32_t mrs::Input::window_size_y = 0;
 
 // Set keys to unpressed
+bool mrs::Input::LastKeys[322] = {false};
 bool mrs::Input::Keys[322] = {false};
+bool mrs::Input::LastMouseButtons[4] = {false};
 bool mrs::Input::MouseButtons[4] = {false};
 
 // Mouse
@@ -36,10 +38,29 @@ bool mrs::Input::IsKeyPressed(int key_code)
 	return false;
 }
 
+bool mrs::Input::IsKeyDown(int key_code)
+{
+	auto scan_code = SDL_GetScancodeFromKey(key_code);
+	if (scan_code < 322) {
+		return Keys[scan_code] && !LastKeys[scan_code];
+	}
+
+	return false;
+}
+
 bool mrs::Input::IsMouseButtonPressed(int key_code)
 {
 	if (key_code < 4) {
 		return MouseButtons[key_code];
+	}
+
+	return false;
+}
+
+bool mrs::Input::IsMouseButtonDown(int key_code)
+{
+	if (key_code < 4) {
+		return MouseButtons[key_code] && !LastMouseButtons[key_code];
 	}
 
 	return false;
@@ -62,5 +83,7 @@ float mrs::Input::GetAxis(const char axis)
 
 glm::vec2 mrs::Input::GetMousePosition()
 {
-	return { x,y };
+	static float half_width = ((float)Input::window_size_x / 2.0f);
+	static float half_height = ((float)Input::window_size_y / 2.0f);
+	return { x - half_width, (-y) + half_height};
 }

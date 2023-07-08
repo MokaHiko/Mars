@@ -33,6 +33,8 @@ add_library(${PROJECT_NAME}
 
 			Engine/ECS/Scene.h
 			Engine/ECS/Scene.cpp
+			Engine/ECS/SceneSerializer.h
+			Engine/ECS/SceneSerializer.cpp
 			Engine/ECS/Entity.h
 			Engine/ECS/Entity.cpp
 			Engine/ECS/ScriptableEntity.h
@@ -71,14 +73,17 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/RenderPipelineLayers/IRenderPipelineLayer.cpp
 			Engine/Renderer/RenderPipelineLayers/DefaultRenderPipelineLayer/DefaultRenderPipelineLayer.h
 			Engine/Renderer/RenderPipelineLayers/DefaultRenderPipelineLayer/DefaultRenderPipelineLayer.cpp
-			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline.h
-			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline/ImGuiRenderPipeline.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline/ImGuiRenderPipeline.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleRenderPipeline.cpp
+
+			Engine/Scripting/NativeScriptingLayer.h
+			Engine/Scripting/NativeScriptingLayer.cpp
 
 			Engine/Physics/Physics2DLayer.cpp
 			Engine/Physics/Physics2DLayer.h

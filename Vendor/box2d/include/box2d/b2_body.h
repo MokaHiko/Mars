@@ -800,7 +800,7 @@ inline void b2Body::ApplyTorque(float torque, bool wake)
 
 inline void b2Body::ApplyLinearImpulse(const b2Vec2& impulse, const b2Vec2& point, bool wake)
 {
-	if (m_type != b2_dynamicBody)
+if (m_type != b2_dynamicBody)
 	{
 		return;
 	}

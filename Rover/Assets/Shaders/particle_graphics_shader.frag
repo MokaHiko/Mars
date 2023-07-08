@@ -16,5 +16,5 @@ void main()
         discard;
     }
 
-    frag_color =  diffuse * vec4(v_color.xyz, 1.0f);
+    frag_color = diffuse * v_color;
 }

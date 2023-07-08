@@ -432,18 +432,24 @@ namespace mrs
 	void Renderer::InitCommands()
 	{
 		VkCommandPoolCreateInfo graphics_cp_info = vkinit::command_pool_create_info(_queue_indices.graphics, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-		VkCommandPoolCreateInfo upload_cp_info = vkinit::command_pool_create_info(_queue_indices.graphics, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+		VkCommandPoolCreateInfo compute_cp_info = vkinit::command_pool_create_info(_queue_indices.compute, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
 		// Create a command pool & buffer for each frame to send render commands async
 		for (uint32_t i = 0; i < frame_overlaps; i++)
 		{
 			vkCreateCommandPool(_device.device, &graphics_cp_info, nullptr, &_frame_data[i].command_pool);
-
 			VkCommandBufferAllocateInfo alloc_info = vkinit::command_buffer_alloc_info(_frame_data[i].command_pool);
 			vkAllocateCommandBuffers(_device.device, &alloc_info, &_frame_data[i].command_buffer);
 
+			vkCreateCommandPool(_device.device, &compute_cp_info, nullptr, &_frame_data[i].compute_command_pool);
+			VkCommandBufferAllocateInfo compute_alloc_info = vkinit::command_buffer_alloc_info(_frame_data[i].compute_command_pool);
+			vkAllocateCommandBuffers(_device.device, &compute_alloc_info, &_frame_data[i].compute_command_buffer);
+
 			_deletion_queue.Push([=]()
-				{ vkDestroyCommandPool(_device.device, _frame_data[i].command_pool, nullptr); });
+				{
+					vkDestroyCommandPool(_device.device, _frame_data[i].compute_command_pool, nullptr);
+					vkDestroyCommandPool(_device.device, _frame_data[i].command_pool, nullptr);
+				});
 		}
 
 		// Create one commmand pool & buffer for all upload/transfer operations
@@ -693,13 +699,18 @@ namespace mrs
 
 	void Renderer::UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index)
 	{
-		// Search for camera if none found each frame
-		if (!_camera)
+		// Search for active camera if none found each frame
+		if (!_camera || !_camera->IsActive())
 		{
 			auto cam_view = scene->Registry()->view<Transform, Camera>();
 			for (auto entity : cam_view)
 			{
-				_camera = &Entity(entity, scene).GetComponent<Camera>();
+				Camera* camera = &Entity(entity, scene).GetComponent<Camera>();
+
+				if (camera->IsActive())
+				{
+					_camera = camera;
+				}
 			}
 		}
 
@@ -749,7 +760,6 @@ namespace mrs
 		// Update object data storage buffer
 		char *objectData;
 		vmaMapMemory(_allocator, _object_descriptor_buffer[frame_index].allocation, (void **)&objectData);
-
 		for (auto entity : view)
 		{
 			Entity e = Entity(entity, scene);
@@ -810,6 +820,7 @@ namespace mrs
 		// Get current image to render to
 		// Make sure image has been acquired before submitting
 		vkAcquireNextImageKHR(_device.device, _swapchain, time_out, frame.present_semaphore, VK_NULL_HANDLE, &_current_swapchain_image);
+		PushGraphicsSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, frame.present_semaphore);
 
 		// Update global descriptors
 		UpdateGlobalDescriptors(scene, frame_index);
@@ -828,18 +839,15 @@ namespace mrs
 
 		// Begin main render pass
 		VkClearValue clear_value = {};
-		clear_value.color = { 0.1f, 0.1f, 0.1f, 0.1f };
+		clear_value.color = { 1.0f, 1.0f, 1.0f, 0.1f };
 
 		VkClearValue depth_value = {};
 		depth_value.depthStencil = { 1.0f, 0 };
 
 		VkClearValue clear_values[2] = { clear_value, depth_value };
 
-		VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(
-			GetCurrentFrameBuffer(), _render_pass, area,
-			clear_values, 2);
-		vkCmdBeginRenderPass(cmd, &render_pass_begin_info,
-			VK_SUBPASS_CONTENTS_INLINE);
+		VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(GetCurrentFrameBuffer(), _render_pass, area, clear_values, 2);
+		vkCmdBeginRenderPass(cmd, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
 	void Renderer::MainPassEnd(VkCommandBuffer cmd)
@@ -849,7 +857,7 @@ namespace mrs
 
 	void Renderer::End()
 	{
-		auto &frame = _frame_data[GetCurrentFrame()];
+		auto& frame = GetCurrentFrameData();
 		VkCommandBuffer cmd = frame.command_buffer;
 
 		VK_CHECK(vkEndCommandBuffer(cmd));
@@ -862,14 +870,12 @@ namespace mrs
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &cmd;
 
-		submit_info.waitSemaphoreCount = 1;
-		submit_info.pWaitSemaphores = &frame.present_semaphore;
+		submit_info.waitSemaphoreCount = static_cast<uint32_t>(_graphics_wait_semaphores.size());
+		submit_info.pWaitSemaphores = _graphics_wait_semaphores.data();
+		submit_info.pWaitDstStageMask = _graphics_wait_stages.data();
 
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = &frame.render_semaphore;
-
-		VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		submit_info.pWaitDstStageMask = &wait_stage;
 
 		VK_CHECK(vkQueueSubmit(_queues.graphics, 1, &submit_info, frame.render_fence));
 
@@ -886,6 +892,10 @@ namespace mrs
 		present_info.pWaitSemaphores = &frame.render_semaphore;
 
 		VK_CHECK(vkQueuePresentKHR(_queues.graphics, &present_info));
+
+		// Clear graphics semaphroes
+		_graphics_wait_semaphores.clear();
+		_graphics_wait_stages.clear();
 
 		// Update frame counter
 		++_frame_count;

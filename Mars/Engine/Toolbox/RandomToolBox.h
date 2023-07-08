@@ -93,6 +93,9 @@ namespace tbx
 
         tbx::PRNGenerator<int> _random_engine = { 1, 100 };
     };
+
+    // Generates unique GUID
+    uint64_t GenerateGUID();
 }
 
 #endif

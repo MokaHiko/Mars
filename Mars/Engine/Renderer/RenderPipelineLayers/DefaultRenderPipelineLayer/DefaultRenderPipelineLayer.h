@@ -7,7 +7,7 @@
 
 #include "Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleRenderPipeline.h"
 #include "Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.h"
-#include "Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline.h"
+#include "Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline/ImGuiRenderPipeline.h"
 
 namespace mrs
 {

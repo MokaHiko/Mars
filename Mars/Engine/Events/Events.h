@@ -19,6 +19,11 @@ namespace mrs
         bool _handled = false;
         SDL_Event& _event;
     };
+
+    class ECSEvent : public Event
+    {
+        
+    };
 }
 
 #endif

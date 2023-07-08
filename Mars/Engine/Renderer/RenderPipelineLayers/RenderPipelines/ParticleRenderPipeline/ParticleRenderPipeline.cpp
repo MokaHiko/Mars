@@ -14,23 +14,23 @@
 #include "ToolboX/TimeToolBox.h"
 #include "Renderer/Vulkan/VulkanInitializers.h"
 
-// Random engines
-static std::uniform_real_distribution<float> rand_dist(0.0f, 1.0f);
-static std::default_random_engine rand_engine((unsigned)time(nullptr));
-
-mrs::ParticleRenderPipeline::ParticleRenderPipeline(uint32_t max_particles) 
+mrs::ParticleRenderPipeline::ParticleRenderPipeline(uint32_t max_particles)
 	: _max_particles(max_particles) {}
 
 mrs::ParticleRenderPipeline::~ParticleRenderPipeline() {}
 
-void mrs::ParticleRenderPipeline::Init() 
+void mrs::ParticleRenderPipeline::Init()
 {
 	_quad_mesh = Mesh::Get("quad");
-
 	uint32_t max_particle_systems = _max_particles / 256;
-	_particle_buffer_size = _renderer->PadToStorageBufferSize(sizeof(Particle)) * _max_particles;
-	_particle_parameters_size = _renderer->PadToStorageBufferSize(sizeof(ParticleParameters)) * max_particle_systems;
 	_buffer_next_free_offset = 0;
+
+	_padded_particle_size = _renderer->PadToStorageBufferSize(sizeof(Particle));
+	_padded_particle_parameter_size = _renderer->PadToStorageBufferSize(sizeof(ParticleParameters));
+	_particle_buffer_size = _padded_particle_size * _max_particles;
+	_particle_parameters_size = _padded_particle_parameter_size * max_particle_systems;
+
+	InitComputeSyncStructures();
 
 	InitComputeDescriptors();
 	InitGraphicsDescriptors();
@@ -53,7 +53,7 @@ void mrs::ParticleRenderPipeline::UploadResources()
 	}
 }
 
-void mrs::ParticleRenderPipeline::InitComputeDescriptors() 
+void mrs::ParticleRenderPipeline::InitComputeDescriptors()
 {
 	// Create particle buffers
 	_particle_storage_buffers.resize(frame_overlaps);
@@ -103,42 +103,177 @@ void mrs::ParticleRenderPipeline::InitComputeDescriptors()
 }
 
 void mrs::ParticleRenderPipeline::InitComputePipeline() {
-  VkPipelineLayoutCreateInfo pipeline_layout_info =
-      vkinit::pipeline_layout_create_info();
-  pipeline_layout_info.setLayoutCount = 1;
-  pipeline_layout_info.pSetLayouts = &_compute_descriptor_set_layout;
+	VkPipelineLayoutCreateInfo pipeline_layout_info =
+		vkinit::pipeline_layout_create_info();
+	pipeline_layout_info.setLayoutCount = 1;
+	pipeline_layout_info.pSetLayouts = &_compute_descriptor_set_layout;
 
-  VkPushConstantRange push_constant = {};
-  push_constant.offset = 0;
-  push_constant.size = sizeof(ParticleSystemPushConstant);
-  push_constant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+	VkPushConstantRange push_constant = {};
+	push_constant.offset = 0;
+	push_constant.size = sizeof(ParticleSystemPushConstant);
+	push_constant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-  pipeline_layout_info.pPushConstantRanges = &push_constant;
-  pipeline_layout_info.pushConstantRangeCount = 1;
+	pipeline_layout_info.pPushConstantRanges = &push_constant;
+	pipeline_layout_info.pushConstantRangeCount = 1;
 
-  VK_CHECK(vkCreatePipelineLayout(_renderer->GetDevice().device,
-                                  &pipeline_layout_info, nullptr,
-                                  &_compute_pipeline_layout));
+	VK_CHECK(vkCreatePipelineLayout(_renderer->GetDevice().device,
+		&pipeline_layout_info, nullptr,
+		&_compute_pipeline_layout));
 
-  VkComputePipelineCreateInfo info = {};
-  info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-  info.layout = _compute_pipeline_layout;
+	VkComputePipelineCreateInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+	info.layout = _compute_pipeline_layout;
 
-  VkShaderModule compute_shader;
-  _renderer->LoadShaderModule("assets/shaders/particle_compute_shader.comp.spv",
-                              &compute_shader);
+	VkShaderModule compute_shader;
+	_renderer->LoadShaderModule("assets/shaders/particle_compute_shader.comp.spv",
+		&compute_shader);
 
-  info.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  info.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-  info.stage.pName = "main";
-  info.stage.module = compute_shader;
+	info.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	info.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+	info.stage.pName = "main";
+	info.stage.module = compute_shader;
 
-  VK_CHECK(vkCreateComputePipelines(_renderer->GetDevice().device,
-                                    VK_NULL_HANDLE, 1, &info, nullptr,
-                                    &_compute_pipeline));
+	VK_CHECK(vkCreateComputePipelines(_renderer->GetDevice().device,
+		VK_NULL_HANDLE, 1, &info, nullptr,
+		&_compute_pipeline));
 }
 
-void mrs::ParticleRenderPipeline::InitGraphicsDescriptors() 
+void mrs::ParticleRenderPipeline::InitComputeSyncStructures()
+{
+	VkSemaphoreCreateInfo semaphore_info = {};
+	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fence_info = {};
+	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	_compute_in_flight_fences.resize(frame_overlaps);
+	_compute_in_flight_semaphores.resize(frame_overlaps);
+	for (uint32_t i = 0; i < frame_overlaps; i++)
+	{
+		VK_CHECK(vkCreateSemaphore(_renderer->GetDevice().device, &semaphore_info, nullptr, &_compute_in_flight_semaphores[i]));
+		VK_CHECK(vkCreateFence(_renderer->GetDevice().device, &fence_info, nullptr, &_compute_in_flight_fences[i]));
+
+		_renderer->GetDeletionQueue().Push([&]() {
+			vkDestroyFence(_renderer->GetDevice().device, _compute_in_flight_fences[i], nullptr);
+			vkDestroySemaphore(_renderer->GetDevice().device, _compute_in_flight_semaphores[i], nullptr);
+			});
+	}
+}
+
+void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_frame, float dt)
+{
+	auto view = _scene->Registry()->view<Transform, ParticleSystem>().use<ParticleSystem>();
+	int ctr = 0;
+
+	// Update parameters
+	char *data;
+	vmaMapMemory(_renderer->GetAllocator(), _particle_parameter_buffers[current_frame].allocation, (void **)&data);
+	for (auto entity : view) {
+		Entity e(entity, _scene);
+		auto &particle_system = e.GetComponent<ParticleSystem>();
+
+		if (!particle_system.registered)
+		{
+			RegisterParticleSystem(particle_system);
+		}
+
+		if (particle_system.running) {
+			particle_system.time += dt;
+			particle_system.live_particles = glm::min((uint32_t)(particle_system.emission_rate * particle_system.time), particle_system.max_particles);
+
+			// Copy to parameters buffer
+			ParticleParameters params = {};
+			params.color_1 = particle_system.color_1;
+			params.color_2 = particle_system.color_2;
+
+			params.scale = particle_system.particle_size;
+
+			params.emission_rate = particle_system.emission_rate;
+			params.life_time = particle_system.life_time;
+			params.live_particles = particle_system.live_particles;
+			params.dt = dt;
+
+			params.buffer_offset = particle_system.buffer_offset;
+			params.buffer_index = particle_system.buffer_offset / static_cast<uint32_t>(_padded_particle_size);
+
+			// Check if reset
+			if (particle_system.reset || (!particle_system.repeating && particle_system.time > particle_system.duration))
+			{
+				// set and reset gpu and cpu flags
+				params.reset = 1;
+				particle_system.reset = false;
+				particle_system.live_particles = 0;
+				particle_system.time = 0.0f;
+			}
+
+			if(particle_system.stop)
+			{
+				params.reset = 1;
+				particle_system.reset = false;
+			}
+
+			// Particle system parameters are in a proportional location to particle buffer
+			size_t offset = ctr * _padded_particle_parameter_size;
+			ctr++;
+
+			//uint32_t offset = (particle_system.buffer_offset / _padded_particle_size) * _padded_particle_parameter_size;
+			memcpy(data + offset, &params, sizeof(ParticleParameters));
+
+			// Stop is handled after reset
+			if(particle_system.stop)
+			{
+				particle_system.running = false;
+				particle_system.stop = false;
+
+				particle_system.live_particles = 0;
+				particle_system.time = 0.0f;
+			}
+		}
+	}
+
+	vmaUnmapMemory(_renderer->GetAllocator(), _particle_parameter_buffers[current_frame].allocation);
+}
+
+void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cmd, uint32_t current_frame)
+{
+	VkCommandBufferBeginInfo beginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	VK_CHECK(vkBeginCommandBuffer(cmd, &beginInfo));
+
+	// Dispatch per entity particle system
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline_layout, 0, 1, &_compute_descriptor_sets[current_frame], 0, 0);
+
+	auto view = _scene->Registry()->view<Transform, ParticleSystem>().use<ParticleSystem>();
+	int ctr = 0;
+
+	for (auto entity : view) {
+		Entity e(entity, _scene);
+		auto &particle_system = e.GetComponent<ParticleSystem>();
+
+		if (particle_system.running) 
+		{
+			// Bind push constant
+			ParticleSystemPushConstant pc;
+			pc.count = ctr++;
+
+			vkCmdPushConstants(cmd, _compute_pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
+
+			// Update particles
+			uint32_t x_groups = (particle_system.max_particles / 256) + 1;
+			vkCmdDispatch(cmd, x_groups, 1, 1);
+
+			// Check duration reached
+			if (!particle_system.repeating && particle_system.time > particle_system.duration)
+			{
+				particle_system.Stop();
+			}
+		}
+	}
+	VK_CHECK(vkEndCommandBuffer(cmd));
+}
+
+void mrs::ParticleRenderPipeline::InitGraphicsDescriptors()
 {
 	// Graphics descriptor
 	_graphics_descriptor_sets.resize(frame_overlaps);
@@ -162,201 +297,111 @@ void mrs::ParticleRenderPipeline::InitGraphicsDescriptors()
 }
 
 void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
-  vkutil::PipelineBuilder builder;
+	vkutil::PipelineBuilder builder;
 
-  // Viewport & scissor
-  builder._scissor.extent = {_window->GetWidth(), _window->GetHeight()};
-  builder._scissor.offset = {0, 0};
+	// Viewport & scissor
+	builder._scissor.extent = { _window->GetWidth(), _window->GetHeight() };
+	builder._scissor.offset = { 0, 0 };
 
-  builder._viewport.x = 0.0f;
-  builder._viewport.y = 0.0f;
-  builder._viewport.width = static_cast<float>(_window->GetWidth());
-  builder._viewport.height = static_cast<float>(_window->GetHeight());
-  builder._viewport.minDepth = 0.0f;
-  builder._viewport.maxDepth = 1.0f;
+	builder._viewport.x = 0.0f;
+	builder._viewport.y = 0.0f;
+	builder._viewport.width = static_cast<float>(_window->GetWidth());
+	builder._viewport.height = static_cast<float>(_window->GetHeight());
+	builder._viewport.minDepth = 0.0f;
+	builder._viewport.maxDepth = 1.0f;
 
-  // Shader
-  VkShaderModule vertex_shader;
-  _renderer->LoadShaderModule(
-      "assets/shaders/particle_graphics_shader.vert.spv", &vertex_shader);
-  VkShaderModule fragment_shader;
-  _renderer->LoadShaderModule(
-      "assets/shaders/particle_graphics_shader.frag.spv", &fragment_shader);
+	// Shader
+	VkShaderModule vertex_shader;
+	_renderer->LoadShaderModule(
+		"assets/shaders/particle_graphics_shader.vert.spv", &vertex_shader);
+	VkShaderModule fragment_shader;
+	_renderer->LoadShaderModule(
+		"assets/shaders/particle_graphics_shader.frag.spv", &fragment_shader);
 
-  builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(
-      VK_SHADER_STAGE_VERTEX_BIT, vertex_shader));
-  builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(
-      VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader));
+	builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader));
+	builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader));
 
-  // Vertex Input
-  VertexInputDescription vertex_desc = Vertex::GetDescription();
-  auto bindings = vertex_desc.bindings;
-  auto attributes = vertex_desc.attributes;
+	// Vertex Input
+	VertexInputDescription vertex_desc = Vertex::GetDescription();
+	auto bindings = vertex_desc.bindings;
+	auto attributes = vertex_desc.attributes;
 
-  builder._vertex_input_info =
-      vkinit::pipeline_vertex_input_state_create_info();
-  builder._vertex_input_info.vertexBindingDescriptionCount =
-      static_cast<uint32_t>(bindings.size());
-  builder._vertex_input_info.pVertexBindingDescriptions = bindings.data();
-  builder._vertex_input_info.vertexAttributeDescriptionCount =
-      static_cast<uint32_t>(attributes.size());
-  builder._vertex_input_info.pVertexAttributeDescriptions = attributes.data();
+	builder._vertex_input_info = vkinit::pipeline_vertex_input_state_create_info();
+	builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(bindings.size());
+	builder._vertex_input_info.pVertexBindingDescriptions = bindings.data();
+	builder._vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes.size());
+	builder._vertex_input_info.pVertexAttributeDescriptions = attributes.data();
+	builder._input_assembly = vkinit::pipeline_input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
-  builder._input_assembly = vkinit::pipeline_input_assembly_state_create_info(
-      VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	// Graphics Settings
+	builder._rasterizer = vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
+	builder._multisampling = vkinit::pipeline_mulitisample_state_create_info();
+	builder._color_blend_attachment = vkinit::pipeline_color_blend_attachment_state();
+	builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(false, false, VK_COMPARE_OP_ALWAYS);
 
-  // Graphics Settings
-  builder._rasterizer =
-      vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
-  builder._multisampling = vkinit::pipeline_mulitisample_state_create_info();
-  builder._color_blend_attachment =
-      vkinit::pipeline_color_blend_attachment_state();
-  builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(
-      false, false, VK_COMPARE_OP_ALWAYS);
+	// Pipeline layouts
+	VkPipelineLayoutCreateInfo layout_info = vkinit::pipeline_layout_create_info();
+	std::vector<VkDescriptorSetLayout> set_layouts = {_global_descriptor_set_layout, _object_descriptor_set_layout, _default_image_set_layout, _graphics_descriptor_set_layout };
 
-  // Pipeline layouts
-  VkPipelineLayoutCreateInfo layout_info =
-      vkinit::pipeline_layout_create_info();
-  std::vector<VkDescriptorSetLayout> set_layouts = {
-      _global_descriptor_set_layout, _object_descriptor_set_layout,
-      _default_image_set_layout, _graphics_descriptor_set_layout};
+	layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
+	layout_info.pSetLayouts = set_layouts.data();
 
-  layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
-  layout_info.pSetLayouts = set_layouts.data();
+	VkPushConstantRange push_constant = {};
+	push_constant.offset = 0;
+	push_constant.size = sizeof(ParticleSystemPushConstant);
+	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-  VkPushConstantRange push_constant;
-  push_constant.offset = 0;
-  push_constant.size = sizeof(ParticleSystemPushConstant);
-  push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	layout_info.pPushConstantRanges = &push_constant;
+	layout_info.pushConstantRangeCount = 1;
 
-  layout_info.pPushConstantRanges = &push_constant;
-  layout_info.pushConstantRangeCount = 1;
+	VK_CHECK(vkCreatePipelineLayout(_renderer->GetDevice().device, &layout_info, nullptr, &_graphics_pipeline_layout));
 
-  VK_CHECK(vkCreatePipelineLayout(_renderer->GetDevice().device, &layout_info,
-                                  nullptr, &_graphics_pipeline_layout));
+	builder._pipeline_layout = _graphics_pipeline_layout;
 
-  builder._pipeline_layout = _graphics_pipeline_layout;
+	_graphics_pipeline = builder.Build(_renderer->GetDevice().device, _default_render_pass);
 
-  _graphics_pipeline =
-      builder.Build(_renderer->GetDevice().device, _default_render_pass);
+	if (_graphics_pipeline == VK_NULL_HANDLE) 
+	{
+		VK_CHECK(VK_ERROR_UNKNOWN);
+	}
 
-  if (_graphics_pipeline == VK_NULL_HANDLE) {
-    VK_CHECK(VK_ERROR_UNKNOWN);
-  }
-
-  // Clean up
-  vkDestroyShaderModule(_renderer->GetDevice().device, vertex_shader, nullptr);
-  vkDestroyShaderModule(_renderer->GetDevice().device, fragment_shader,
-                        nullptr);
-  _renderer->GetDeletionQueue().Push([&]() {
-    vkDestroyPipeline(_renderer->GetDevice().device, _graphics_pipeline,
-                      nullptr);
-    vkDestroyPipelineLayout(_renderer->GetDevice().device,
-                            _graphics_pipeline_layout, nullptr);
-  });
+	// Clean up
+	vkDestroyShaderModule(_renderer->GetDevice().device, vertex_shader, nullptr);
+	vkDestroyShaderModule(_renderer->GetDevice().device, fragment_shader, nullptr);
+	_renderer->GetDeletionQueue().Push([&]() {
+	vkDestroyPipeline(_renderer->GetDevice().device, _graphics_pipeline,nullptr);
+	vkDestroyPipelineLayout(_renderer->GetDevice().device, _graphics_pipeline_layout, nullptr);
+		});
 }
 
 void mrs::ParticleRenderPipeline::Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt)
 {
-	size_t padded_particle_size = _renderer->PadToStorageBufferSize(sizeof(Particle));
-	size_t padded_particle_parameter_size = _renderer->PadToStorageBufferSize(sizeof(ParticleParameters));
+	VkDevice device = _renderer->GetDevice().device;
 
-	auto view = _scene->Registry()->view<Transform, ParticleSystem>();
+	vkWaitForFences(device, 1, &_compute_in_flight_fences[current_frame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+	UpdateComputeDescriptorSets(current_frame, dt);
+	vkResetFences(device, 1, &_compute_in_flight_fences[current_frame]);
 
-	//Update parameters
-	char *data;
-	vmaMapMemory(_renderer->GetAllocator(), _particle_parameter_buffers[current_frame].allocation, (void **)&data);
-	for (auto entity : view)
-	{
-		Entity e(entity, _scene);
-		auto &particle_system = e.GetComponent<ParticleSystem>();
+	vkResetCommandBuffer(cmd, 0);
+	RecordComputeCommandBuffers(cmd, current_frame);
 
-		if (!particle_system.registered)
-		{
-			RegisterParticleSystem(particle_system);
-		}
+	VkSubmitInfo submit_info = {};
+	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submit_info.pNext = nullptr;
 
-		if (particle_system.running)
-		{
-			particle_system.time += dt;
-			particle_system.live_particles = glm::min((uint32_t)(particle_system.emission_rate * particle_system.time), particle_system.max_particles);
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = &cmd;
+	submit_info.signalSemaphoreCount = 1;
+	submit_info.pSignalSemaphores = &_compute_in_flight_semaphores[current_frame];
 
-			// Copy to parameters buffer
-			ParticleParameters params = {};
-			params.dt = dt;
-
-			params.emission_rate = particle_system.emission_rate;
-			params.life_time = particle_system.life_time;
-			params.live_particles = particle_system.live_particles;
-
-			params.buffer_offset = particle_system.buffer_offset;
-			params.buffer_index = particle_system.buffer_offset / padded_particle_size;
-
-			// Check if reset
-			if (particle_system.reset || (!particle_system.repeating && particle_system.time > particle_system.duration))
-			{
-				// set and reset gpu and cpu flags
-				params.reset = 1;
-				particle_system.reset = false;
-			}
-
-			// Particle system parameters are in a proportional location to particle buffer
-			uint32_t offset = (particle_system.buffer_offset / padded_particle_size) * padded_particle_parameter_size;
-			memcpy(data + offset, &params, sizeof(ParticleParameters));
-		}
-	}
-	vmaUnmapMemory(_renderer->GetAllocator(), _particle_parameter_buffers[current_frame].allocation);
-
-	// Dispatch per entity particle system 
-	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline);
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline_layout, 0, 1, &_compute_descriptor_sets[current_frame], 0, 0);
-
-	for (auto entity : view)
-	{
-		Entity e(entity, _scene);
-		auto &particle_system = e.GetComponent<ParticleSystem>();
-
-		if (particle_system.running)
-		{
-			// Bind push constant
-			ParticleSystemPushConstant pc;
-			pc.count = particle_system.buffer_offset / padded_particle_size;
-			vkCmdPushConstants(cmd, _compute_pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
-
-			// Update particles
-			uint32_t x_groups = (particle_system.max_particles / 256) + 1;
-			vkCmdDispatch(cmd, x_groups, 1, 1);
-
-			// Check duration reached
-			if (!particle_system.repeating && particle_system.time > particle_system.duration)
-			{
-				particle_system.Stop();
-			}
-		}
-	}
-
-	{
-		VkBufferMemoryBarrier compute_graphics_barrier = {};
-		compute_graphics_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-		compute_graphics_barrier.pNext = nullptr;
-
-		compute_graphics_barrier.buffer = _particle_storage_buffers[current_frame].buffer;
-		compute_graphics_barrier.offset = 0;
-		compute_graphics_barrier.size = VK_WHOLE_SIZE;
-
-		compute_graphics_barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-		compute_graphics_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 1, &compute_graphics_barrier, 0, nullptr);
-	}
+	_renderer->PushGraphicsSemaphore(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, _compute_in_flight_semaphores[current_frame]);
+	VK_CHECK(vkQueueSubmit(_renderer->GetQueues().compute, 1, &submit_info, _compute_in_flight_fences[current_frame]));
 }
 
 void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame)
 {
-	VkDescriptorSet _frame_object_set = _renderer->GetCurrentGlobalObjectDescriptorSet();
 
-	size_t padded_particle_size = _renderer->PadToStorageBufferSize(sizeof(Particle));
-	size_t padded_particle_parameter_size = _renderer->PadToStorageBufferSize(sizeof(ParticleParameters));
+	VkDescriptorSet _frame_object_set = _renderer->GetCurrentGlobalObjectDescriptorSet();
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline);
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 0, 1, &_global_descriptor_set, 0, 0);
@@ -370,7 +415,8 @@ void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_fr
 	vkCmdBindVertexBuffers(cmd, 0, 1, &_quad_mesh->_buffer.buffer, &offset);
 	vkCmdBindIndexBuffer(cmd, _quad_mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-	auto view = _scene->Registry()->view<Transform, ParticleSystem>();
+	auto view = _scene->Registry()->view<Transform, ParticleSystem>().use<ParticleSystem>();
+	int ctr = 0;
 
 	for (auto entity : view)
 	{
@@ -380,11 +426,14 @@ void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_fr
 
 		// Bind push constant
 		ParticleSystemPushConstant pc;
-		pc.count = particle_system.buffer_offset / padded_particle_size;
+		pc.count = ctr++;
 		vkCmdPushConstants(cmd, _graphics_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
 
-		// Bind material
-		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 2, 1, &material->texture_set, 0, 0);
+		// Bind material if present
+		if (material)
+		{
+			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 2, 1, &material->texture_set, 0, 0);
+		}
 
 		// Draw using instancing
 		vkCmdDrawIndexed(cmd, _quad_mesh->_index_count, particle_system.live_particles, 0, 0, e.Id());
@@ -393,10 +442,10 @@ void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_fr
 
 void mrs::ParticleRenderPipeline::End(VkCommandBuffer cmd) {}
 
+void mrs::ParticleRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd) {}
+
 void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particle_system)
 {
-	size_t padded_particle_size = _renderer->PadToStorageBufferSize(sizeof(Particle));
-
 	// See if simillair particle system type exists in gpu cache
 	auto cache_it = _particle_system_type_cache.find(particle_system);
 	if (cache_it != _particle_system_type_cache.end())
@@ -410,7 +459,7 @@ void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particl
 		else
 		{
 			//  Check particle offset is within buffer size
-			if (_buffer_next_free_offset / padded_particle_size > _max_particles)
+			if (_buffer_next_free_offset / _padded_particle_size > _max_particles)
 			{
 				std::cout << "Max particle count reached!" << std::endl;
 				return;
@@ -418,7 +467,7 @@ void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particl
 
 			// Increment buffer
 			particle_system.buffer_offset = static_cast<uint32_t>(_buffer_next_free_offset);
-			_buffer_next_free_offset += _renderer->PadToStorageBufferSize(sizeof(Particle)) * particle_system.max_particles;
+			_buffer_next_free_offset += _padded_particle_size * particle_system.max_particles;
 
 			// Copy particle system data to new offset
 			for (uint32_t i = 0; i < frame_overlaps; i++)
@@ -440,7 +489,7 @@ void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particl
 	else
 	{
 		//  Check particle offset is within buffer size
-		if (_buffer_next_free_offset / padded_particle_size > _max_particles)
+		if (_buffer_next_free_offset / _padded_particle_size > _max_particles)
 		{
 			std::cout << "Max particle count reached!" << std::endl;
 			return;
@@ -448,7 +497,7 @@ void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particl
 
 		// Update next buffer offset
 		particle_system.buffer_offset = static_cast<uint32_t>(_buffer_next_free_offset);
-		_buffer_next_free_offset += padded_particle_size * particle_system.max_particles;
+		_buffer_next_free_offset += _padded_particle_size * particle_system.max_particles;
 
 		// Create new particles data
 		std::vector<Particle> particles(particle_system.max_particles);
@@ -456,25 +505,25 @@ void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particl
 		if (particle_system.emission_shape == EmissionShape::Cone) {
 			for (uint32_t i = 0; i < particle_system.max_particles; i++)
 			{
-				float r = 0.5f * rand_dist(rand_engine);
-				float theta = rand_dist(rand_engine) * glm::radians(15.0f);
+				float r = 0.5f * _random_generator.Next();
+				float theta = _random_generator.Next() * glm::radians(25.0f);
 				float x = r * cos(theta);
 				float y = r * sin(theta);
 				particles[i].position = glm::vec2(x, y);
-				particles[i].velocity = { rand_dist(rand_engine) * particle_system.velocity.x, rand_dist(rand_engine) * particle_system.velocity.y };
-				particles[i].color = glm::vec4(particle_system.color, 1.0f);
+				particles[i].velocity = { _random_generator.Next() * particle_system.velocity.x, _random_generator.Next() * particle_system.velocity.y };
+				particles[i].color = particle_system.color_1;
 			}
 		}
 		else if (particle_system.emission_shape == EmissionShape::Circle) {
 			for (uint32_t i = 0; i < particle_system.max_particles; i++)
 			{
-				float r = 1.0f * rand_dist(rand_engine);
-				float theta = rand_dist(rand_engine) * glm::radians(360.0f);
+				float r = 1.0f * _random_generator.Next();
+				float theta = _random_generator.Next() * glm::radians(360.0f);
 				float x = r * cos(theta);
 				float y = r * sin(theta);
 				particles[i].position = glm::vec2(x, y);
-				particles[i].velocity = rand_dist(rand_engine) * glm::vec2(x, y);
-				particles[i].color = glm::vec4(particle_system.color, 1.0f);
+				particles[i].velocity = _random_generator.Next() * glm::vec2(x, y);
+				particles[i].color = particle_system.color_1;
 			}
 		}
 
@@ -482,12 +531,12 @@ void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particl
 		CacheParticleSystemType(particle_system);
 
 		// Create staging buffer for new particles
-		AllocatedBuffer staging_buffer = _renderer->CreateBuffer(padded_particle_size * particle_system.max_particles, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		AllocatedBuffer staging_buffer = _renderer->CreateBuffer(_padded_particle_size * particle_system.max_particles, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 		char *data;
 		vmaMapMemory(_renderer->GetAllocator(), staging_buffer.allocation, (void **)&data);
 		for (uint32_t i = 0; i < particle_system.max_particles; i++) {
-			memcpy(data + (padded_particle_size * i), &particles[i], sizeof(Particle));
+			memcpy(data + (_padded_particle_size * i), &particles[i], sizeof(Particle));
 		}
 		vmaUnmapMemory(_renderer->GetAllocator(), staging_buffer.allocation);
 
@@ -498,7 +547,7 @@ void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particl
 				{
 					VkBufferCopy region = {};
 					region.srcOffset = 0;
-					region.size = padded_particle_size * particle_system.max_particles;
+					region.size = _padded_particle_size * particle_system.max_particles;
 					region.dstOffset = particle_system.buffer_offset;
 
 					vkCmdCopyBuffer(cmd, staging_buffer.buffer, _particle_storage_buffers[i].buffer, 1, &region); });
@@ -518,7 +567,7 @@ void mrs::ParticleRenderPipeline::CacheParticleSystemType(ParticleSystem &partic
 	// Create and cache first instance data
 	ParticleSystemType type;
 	type.first_instance_buffer_offset = particle_system.buffer_offset;
-	type.buffer_size = _renderer->PadToStorageBufferSize(sizeof(Particle)) * particle_system.max_particles;
+	type.buffer_size = _padded_particle_size * particle_system.max_particles;
 
 	_particle_system_type_cache[particle_system] = type;
 }

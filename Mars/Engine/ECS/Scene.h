@@ -32,11 +32,27 @@ namespace mrs
         // Queues entity for destruction at end of frame
         void QueueDestroy(Entity entity);
 
+        // Clears destroys all entities and components in destruction queue
+        void FlushDestructionQueue();
+
+        template<typename T>
+        Entity FindEntityWithComponent()
+        {
+            for(auto e : _game_object._scene->Registry()->view<T>())
+            {
+                return {e, _game_object._scene};
+            }
+
+            return {};
+        }
     private:
         void Destroy(Entity entity);
 
         friend class Entity;
         entt::registry _registry;
+
+        // Entity ids free to be reused
+        std::vector<Entity> _free_queue;
 
         // Queue of entities to destroy
         std::vector<Entity> _destruction_queue;

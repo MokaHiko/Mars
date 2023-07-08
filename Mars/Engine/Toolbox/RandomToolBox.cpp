@@ -1,5 +1,8 @@
 #include "RandomToolBox.h"
 
+#include <objbase.h>
+#include "Core/Log.h"
+
 tbx::PrimeSearch::PrimeSearch(int n_elements)
 	: _n_elements(n_elements)
 {
@@ -94,4 +97,14 @@ int tbx::PrimeSearch::IsPrime(int n)
 	}
 
 	return true;
+}
+
+uint64_t tbx::GenerateGUID()
+{
+	GUID guid;
+	if(CoCreateGuid(&guid) != S_OK)
+	{
+		MRS_ERROR("Failed to generate GUID");
+	}
+	return static_cast<uint64_t>(guid.Data1);
 }

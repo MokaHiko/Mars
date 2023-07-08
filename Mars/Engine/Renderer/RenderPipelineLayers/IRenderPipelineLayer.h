@@ -36,6 +36,7 @@ namespace mrs
     };
 
     // Application layer that owns the application renderer and all graphics pipeline that render to scenes
+    // RenderPipelineLayers contain a stack of render pipelines that can be added or removed 
     class IRenderPipelineLayer : public Layer
     {
     public:

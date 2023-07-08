@@ -27,8 +27,21 @@ namespace mrs {
 	class Camera
 	{
 	public:
-		Camera(CameraType type, uint32_t aspect_w, uint32_t aspect_h, const glm::vec3& pos = glm::vec3(.0f));
+		Camera(CameraType type = CameraType::Perspective, uint32_t aspect_w = 1600, uint32_t aspect_h = 900, const glm::vec3& pos = glm::vec3(0.0f));
 		~Camera();
+
+		bool _active = true;
+		uint32_t _aspect_w = 0;
+		uint32_t _aspect_h = 0;
+
+		float _near = 0.1f;
+		float _far = 1000.0f;
+
+		// Set active
+		void SetActive(bool is_active) {_active = is_active;}
+
+		// Returns whether or not camera is active
+		const bool IsActive() const {return _active;}
 
 		// Returns view projection matrix as reference
 		inline const glm::mat4& GetViewProj() const { return _view_proj; }
@@ -39,6 +52,10 @@ namespace mrs {
 		inline const glm::vec3& GetFront() const { return _front; }
 		inline const glm::vec3& GetRight() const { return _right; }
 		inline const glm::vec3& GetUp() const { return _up; }
+		inline const glm::vec3& GetWorldUp() const { return _worldup; }
+
+		// Returns camera type
+		CameraType GetType() const {return _type;}
 
 		// Returns reference to position
 		inline glm::vec3& GetPosition() { return _position; }
@@ -54,11 +71,6 @@ namespace mrs {
 
 		// Returns reference to pitch
 		float& GetPitch() {return _pitch;}
-	public:
-        // Camera Settings
-        float _speed = 2.5f;
-        float _zoom = 45.0f;
-        float _sensitivity = 0.1f;
     private:
         // Camera Relative Position Attributes
 		glm::vec3 _front{ 0.0f };

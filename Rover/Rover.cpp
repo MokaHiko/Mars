@@ -2,12 +2,16 @@
 
 #include <Mars.h>
 #include <Core/Input.h>
-#include <glm/gtc/type_ptr.hpp>
 
 #include <Physics/Physics2DLayer.h>
-#include <imgui.h>
 
-#include "Scripts/EditorManager.h"
+#include "Scripts/Editor/EditorManager.h"
+#include "UIHelpers.h"
+
+#include "Panels/Menus/MainMenu.h"
+#include "Panels/InspectorPanel.h"
+
+#include "GameLayer/GameLayer.h"
 
 namespace mrs {
 	class EditorLayer : public Layer
@@ -16,54 +20,125 @@ namespace mrs {
 		virtual void OnAttach() override
 		{
 			LoadEditorResources();
-			InitObjects();
+			LoadScene();
+
+			_name = "EditorLayer";
 		}
 
 		virtual void OnDetatch() override
 		{
 		}
 
+        virtual void OnEnable()
+		{
+		};
+
 		virtual void OnUpdate(float dt) override
 		{
+			// Pause on start start
+			static bool start_paused = [&](){
+				Pause();
+				return true;
+			}();
+
 			_dt = dt;
-			ProcessInput(dt);
+		}
+
+		// Focuses editor on entity
+		void FocusEntity(Entity entity)
+		{
+			EditorManager *editor_script = (EditorManager *)(void *)(_editor_manager.GetComponent<Script>().script);
+			_selected_entity = entity;
+			if (editor_script != nullptr)
+			{
+				editor_script->_camera_controller->_focused = entity;
+			}
 		}
 
 		virtual void OnImGuiRender() override
 		{
 			// Scene
-			Scene *_scene = Application::GetInstance().GetScene();
+			Scene *scene = Application::GetInstance().GetScene();
+			auto view = scene->Registry()->view<Tag, Transform>();
 
-			// [UI]
-			ImGui::Begin("Application Stats");
-			ImGui::Text("Delta time: %0.3f ms", _dt * 1000.0f);
-			ImGui::Text("Mouse Input x: %0.2f , y : %0.2f", Input::GetAxis('x'), Input::GetAxis('y'));
+			MainMenu::Draw(scene);
 
-			int id = 0;
-			for (auto entity : _scene->Registry()->view<Tag, Transform>())
+			// [Ui] Hierarchy Panel
+			ImGui::Begin("Entity Hierarchy");
+			int ctr = 0;
+			for (auto entity : view)
 			{
-				ImGui::PushID(id++);
+				ImGui::PushID(ctr++);
 
-				Entity e = { entity, _scene };
+				Entity e = { entity, scene };
 				Tag &tag = e.GetComponent<Tag>();
-				Transform &transform = e.GetComponent<Transform>();
 
-				ImGui::Text(tag.tag.c_str());
-				ImGui::Text("Position: ");  ImGui::SameLine();
-				ImGui::DragFloat3("##Position", glm::value_ptr(transform.position));
-				ImGui::Text("Rotation: ");  ImGui::SameLine();
-				ImGui::DragFloat3("##Rotation", glm::value_ptr(transform.rotation));
-				ImGui::Text("Scale: ");  ImGui::SameLine();
-				ImGui::DragFloat3("##Scale", glm::value_ptr(transform.scale));
+				if (ImGui::Selectable(tag.tag.c_str(), e == _selected_entity))
+				{
+					if (ImGui::IsMouseClicked(1))
+					{
+						ImGui::OpenPopup("Object Options");
+					}
+
+					if (ImGui::BeginPopup("Object Options"))
+					{
+						ImGui::Button("Delete Object");
+						ImGui::EndPopup();
+					}
+
+					FocusEntity(e);
+				}
+
 				ImGui::PopID();
 			}
 			ImGui::End();
+
+			// [UI] Inspector Panel
+			InspectorPanel::Draw(_selected_entity);
+
+			ImGui::Begin("Scene Bar");
+			std::string state = _playing ? "Pause" : "Play";
+			if (ImGui::Button(state.c_str()))
+			{
+				if(_playing)
+				{
+					Pause();
+				}
+				else
+				{
+					Play();
+				}
+			}
+			ImGui::End();
+		}
+	private:
+		void Play()
+		{
+			Application::GetInstance().EnableLayer("Physics2DLayer");
+			Application::GetInstance().EnableLayer("NativeScriptingLayer");
+
+			// Disable editor controls and camera 
+			EditorManager* em_script = dynamic_cast<EditorManager*>(_editor_manager.GetComponent<Script>().script);
+			em_script->_camera.GetComponent<Camera>().SetActive(false);
+
+			_playing = true;
 		}
 
-	private:
+		void Pause()
+		{
+			// Disable play time layers
+			Application::GetInstance().DisableLayer("Physics2DLayer");
+			Application::GetInstance().DisableLayer("NativeScriptingLayer");
+
+			// Enable editor controls and camera 
+			EditorManager* em_script = dynamic_cast<EditorManager*>(_editor_manager.GetComponent<Script>().script);
+			em_script->_camera.GetComponent<Camera>().SetActive(true);
+
+			_playing = false; 
+		}
+
 		void LoadEditorResources()
 		{
-			// Load app resources
 			Mesh::LoadFromAsset("Assets/Models/sphere.boop_obj", "sphere");
 			Texture::LoadFromAsset("Assets/Models/white.boop_png", "default_texture");
 			Material::Create("default_material");
@@ -72,52 +147,28 @@ namespace mrs {
 			Texture::LoadFromAsset("Assets/Models/textures_container/Container_DiffuseMap.boop_jpg", "container");
 			Material::Create("container", "container");
 
-			Mesh::LoadFromAsset("Assets/Models/grass_blade.boop_obj", "grass");
 			Texture::LoadFromAsset("Assets/Textures/green.boop_png", "green");
 			Material::Create("green_material", "green");
 
-			// Default meshes
-			Mesh::LoadFromAsset("Assets/Models/plane.boop_obj", "plane");
+			Texture::LoadFromAsset("Assets/Textures/smoke_01.boop_png", "smoke_01");
+			Material::Create("smoke_01_material", "smoke_01");
+
+			Mesh::LoadFromAsset("Assets/Models/cube.boop_obj", "cube");
+			Mesh::LoadFromAsset("Assets/Models/cone.boop_obj", "cone");
 			Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj", "monkey");
 			Mesh::LoadFromAsset("Assets/Models/quad.boop_obj", "quad");
-
-			// Create default shapes
-
-			// ~ Cube
-			std::vector<Vertex> vertices = {
-			  {{-1.0f,1.0f,0.0f}, {}, {}, {}},
-			  {{-1.0f,-1.0f,0.0f}, {}, {}, {}},
-			  {{1.0f,1.0f,0.0f}, {}, {}, {}},
-			  {{1.0f,-1.0f,0.0f}, {}, {}, {}},
-			  {{-1.0f,1.0f,-1.0f}, {}, {}, {}},
-			  {{-1.0f,-1.0f,-1.0f}, {}, {}, {}},
-			  {{1.0f,1.0f,-1.0f}, {}, {}, {}},
-			  {{1.0f,-1.0f,-1.0f}, {}, {}, {}}
-			};
-
-			std::vector<uint32_t> indices = {
-				  0, 2, 3, 0, 3, 1,
-				  2, 6, 7, 2, 7, 3,
-				  6, 4, 5, 6, 5, 7,
-				  4, 0, 1, 4, 1, 5,
-				  0, 4, 6, 0, 6, 2,
-				  1, 5, 7, 1, 7, 3,
-			};
-
-			auto &cube = Mesh::Create("cube");
-			cube->_vertices = vertices;
-			cube->_vertex_count = vertices.size();
-			cube->_indices = indices;
-			cube->_index_count = indices.size();
 		}
 
-		void ProcessInput(float dt)
+		void LoadScene()
 		{
-		}
+			// Register Scripts
+			Script::Register<CameraController>();
+			Script::Register<EditorManager>();
 
-		void InitObjects()
-		{
-			Application::GetInstance().GetScene()->Instantiate("Editor manager").AddComponent<Script>().Bind<EditorManager>();
+			// Create editor manager
+			Scene *scene = Application::GetInstance().GetScene();
+			_editor_manager = scene->Instantiate("Editor Manager");
+			_editor_manager.AddComponent<Script>().Bind<EditorManager>();
 		}
 
 	private:
@@ -131,15 +182,22 @@ namespace mrs {
 
 		// Stats
 		float _dt = 0.0f;
+
+		Entity _selected_entity = {};
+		Entity _editor_manager = {};
+
+		bool _playing = false;
+		bool _initialized = false;
 	};
 
 	class Rover : public Application
 	{
 	public:
-		Rover() : Application("Rover: Mars Editor", 1920, 1080)
+		Rover() : Application("Rover", 1600, 900)
 		{
-			PushLayer(new EditorLayer);
-			PushLayer(new mrs::Physics2DLayer);
+			PushLayer(new mrs::Physics2DLayer());
+			PushLayer(new EditorLayer());
+			PushLayer(new GameLayer());
 		}
 
 		~Rover() {};

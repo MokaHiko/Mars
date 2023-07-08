@@ -1,0 +1,193 @@
+Scene: Rover
+Entities:
+  - Entity: 1310082344
+    Tag:
+      Tag: Player Camera
+    Transform:
+      Position: [7.27395678, 46.9427071, 33.8154335]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Camera:
+      Type: 2
+      Front: [0.155589059, -0.500000179, -0.851934254]
+      Right: [0.983728945, -0, 0.179658771]
+      Up: [0.0898294151, 0.866025329, -0.491864651]
+      WorldUp: [0, 1, 0]
+      Yaw: -79.650116
+      Pitch: -30.0000114
+      AspectW: 1080
+      AspectH: 720
+      Active: true
+    Script:
+      Binding: class PlayerCamera
+  - Entity: 175762344
+    Tag:
+      Tag: Player
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    RenderableObject:
+      Mesh: cone
+      Material: default_material
+    Script:
+      Binding: class PlayerController
+    RigidBody2D:
+      Type: 2
+      UseGravity: false
+    ParticleSystem:
+      MaxParticles: 128
+      ParticleSize: 0.25
+      LifeTime: 0.25
+      EmissionRate: 418
+      Velocity: [500, 500]
+      Running: false
+      Color1: [0.5, 0.5, 0, 1]
+      Color2: [1, 0, 0, 1]
+      Texture: default_material
+  - Entity: 175762383
+    Tag:
+      Tag: Ball
+    Transform:
+      Position: [22.1228619, 31.2420006, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    RenderableObject:
+      Mesh: sphere
+      Material: default_material
+    Script:
+      Binding: class Unit
+    RigidBody2D:
+      Type: 2
+      UseGravity: false
+    ParticleSystem:
+      MaxParticles: 128
+      ParticleSize: 0.25
+      LifeTime: 5
+      EmissionRate: 418
+      Velocity: [500, 500]
+      Running: true
+      Color1: [0.5, 0.5, 0, 1]
+      Color2: [1, 0, 0, 1]
+      Texture: default_material
+  - Entity: 1729822048
+    Tag:
+      Tag: Ball
+    Transform:
+      Position: [7.34196997, 33.2449303, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    RenderableObject:
+      Mesh: sphere
+      Material: default_material
+    Script:
+      Binding: class Unit
+    RigidBody2D:
+      Type: 2
+      UseGravity: false
+    ParticleSystem:
+      MaxParticles: 128
+      ParticleSize: 0.25
+      LifeTime: 5
+      EmissionRate: 418
+      Velocity: [500, 500]
+      Running: true
+      Color1: [0.5, 0.5, 0, 1]
+      Color2: [1, 0, 0, 1]
+      Texture: default_material
+  - Entity: 1154764743
+    Tag:
+      Tag: Ball
+    Transform:
+      Position: [23.004734, 10.4266462, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    RenderableObject:
+      Mesh: sphere
+      Material: default_material
+    Script:
+      Binding: class Unit
+    RigidBody2D:
+      Type: 2
+      UseGravity: false
+    ParticleSystem:
+      MaxParticles: 128
+      ParticleSize: 0.25
+      LifeTime: 5
+      EmissionRate: 418
+      Velocity: [500, 500]
+      Running: true
+      Color1: [0.5, 0.5, 0, 1]
+      Color2: [1, 0, 0, 1]
+      Texture: default_material
+  - Entity: 3295939934
+    Tag:
+      Tag: Ball
+    Transform:
+      Position: [27.370575, 9.72327423, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    RenderableObject:
+      Mesh: sphere
+      Material: default_material
+    Script:
+      Binding: class Unit
+    RigidBody2D:
+      Type: 2
+      UseGravity: false
+    ParticleSystem:
+      MaxParticles: 128
+      ParticleSize: 0.25
+      LifeTime: 5
+      EmissionRate: 418
+      Velocity: [500, 500]
+      Running: true
+      Color1: [0.5, 0.5, 0, 1]
+      Color2: [1, 0, 0, 1]
+      Texture: default_material
+  - Entity: 1114958010
+    Tag:
+      Tag: Ball
+    Transform:
+      Position: [16.7650223, 18.6003494, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    RenderableObject:
+      Mesh: sphere
+      Material: default_material
+    Script:
+      Binding: class Unit
+    RigidBody2D:
+      Type: 2
+      UseGravity: false
+    ParticleSystem:
+      MaxParticles: 128
+      ParticleSize: 0.25
+      LifeTime: 5
+      EmissionRate: 418
+      Velocity: [500, 500]
+      Running: true
+      Color1: [0.5, 0.5, 0, 1]
+      Color2: [1, 0, 0, 1]
+      Texture: default_material
+  - Entity: 1445797466
+    Tag:
+      Tag: Directional Light
+    Transform:
+      Position: [150, 900, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    RenderableObject:
+      Mesh: monkey
+      Material: default_material
+    DirectionalLight:
+      Intensity: 0
+  - Entity: 585847553
+    Tag:
+      Tag: "GameManager"
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Script:
+      Binding: class GameManager

@@ -63,6 +63,9 @@ struct VulkanFrameContext
 	// Main command pool for frame
 	VkCommandPool command_pool;
 	VkCommandBuffer command_buffer;
+
+	VkCommandPool compute_command_pool;
+	VkCommandBuffer compute_command_buffer;
 };
 
 #endif

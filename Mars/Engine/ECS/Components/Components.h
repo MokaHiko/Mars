@@ -9,6 +9,9 @@
 #include <glm/glm.hpp>
 
 #include "ECS/ScriptableEntity.h"
+#include "Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.h"
+#include "Physics/Physics.h"
+#include "Renderer/Camera.h"
 
 namespace mrs
 {
@@ -29,11 +32,17 @@ namespace mrs
     // Base renderer class component that makes an object appear on the screen. Inherited by all game object renderers
     struct RenderableObject
     {
+        RenderableObject() 
+        {
+            mesh = Mesh::Get("cube");
+            material = Material::Get("default_material");
+        };
+
         RenderableObject(std::shared_ptr<Mesh> mesh_, std::shared_ptr<Material> material_)
             : mesh(mesh_), material(material_) {}
 
-        std::shared_ptr<Mesh> mesh;
-        std::shared_ptr<Material> material;
+        std::shared_ptr<Mesh> mesh = nullptr;
+        std::shared_ptr<Material> material = nullptr;
     };
 
     struct DirectionalLight
@@ -49,16 +58,29 @@ namespace mrs
     struct Script
     {
         ScriptableEntity *script = nullptr;
+        std::string binding = "";
 
         std::function<ScriptableEntity *()> InstantiateScript;
         std::function<void(ScriptableEntity *script)> DestroyScript;
 
+        bool enabled = true;
+
+        // Bind scriptable entity
         template <typename T>
         void Bind()
         {
-            InstantiateScript = []()
+            binding = typeid(T).name();
+
+            // Check if script has already been registered
+            auto instantiation_fn = script_instantion_bindings.find(binding);
+            if(instantiation_fn == script_instantion_bindings.end())
             {
-                return static_cast<ScriptableEntity *>(new T());
+                Register<T>();
+            }
+
+            InstantiateScript = [&]()
+            {
+                return static_cast<ScriptableEntity *>((script_instantion_bindings.find(binding)->second)());
             };
 
             DestroyScript = [](ScriptableEntity *script)
@@ -67,6 +89,40 @@ namespace mrs
                 script = nullptr;
             };
         };
+
+        // Binds script to entity given registered script
+        void Bind(std::string binding_name)
+        {
+            binding = binding_name;
+
+            // Assert the script has already been registered
+            auto instantiation_fn = script_instantion_bindings.find(binding);
+            assert(instantiation_fn != script_instantion_bindings.end());
+
+            InstantiateScript = [&]()
+            {
+                return static_cast<ScriptableEntity *>((script_instantion_bindings.find(binding)->second)());
+            };
+
+            DestroyScript = [](ScriptableEntity *script)
+            {
+                delete script;
+                script = nullptr;
+            };
+        }
+
+        // Registers script as valid scriptable entity
+        template<typename T>
+        static void Register()
+        {
+            script_instantion_bindings[typeid(T).name()] = []()
+            {
+                return new T();
+            };
+        }
+
+        // Map between scriptable entity type id and instantiate functions
+        static std::unordered_map <std::string, std::function<ScriptableEntity* ()>> script_instantion_bindings;
     };
 }
 #endif

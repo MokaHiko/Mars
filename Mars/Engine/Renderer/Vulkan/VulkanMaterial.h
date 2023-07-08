@@ -20,6 +20,7 @@ namespace mrs {
 			ResourceManager::Get()._materials[alias] = std::make_shared<Material>();
 			ResourceManager::Get()._materials[alias]->diffuse_texture_path = texture_name;
 
+			ResourceManager::Get()._materials[alias]->_material_name = alias;
 			return ResourceManager::Get()._materials[alias];
 		}
 
@@ -34,6 +35,7 @@ namespace mrs {
 			return nullptr;
 		}
 
+		std::string _material_name;
 		std::string diffuse_texture_path;
 	};
 }

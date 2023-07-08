@@ -10,11 +10,14 @@
 #include <box2d/b2_polygon_shape.h>
 #include <box2d/b2_fixture.h>
 
+#include "ECS/Entity.h"
+#include "Core/Application.h"
+
 namespace mrs
 {
     enum class BodyType
     {
-        UNKNOWN, 
+        UNKNOWN = 0, 
         STATIC,
         DYNAMIC
     };
@@ -34,7 +37,24 @@ namespace mrs
             body->SetLinearVelocity({value.x, value.y});
         }
 
+        // Sets instantaneous angular velocity in radians/second
+        void SetAngularVelocity(const float w)
+        {
+            body->SetAngularVelocity(w);
+        }
+
+        void ApplyAngularImpulse(const float w)
+        {
+            body->ApplyAngularImpulse(w, true);
+        }
+
+        void SetGravityScale(const float value)
+        {
+            body->SetGravityScale(0.0f);
+        };
+
     public:
+        bool use_gravity = true;
         b2Body *body = nullptr;
         BodyType type = BodyType::DYNAMIC;
     };
@@ -44,6 +64,9 @@ namespace mrs
         float width = 1.0f;
         float height = 1.0f;
     };
+
+    template <>
+    RigidBody2D& Entity::AddComponent<RigidBody2D>();
 };
 
 #endif

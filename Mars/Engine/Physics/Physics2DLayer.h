@@ -31,22 +31,25 @@ namespace mrs
     class Physics2DLayer : public Layer
     {
     public:
-        Physics2DLayer();
-        ~Physics2DLayer();
-
         virtual void OnAttach() override;
         virtual void OnDetatch() override;
 
         virtual void OnUpdate(float dt) override;
         virtual void OnImGuiRender() override;
 
+        virtual void OnEnable() override;
+        virtual void OnDisable() override;
+
         void AddBody(Entity entity);
 
         void CreateFixture(Entity entity, BodyType type);
 
     private:
-        b2World* _physics_world;
-        ContactListener* _contact_listener;
+        void InitWorld();
+        void ShutdownWorld();
+    private:
+        b2World* _physics_world = nullptr;
+        ContactListener* _contact_listener = nullptr;
 
         Scene* _scene;
     };

@@ -5,21 +5,22 @@
 
 namespace mrs
 {
-    enum class LogLevel : uint16_t
+    enum class LogLevel : uint8_t
     {
         Unknown = 0,
-        Info = 1,
-        Success = 2,
-        Trace = 3,
-        Error = 4,
-        Warn = 5,
+        Info,
+        Success,
+        Trace,
+        Error,
+        Warn
     };
 
     class Platform
     {
     public:
-        static void Log(const char *msg, LogLevel level);
+        static void Log(LogLevel level, const char* msg, ...);
 
+        static void ConsoleWrite(const char* message, uint8_t color);
     public:
         // Checks if system has enough hard disk space
         static bool CheckStorage(size_t required_size);

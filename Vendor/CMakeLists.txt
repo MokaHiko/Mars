@@ -5,6 +5,7 @@ add_subdirectory(SDL)
 add_subdirectory(vkboostrap)
 add_subdirectory(glm)
 add_subdirectory(entt)
+add_subdirectory(yaml)
 
 set(BOX2D_BUILD_TESTBED OFF)
 set(BOX2D_BUILD_UNIT_TESTS OFF)
@@ -20,6 +21,7 @@ target_link_libraries(${PROJECT_NAME}
 					INTERFACE EnTT
 					INTERFACE box2d
 					INTERFACE boop
+					INTERFACE yaml-cpp
 					)
 
 # Header only libraries 

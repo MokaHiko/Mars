@@ -7,6 +7,7 @@
 
 #include "ParticleComponents.h"
 #include "Renderer/RenderPipelineLayers/IRenderPipeline.h"
+#include "Toolbox/RandomToolBox.h"
 
 namespace mrs
 {
@@ -24,24 +25,23 @@ namespace mrs
 
     struct ParticleParameters
     {
-        //dela time in second
-        float life_time = 0.0f;
-        float dt = 0.0f;
+        // Color Gradient
+        glm::vec4 color_1 = glm::vec4(1.0f);
+        glm::vec4 color_2 = glm::vec4(1.0f);
+        
+        // Shape
+        float scale = 1.0f;
 
-        // emission rate in seconds 
-        float emission_rate = 0.0f;
+        // Emission
+        float life_time; // particles lifetiem in seconds;
+        float dt; // delta time this frame in seconds
+        float emission_rate;
+        uint32_t live_particles;
+        uint32_t reset; // set to 1 if reset
 
-        // Particles alive
-        uint32_t live_particles = 0;
-
-        // Offset into global particle buffer
-        uint32_t buffer_offset = 0;
-
-        // Offset into global particle buffer array
-        uint32_t buffer_index = 0;
-
-        // Set to 1 if reset 
-        uint32_t reset = 0;
+        // Buffer offsets
+        uint32_t buffer_offset; // Offset into global particle buffer
+        uint32_t buffer_index; // Offset into global particle buffer array
     };
 
     struct ParticleSystemPushConstant
@@ -60,6 +60,8 @@ namespace mrs
         virtual void Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt) override;
         virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame) override;
         virtual void End(VkCommandBuffer cmd) override;
+
+        virtual void OnPreRenderPass(VkCommandBuffer cmd) override;
 
         void RegisterParticleSystem(ParticleSystem &particle_system);
         void CacheParticleSystemType(ParticleSystem &particle_system);
@@ -93,11 +95,17 @@ namespace mrs
     private:
         virtual void UploadResources();
 
+        size_t _padded_particle_size = 0;
+        size_t _padded_particle_parameter_size = 0;
         size_t _particle_parameters_size = 0;
         size_t _particle_buffer_size = 0;
     private:
         void InitComputeDescriptors();
         void InitComputePipeline();
+        void InitComputeSyncStructures();
+
+        void UpdateComputeDescriptorSets(uint32_t current_frame, float dt);
+        void RecordComputeCommandBuffers(VkCommandBuffer cmd, uint32_t current_frame);
 
         // Particle Compute Pipeline
         std::vector<AllocatedBuffer> _particle_storage_buffers;
@@ -111,6 +119,9 @@ namespace mrs
 
         // Renderer max and live particles
         uint32_t _max_particles = 0;
+
+        std::vector<VkFence> _compute_in_flight_fences = {};
+        std::vector<VkSemaphore> _compute_in_flight_semaphores = {};
     private:
         void InitGraphicsDescriptors();
         void InitGraphicsPipeline();
@@ -124,6 +135,8 @@ namespace mrs
 
         // Quad to render particles with
         std::shared_ptr<Mesh> _quad_mesh;
+        tbx::PRNGenerator<float> _random_generator{0.0f, 1.0f};
+
     };
 }
 

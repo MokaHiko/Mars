@@ -19,6 +19,7 @@ namespace mrs
         virtual void End(VkCommandBuffer cmd) override;
 
     private:
+        void SetupImGuiStyle( bool bStyleDark_, float alpha_);
         SDL_Window *_window_handle = nullptr;
     };
 }

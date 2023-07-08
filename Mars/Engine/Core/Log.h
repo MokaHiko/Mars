@@ -5,8 +5,8 @@
 
 #include "Platform/Platform.h"
 
-#define MRS_ERROR(x) Platform::Log(x, LogLevel::Error)
-#define MRS_INFO(x) Platform::Log(x, LogLevel::Info)
-#define MRS_TRACE(x) Platform::Log(x, LogLevel::Trace)
+#define MRS_ERROR(msg, ...) mrs::Platform::Log(mrs::LogLevel::Error, msg, __VA_ARGS__)
+#define MRS_INFO(msg, ...)  mrs::Platform::Log(mrs::LogLevel::Info, msg, __VA_ARGS__)
+#define MRS_TRACE(msg, ...) mrs::Platform::Log(mrs::LogLevel::Trace, msg, __VA_ARGS__)
 
 #endif

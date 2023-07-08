@@ -31,18 +31,24 @@ namespace mrs {
 		virtual ~Application();
 
 		void Run();
+		void Shutdown();
 
-		// Polls events and dispatches to layers return false if quit
 		bool PollEvents();
 
 		void PushLayer(Layer* layer);
 		void PopLayer(Layer* layer);
+
+		void DisableLayer(const std::string& layer_name);
+		void EnableLayer(const std::string& layer_name);
 
 		// Returns handle to layer given name
 		Layer* FindLayer(const std::string& layer_name);
 
 		// Returns handle to application scene
 		Scene* GetScene() { return _scene.get(); }
+		
+		// Returns const reference to app name string
+		const std::string& GetAppName() const { return _app_name; }
 
 		// Get static instance of application
 		static Application& GetInstance() { return *_instance; }
@@ -56,6 +62,7 @@ namespace mrs {
 		// Core application structures
 		std::shared_ptr<Window> _window = nullptr;
 		std::shared_ptr<Scene> _scene = nullptr;
+		std::string _app_name;
 
 		bool _running = false;
 		float _dt = 0.0f;
