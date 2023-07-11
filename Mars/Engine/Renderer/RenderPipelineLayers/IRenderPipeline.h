@@ -34,6 +34,9 @@ namespace mrs
 
         // Called after main render pass
         virtual void OnPostRenderpass(VkCommandBuffer cmd) {};
+
+        // Called on renderable destroyed
+        virtual void OnEntityDestroyed(Entity e) {};
     protected:
         friend class IRenderPipelineLayer;
 

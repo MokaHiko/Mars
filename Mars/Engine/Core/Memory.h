@@ -14,14 +14,6 @@ constexpr Ref<T> CreateRef(Args &&...args)
 	return std::make_shared<T>(std::forward<Args>(args)...);
 }
 
-template <typename T>
-using WeakRef = T*;
-template <typename T, typename... Args>
-constexpr T* CreateWeakRef(Args &&...args)
-{
-	return MRS_NEW(std::forward<Args>(args)...);
-}
-
 #else
 #define MRS_NEW new
 
@@ -32,15 +24,6 @@ constexpr Ref<T> CreateRef(Args &&...args)
 {
 	return std::make_shared<T>(std::forward<Args>(args)...);
 }
-
-template <typename T>
-using WeakRef = T*;
-template <typename T, typename... Args>
-constexpr T* CreateWeakRef(Args &&...args)
-{
-	return MRS_NEW(std::forward<Args>(args)...);
-}
-
 #endif
 
 #endif

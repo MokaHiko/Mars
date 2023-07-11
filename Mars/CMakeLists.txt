@@ -48,6 +48,7 @@ add_library(${PROJECT_NAME}
 			Engine/Toolbox/TimeToolBox.cpp
 			Engine/Toolbox/RandomToolBox.h
 			Engine/Toolbox/RandomToolBox.cpp
+			Engine/Toolbox/SignalToolBox.h
 			Engine/Toolbox/PathFindingToolBox.h
 			Engine/Toolbox/PathFindingToolBox.cpp
 

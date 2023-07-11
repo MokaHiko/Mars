@@ -61,6 +61,11 @@ namespace mrs
 
 			pipeline->Init();
 		}
+
+		// Subscribe to signals
+		Application::GetInstance().GetScene()->_entity_destroyed += [&](Entity e){
+			OnEntityDestroyed(e);
+		};
 	}
 
 	void IRenderPipelineLayer::OnDetatch()
@@ -132,5 +137,13 @@ namespace mrs
 
 	void IRenderPipelineLayer::OnImGuiRender()
 	{
+	}
+
+	void IRenderPipelineLayer::OnEntityDestroyed(Entity e)
+	{
+		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
+		{
+			(*it)->OnEntityDestroyed(e);
+		}
 	}
 }

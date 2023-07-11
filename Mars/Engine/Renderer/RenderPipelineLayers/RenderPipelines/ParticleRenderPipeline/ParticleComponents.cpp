@@ -9,9 +9,11 @@ bool mrs::ParticleSystem::operator==(const ParticleSystem &other) const
     if(other.duration != duration) {
         return false;
     }
+
     if(other.emission_shape != emission_shape) {
         return false;
     }
+
     if(other.emission_rate != emission_rate) {
         return false;
     }

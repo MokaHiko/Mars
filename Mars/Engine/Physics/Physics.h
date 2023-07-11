@@ -48,9 +48,14 @@ namespace mrs
             body->ApplyAngularImpulse(w, true);
         }
 
-        void SetGravityScale(const float value)
+        void SetGravityScale(const float value = 0.0f)
         {
-            body->SetGravityScale(0.0f);
+            body->SetGravityScale(value);
+        };
+
+        void SetFixedRotation(const bool flag)
+        {
+            body->SetFixedRotation(flag);
         };
 
     public:

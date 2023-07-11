@@ -10,6 +10,10 @@ namespace mrs
 	{
 		_name = "Physics2DLayer";
 		_scene = Application::GetInstance().GetScene();
+
+		_scene->_entity_destroyed += [&](Entity e) {
+				OnEntityDestroyed(e);
+			};
 	}
 
 	void Physics2DLayer::OnDetatch()
@@ -87,7 +91,7 @@ namespace mrs
 			rb.body = _physics_world->CreateBody(&dynamic_body_def);
 			rb.body->GetUserData().pointer = entity.Id();
 
-			if(!rb.use_gravity)
+			if (!rb.use_gravity)
 			{
 				rb.body->SetGravityScale(0.0f);
 			}
@@ -127,6 +131,15 @@ namespace mrs
 		}
 	}
 
+	void Physics2DLayer::OnEntityDestroyed(Entity e)
+	{
+		if (e.HasComponent<RigidBody2D>())
+		{
+			auto &rb = e.GetComponent<RigidBody2D>();
+			rb.body->GetWorld()->DestroyBody(rb.body);
+		}
+	}
+
 	void Physics2DLayer::InitWorld()
 	{
 		// Prevent instantiate of world without shutdown
@@ -136,7 +149,7 @@ namespace mrs
 		}
 
 		// Init world
-		b2Vec2 gravity = {0.0f, -10.0f};
+		b2Vec2 gravity = { 0.0f, -10.0f };
 		_physics_world = new b2World(gravity);
 
 		auto view = _scene->Registry()->view<Transform, RigidBody2D>();
@@ -156,7 +169,7 @@ namespace mrs
 
 	void Physics2DLayer::ShutdownWorld()
 	{
-		delete _contact_listener; 
+		delete _contact_listener;
 		_contact_listener = nullptr;
 
 		delete _physics_world;
@@ -168,12 +181,12 @@ namespace mrs
 		Entity entity_a = Entity((entt::entity)contact->GetFixtureA()->GetBody()->GetUserData().pointer, _scene);
 		Entity entity_b = Entity((entt::entity)contact->GetFixtureB()->GetBody()->GetUserData().pointer, _scene);
 
-		if(entity_a.HasComponent<Script>()) {
-		entity_a.GetComponent<Script>().script->OnCollisionEnter(entity_b);
+		if (entity_a.HasComponent<Script>()) {
+			entity_a.GetComponent<Script>().script->OnCollisionEnter(entity_b);
 		}
 
-		if(entity_b.HasComponent<Script>()) {
-		entity_b.GetComponent<Script>().script->OnCollisionEnter(entity_a);
+		if (entity_b.HasComponent<Script>()) {
+			entity_b.GetComponent<Script>().script->OnCollisionEnter(entity_a);
 		}
 	}
 	void ContactListener::EndContact(b2Contact *contact)

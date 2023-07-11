@@ -41,9 +41,9 @@ namespace mrs
         virtual void OnDisable() override;
 
         void AddBody(Entity entity);
-
         void CreateFixture(Entity entity, BodyType type);
 
+        void OnEntityDestroyed(Entity e);
     private:
         void InitWorld();
         void ShutdownWorld();

@@ -18,6 +18,7 @@ namespace mrs
         virtual void OnUpdate(float dt) override;
         virtual void OnEvent(Event &event) override;
 
+        void OnEntityDestroyed(Entity e);
     private:
         Scene *_scene = nullptr;
     };

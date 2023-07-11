@@ -52,6 +52,7 @@ namespace mrs
 		void PushRenderPipeline(IRenderPipeline* pipeline);
 		void PopRenderPipeline(IRenderPipeline* pipeline);
 
+        void OnEntityDestroyed(Entity e);
     private:
         std::shared_ptr<Renderer> _renderer = nullptr;
 		RenderPipelineStack _render_pipeline_layers;

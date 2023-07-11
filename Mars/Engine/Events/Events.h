@@ -4,10 +4,11 @@
 #pragma once
 
 #include <SDL2/SDL.h>
+#include <atomic>
 
 namespace mrs 
 {
-    // Base mars event
+    // Wrapper for SDL Events
     class Event
     {
     public:
@@ -18,11 +19,6 @@ namespace mrs
 
         bool _handled = false;
         SDL_Event& _event;
-    };
-
-    class ECSEvent : public Event
-    {
-        
     };
 }
 

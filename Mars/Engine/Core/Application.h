@@ -72,6 +72,8 @@ namespace mrs {
 
 		// Application singleton instance
 		static Application* _instance;
+
+		// Application Signals
 	};
 
 	// To be implemented by client

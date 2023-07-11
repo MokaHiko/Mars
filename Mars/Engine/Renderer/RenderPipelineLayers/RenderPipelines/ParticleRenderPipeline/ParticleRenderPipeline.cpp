@@ -178,7 +178,8 @@ void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_f
 			RegisterParticleSystem(particle_system);
 		}
 
-		if (particle_system.running) {
+		if (particle_system.running) 
+		{
 			particle_system.time += dt;
 			particle_system.live_particles = glm::min((uint32_t)(particle_system.emission_rate * particle_system.time), particle_system.max_particles);
 
@@ -455,6 +456,8 @@ void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particl
 		{
 			particle_system.buffer_offset = cache_it->second.free_buffer_offsets.back();
 			cache_it->second.free_buffer_offsets.pop_back();
+
+			particle_system.Reset();
 		}
 		else
 		{
@@ -522,7 +525,7 @@ void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particl
 				float x = r * cos(theta);
 				float y = r * sin(theta);
 				particles[i].position = glm::vec2(x, y);
-				particles[i].velocity = _random_generator.Next() * glm::vec2(x, y);
+				particles[i].velocity = _random_generator.Next() * glm::vec2(x, y) * particle_system.velocity;
 				particles[i].color = particle_system.color_1;
 			}
 		}
@@ -570,6 +573,22 @@ void mrs::ParticleRenderPipeline::CacheParticleSystemType(ParticleSystem &partic
 	type.buffer_size = _padded_particle_size * particle_system.max_particles;
 
 	_particle_system_type_cache[particle_system] = type;
+}
+
+void mrs::ParticleRenderPipeline::OnEntityDestroyed(Entity e)
+{
+	// Cache particle system on destruction
+	if (e.HasComponent<ParticleSystem>())
+    {
+        auto &particle_system = e.GetComponent<ParticleSystem>();
+        auto cache_it = particle_system.pipeline->_particle_system_type_cache.find(particle_system);
+        
+        if(cache_it != particle_system.pipeline->_particle_system_type_cache.end()) {
+            cache_it->second.free_buffer_offsets.push_back(particle_system.buffer_offset);
+        } else {
+            particle_system.pipeline->CacheParticleSystemType(particle_system);
+        }
+    }
 }
 
 const VkVertexInputBindingDescription &mrs::Particle::GetBinding()

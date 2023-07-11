@@ -32,7 +32,7 @@ public:
     float _turning_speed = 100.0f;
 
     float _fire_rate = 0.35f;
-    float _projecitle_velocity = 100.0f;
+    float _projecitle_velocity = 25.0f;
     float _projectile_scale = 0.25f;
     float _current_cooldown_time = _fire_rate;
 
@@ -123,7 +123,20 @@ private:
                 e.GetComponent<mrs::Transform>().scale = glm::vec3(_projectile_scale);
 
                 e.AddComponent<mrs::RenderableObject>();
-                e.AddComponent<mrs::RigidBody2D>().AddImpulse(target_dir * _projecitle_velocity);
+                e.AddComponent<mrs::Script>().Bind<Projectile>();
+
+                auto& rb = e.AddComponent<mrs::RigidBody2D>();
+                rb.use_gravity = false;
+                rb.AddImpulse(target_dir * _projecitle_velocity);
+                rb.SetFixedRotation(true);
+
+                auto& particles = e.AddComponent<mrs::ParticleSystem>();
+                particles.velocity = {500.0f, 500.0f};
+                particles.life_time = 10.0f;
+                particles.particle_size = 0.5f;
+                particles.emission_rate = 252.0f;
+                particles.emission_shape = mrs::EmissionShape::Circle;
+                particles.running = false;
 
                 _current_cooldown_time = _fire_rate;
             }

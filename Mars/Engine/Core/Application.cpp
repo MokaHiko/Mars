@@ -65,6 +65,8 @@ namespace mrs {
 					layer->OnUpdate(dt);
 				}
 			}
+
+			_scene->FlushDestructionQueue();
 		}
 	}
 

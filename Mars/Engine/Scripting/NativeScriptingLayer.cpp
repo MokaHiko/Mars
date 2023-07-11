@@ -4,11 +4,14 @@
 void mrs::NativeScriptingLayer::OnAttach()
 {
 	_name = "NativeScriptingLayer";
+
+	_scene = Application::GetInstance().GetScene();
+	_scene->_entity_destroyed += [&](Entity e) {
+		OnEntityDestroyed(e);
+	};
 }
 
 void mrs::NativeScriptingLayer::OnEnable() {
-	_scene = Application::GetInstance().GetScene();
-
 	// Instantiate scripts
 	{
 		auto view = _scene->Registry()->view<Transform, Script>().use<Script>();
@@ -92,4 +95,13 @@ void mrs::NativeScriptingLayer::OnUpdate(float dt)
 void mrs::NativeScriptingLayer::OnEvent(Event &event)
 {
 
+}
+
+void mrs::NativeScriptingLayer::OnEntityDestroyed(Entity e) 
+{
+    if (e.HasComponent<Script>())
+    {
+        auto &script = e.GetComponent<Script>();
+        script.DestroyScript(script.script);
+    }
 }

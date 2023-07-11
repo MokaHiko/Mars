@@ -17,6 +17,7 @@ namespace mrs
 {
     struct Tag
     {
+        Tag() = default;
         Tag(const std::string &name)
             : tag(name) {}
         std::string tag = "";

@@ -153,6 +153,8 @@ namespace mrs
 				ImGui::ColorEdit4("color 1", glm::value_ptr(particles.color_1));
 				ImGui::ColorEdit4("color 2", glm::value_ptr(particles.color_2));
 
+				ImGui::DragFloat2("Starting Velocity", glm::value_ptr(particles.velocity), 0.5f, 0.0f);
+
 				ImGui::TreePop();
 			}
 
