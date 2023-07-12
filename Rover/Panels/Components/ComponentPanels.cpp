@@ -146,14 +146,14 @@ namespace mrs
 			// Particle properties
 			if (ImGui::TreeNode("Particle Properties"))
 			{
-				ImGui::DragFloat("Lifetime", &particles.life_time, 0.1f, 0.0f);
-				ImGui::DragFloat("Scale", &particles.particle_size, 0.5f, 0.0f);
+				ImGui::DragFloat("Lifetime", &particles.life_time, 0.1f, 0.0f, std::numeric_limits<float>::max());
+				ImGui::DragFloat("Scale", &particles.particle_size, 0.5f, 0.0f, std::numeric_limits<float>::max());
 
 				ImGui::Text("Color Gradient");
 				ImGui::ColorEdit4("color 1", glm::value_ptr(particles.color_1));
 				ImGui::ColorEdit4("color 2", glm::value_ptr(particles.color_2));
 
-				ImGui::DragFloat2("Starting Velocity", glm::value_ptr(particles.velocity), 0.5f, 0.0f);
+				ImGui::DragFloat2("Starting Velocity", glm::value_ptr(particles.velocity), 0.5f, 0.0f, 10000.0f);
 
 				ImGui::TreePop();
 			}

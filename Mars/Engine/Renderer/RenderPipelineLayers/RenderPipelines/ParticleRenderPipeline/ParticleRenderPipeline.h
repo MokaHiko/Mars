@@ -71,10 +71,10 @@ namespace mrs
         // Particle system type
         struct ParticleSystemType
         {
-            // Offset of first instance in buffer
-            uint32_t first_instance_buffer_offset = 0;
+            // Offset of template instance in buffer
+            uint32_t template_instance_buffer_offset = 0;
 
-            // Size of single particle system in bufer
+            // Size a single instance of the particle system in buffer
             size_t buffer_size = 0;
 
             // Offsets of free members in buffer
@@ -84,7 +84,8 @@ namespace mrs
         // Particle system hash
         struct ParticleSystemHash
         {
-            size_t operator()(const ParticleSystem &k) const {
+            size_t operator()(const ParticleSystem &k) const 
+            {
                 return k.Hash();
             }
         };
@@ -108,6 +109,9 @@ namespace mrs
 
         void UpdateComputeDescriptorSets(uint32_t current_frame, float dt);
         void RecordComputeCommandBuffers(VkCommandBuffer cmd, uint32_t current_frame);
+
+        // Fills an array with properties of a particle system
+        void FillParticleArray(const ParticleSystem& particle_system, std::vector<Particle>& particles);
 
         // Particle Compute Pipeline
         std::vector<AllocatedBuffer> _particle_storage_buffers;

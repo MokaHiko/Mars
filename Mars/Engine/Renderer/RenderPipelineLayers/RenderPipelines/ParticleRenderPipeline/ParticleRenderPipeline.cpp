@@ -49,7 +49,11 @@ void mrs::ParticleRenderPipeline::UploadResources()
 	{
 		Entity e(entity, _scene);
 		auto &particle_system = e.GetComponent<ParticleSystem>();
-		RegisterParticleSystem(particle_system);
+
+		if(!particle_system.registered)
+		{
+			RegisterParticleSystem(particle_system);
+		}
 	}
 }
 
@@ -178,7 +182,7 @@ void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_f
 			RegisterParticleSystem(particle_system);
 		}
 
-		if (particle_system.running) 
+		if (particle_system.running)
 		{
 			particle_system.time += dt;
 			particle_system.live_particles = glm::min((uint32_t)(particle_system.emission_rate * particle_system.time), particle_system.max_particles);
@@ -208,7 +212,7 @@ void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_f
 				particle_system.time = 0.0f;
 			}
 
-			if(particle_system.stop)
+			if (particle_system.stop)
 			{
 				params.reset = 1;
 				particle_system.reset = false;
@@ -222,7 +226,7 @@ void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_f
 			memcpy(data + offset, &params, sizeof(ParticleParameters));
 
 			// Stop is handled after reset
-			if(particle_system.stop)
+			if (particle_system.stop)
 			{
 				particle_system.running = false;
 				particle_system.stop = false;
@@ -252,7 +256,7 @@ void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cm
 		Entity e(entity, _scene);
 		auto &particle_system = e.GetComponent<ParticleSystem>();
 
-		if (particle_system.running) 
+		if (particle_system.running)
 		{
 			// Bind push constant
 			ParticleSystemPushConstant pc;
@@ -272,6 +276,37 @@ void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cm
 		}
 	}
 	VK_CHECK(vkEndCommandBuffer(cmd));
+}
+
+void mrs::ParticleRenderPipeline::FillParticleArray(const ParticleSystem &particle_system, std::vector<Particle> &particles)
+{
+	particles.resize(particle_system.max_particles);
+
+	if (particle_system.emission_shape == EmissionShape::Cone) {
+		for (uint32_t i = 0; i < particle_system.max_particles; i++)
+		{
+			float r = 0.5f * _random_generator.Next();
+			float theta = _random_generator.Next() * glm::radians(25.0f);
+			float x = r * cos(theta);
+			float y = r * sin(theta);
+			particles[i].position = glm::vec2(x, y);
+			particles[i].velocity = { _random_generator.Next() * particle_system.velocity.x, _random_generator.Next() * particle_system.velocity.y };
+			particles[i].color = particle_system.color_1;
+		}
+	}
+	else if (particle_system.emission_shape == EmissionShape::Circle)
+	{
+		for (uint32_t i = 0; i < particle_system.max_particles; i++)
+		{
+			float r = 1.0f * _random_generator.Next();
+			float theta = _random_generator.Next() * glm::radians(360.0f);
+			float x = r * cos(theta);
+			float y = r * sin(theta);
+			particles[i].position = glm::vec2(x, y);
+			particles[i].velocity = particles[i].position * particle_system.velocity;
+			particles[i].color = particle_system.color_1;
+		}
+	}
 }
 
 void mrs::ParticleRenderPipeline::InitGraphicsDescriptors()
@@ -342,7 +377,7 @@ void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
 
 	// Pipeline layouts
 	VkPipelineLayoutCreateInfo layout_info = vkinit::pipeline_layout_create_info();
-	std::vector<VkDescriptorSetLayout> set_layouts = {_global_descriptor_set_layout, _object_descriptor_set_layout, _default_image_set_layout, _graphics_descriptor_set_layout };
+	std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, _default_image_set_layout, _graphics_descriptor_set_layout };
 
 	layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
 	layout_info.pSetLayouts = set_layouts.data();
@@ -361,7 +396,7 @@ void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
 
 	_graphics_pipeline = builder.Build(_renderer->GetDevice().device, _default_render_pass);
 
-	if (_graphics_pipeline == VK_NULL_HANDLE) 
+	if (_graphics_pipeline == VK_NULL_HANDLE)
 	{
 		VK_CHECK(VK_ERROR_UNKNOWN);
 	}
@@ -370,8 +405,8 @@ void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
 	vkDestroyShaderModule(_renderer->GetDevice().device, vertex_shader, nullptr);
 	vkDestroyShaderModule(_renderer->GetDevice().device, fragment_shader, nullptr);
 	_renderer->GetDeletionQueue().Push([&]() {
-	vkDestroyPipeline(_renderer->GetDevice().device, _graphics_pipeline,nullptr);
-	vkDestroyPipelineLayout(_renderer->GetDevice().device, _graphics_pipeline_layout, nullptr);
+		vkDestroyPipeline(_renderer->GetDevice().device, _graphics_pipeline, nullptr);
+		vkDestroyPipelineLayout(_renderer->GetDevice().device, _graphics_pipeline_layout, nullptr);
 		});
 }
 
@@ -401,7 +436,6 @@ void mrs::ParticleRenderPipeline::Compute(VkCommandBuffer cmd, uint32_t current_
 
 void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame)
 {
-
 	VkDescriptorSet _frame_object_set = _renderer->GetCurrentGlobalObjectDescriptorSet();
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline);
@@ -423,6 +457,12 @@ void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_fr
 	{
 		Entity e(entity, _scene);
 		auto &particle_system = e.GetComponent<ParticleSystem>();
+
+		if(!particle_system.running)
+		{
+			continue;
+		}
+
 		auto &material = particle_system.texture;
 
 		// Bind push constant
@@ -447,117 +487,49 @@ void mrs::ParticleRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd) {}
 
 void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particle_system)
 {
+	//  Check next particle offset is within alloted buffer size
+	if (_buffer_next_free_offset / _padded_particle_size > _max_particles)
+	{
+		std::cout << "Max particle count reached!" << std::endl;
+		return;
+	}
+
 	// See if simillair particle system type exists in gpu cache
 	auto cache_it = _particle_system_type_cache.find(particle_system);
 	if (cache_it != _particle_system_type_cache.end())
 	{
-		// Check if free instance already in buffer
+		// Find free buffer offset
 		if (!cache_it->second.free_buffer_offsets.empty())
 		{
 			particle_system.buffer_offset = cache_it->second.free_buffer_offsets.back();
 			cache_it->second.free_buffer_offsets.pop_back();
-
-			particle_system.Reset();
 		}
 		else
 		{
-			//  Check particle offset is within buffer size
-			if (_buffer_next_free_offset / _padded_particle_size > _max_particles)
-			{
-				std::cout << "Max particle count reached!" << std::endl;
-				return;
-			}
-
-			// Increment buffer
 			particle_system.buffer_offset = static_cast<uint32_t>(_buffer_next_free_offset);
-			_buffer_next_free_offset += _padded_particle_size * particle_system.max_particles;
-
-			// Copy particle system data to new offset
-			for (uint32_t i = 0; i < frame_overlaps; i++)
-			{
-				_renderer->ImmediateSubmit([&](VkCommandBuffer cmd)
-					{
-						VkBufferCopy region = {};
-						region.size = cache_it->second.buffer_size;
-						region.srcOffset = cache_it->second.first_instance_buffer_offset;
-						region.dstOffset = particle_system.buffer_offset;
-
-						vkCmdCopyBuffer(cmd, _particle_storage_buffers[i].buffer, _particle_storage_buffers[i].buffer, 1, &region); });
-			}
-
-			// Set reset flag to reset properties
-			particle_system.Reset();
-		}
-	}
-	else
-	{
-		//  Check particle offset is within buffer size
-		if (_buffer_next_free_offset / _padded_particle_size > _max_particles)
-		{
-			std::cout << "Max particle count reached!" << std::endl;
-			return;
+			_buffer_next_free_offset += particle_system.max_particles * _padded_particle_size;
 		}
 
-		// Update next buffer offset
-		particle_system.buffer_offset = static_cast<uint32_t>(_buffer_next_free_offset);
-		_buffer_next_free_offset += _padded_particle_size * particle_system.max_particles;
-
-		// Create new particles data
-		std::vector<Particle> particles(particle_system.max_particles);
-
-		if (particle_system.emission_shape == EmissionShape::Cone) {
-			for (uint32_t i = 0; i < particle_system.max_particles; i++)
-			{
-				float r = 0.5f * _random_generator.Next();
-				float theta = _random_generator.Next() * glm::radians(25.0f);
-				float x = r * cos(theta);
-				float y = r * sin(theta);
-				particles[i].position = glm::vec2(x, y);
-				particles[i].velocity = { _random_generator.Next() * particle_system.velocity.x, _random_generator.Next() * particle_system.velocity.y };
-				particles[i].color = particle_system.color_1;
-			}
-		}
-		else if (particle_system.emission_shape == EmissionShape::Circle) {
-			for (uint32_t i = 0; i < particle_system.max_particles; i++)
-			{
-				float r = 1.0f * _random_generator.Next();
-				float theta = _random_generator.Next() * glm::radians(360.0f);
-				float x = r * cos(theta);
-				float y = r * sin(theta);
-				particles[i].position = glm::vec2(x, y);
-				particles[i].velocity = _random_generator.Next() * glm::vec2(x, y) * particle_system.velocity;
-				particles[i].color = particle_system.color_1;
-			}
-		}
-
-		// Cache particle system type
-		CacheParticleSystemType(particle_system);
-
-		// Create staging buffer for new particles
-		AllocatedBuffer staging_buffer = _renderer->CreateBuffer(_padded_particle_size * particle_system.max_particles, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-		char *data;
-		vmaMapMemory(_renderer->GetAllocator(), staging_buffer.allocation, (void **)&data);
-		for (uint32_t i = 0; i < particle_system.max_particles; i++) {
-			memcpy(data + (_padded_particle_size * i), &particles[i], sizeof(Particle));
-		}
-		vmaUnmapMemory(_renderer->GetAllocator(), staging_buffer.allocation);
-
-		// Upload particles to offset in global particle buffer
+		// Copy particle system template to offset
 		for (uint32_t i = 0; i < frame_overlaps; i++)
 		{
 			_renderer->ImmediateSubmit([&](VkCommandBuffer cmd)
 				{
 					VkBufferCopy region = {};
-					region.srcOffset = 0;
-					region.size = _padded_particle_size * particle_system.max_particles;
+					region.size = cache_it->second.buffer_size;
+					region.srcOffset = cache_it->second.template_instance_buffer_offset;
 					region.dstOffset = particle_system.buffer_offset;
 
-					vkCmdCopyBuffer(cmd, staging_buffer.buffer, _particle_storage_buffers[i].buffer, 1, &region); });
+					vkCmdCopyBuffer(cmd, _particle_storage_buffers[i].buffer, _particle_storage_buffers[i].buffer, 1, &region);
+				});
 		}
-
-		// Clean up
-		vmaDestroyBuffer(_renderer->GetAllocator(), staging_buffer.buffer, staging_buffer.allocation);
+	}
+	else
+	{
+		// Cache particle system type then register again
+		CacheParticleSystemType(particle_system);
+		RegisterParticleSystem(particle_system);
+		return;
 	}
 
 	// Signal registered flag
@@ -567,28 +539,64 @@ void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particl
 
 void mrs::ParticleRenderPipeline::CacheParticleSystemType(ParticleSystem &particle_system)
 {
-	// Create and cache first instance data
+	// Create new particles data
+	std::vector<Particle> particles = {};
+	FillParticleArray(particle_system, particles);
+
+	// Create staging buffer for new particles
+	AllocatedBuffer staging_buffer = _renderer->CreateBuffer(_padded_particle_size * particle_system.max_particles, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	char *data;
+	vmaMapMemory(_renderer->GetAllocator(), staging_buffer.allocation, (void **)&data);
+	for (uint32_t i = 0; i < particle_system.max_particles; i++) {
+		memcpy(data + (_padded_particle_size * i), &particles[i], sizeof(Particle));
+	}
+	vmaUnmapMemory(_renderer->GetAllocator(), staging_buffer.allocation);
+
+	// Cache particle system template in particle buffer
+	for (uint32_t i = 0; i < frame_overlaps; i++)
+	{
+		_renderer->ImmediateSubmit([&](VkCommandBuffer cmd)
+			{
+				// Copy particle template buffer
+				VkBufferCopy region = {};
+				region.srcOffset = 0;
+				region.size = _padded_particle_size * particle_system.max_particles;
+				region.dstOffset = _buffer_next_free_offset;
+
+				vkCmdCopyBuffer(cmd, staging_buffer.buffer, _particle_storage_buffers[i].buffer, 1, &region);
+			});
+	}
+
+	// Create and cache first instance data 
 	ParticleSystemType type;
-	type.first_instance_buffer_offset = particle_system.buffer_offset;
-	type.buffer_size = _padded_particle_size * particle_system.max_particles;
+	type.template_instance_buffer_offset = _buffer_next_free_offset;
+	type.buffer_size = particle_system.max_particles * _padded_particle_size;
 
 	_particle_system_type_cache[particle_system] = type;
+
+	// Update buffer offset
+	_buffer_next_free_offset += type.buffer_size;
+
+	// Clean up
+	vmaDestroyBuffer(_renderer->GetAllocator(), staging_buffer.buffer, staging_buffer.allocation);
 }
 
 void mrs::ParticleRenderPipeline::OnEntityDestroyed(Entity e)
 {
 	// Cache particle system on destruction
 	if (e.HasComponent<ParticleSystem>())
-    {
-        auto &particle_system = e.GetComponent<ParticleSystem>();
-        auto cache_it = particle_system.pipeline->_particle_system_type_cache.find(particle_system);
-        
-        if(cache_it != particle_system.pipeline->_particle_system_type_cache.end()) {
-            cache_it->second.free_buffer_offsets.push_back(particle_system.buffer_offset);
-        } else {
-            particle_system.pipeline->CacheParticleSystemType(particle_system);
-        }
-    }
+	{
+		auto &particle_system = e.GetComponent<ParticleSystem>();
+		auto cache_it = particle_system.pipeline->_particle_system_type_cache.find(particle_system);
+
+		if (cache_it != particle_system.pipeline->_particle_system_type_cache.end()) {
+			cache_it->second.free_buffer_offsets.push_back(particle_system.buffer_offset);
+		}
+		else
+		{
+			particle_system.pipeline->CacheParticleSystemType(particle_system);
+		}
+	}
 }
 
 const VkVertexInputBindingDescription &mrs::Particle::GetBinding()

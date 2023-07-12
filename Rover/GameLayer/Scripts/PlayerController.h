@@ -11,6 +11,7 @@
 #include <SDL.h>
 
 #include "Projectile.h"
+
 class PlayerController : public mrs::ScriptableEntity
 {
 public:
@@ -41,7 +42,7 @@ public:
         // Get handles
         _transform = &GetComponent<mrs::Transform>();
         _rb = &GetComponent<mrs::RigidBody2D>();
-        _particles = &GetComponent<mrs::ParticleSystem>();
+        //_particles = &GetComponent<mrs::ParticleSystem>();
 
         // Set initial state
         _state = PlayerState::Idle;
@@ -131,13 +132,17 @@ private:
                 rb.SetFixedRotation(true);
 
                 auto& particles = e.AddComponent<mrs::ParticleSystem>();
-                particles.velocity = {500.0f, 500.0f};
+                particles.max_particles = 12;
+                particles.velocity = glm::vec2(750.0f);
                 particles.life_time = 10.0f;
                 particles.particle_size = 0.5f;
-                particles.emission_rate = 252.0f;
+                particles.emission_rate = 254.0f;
                 particles.emission_shape = mrs::EmissionShape::Circle;
                 particles.running = false;
 
+                particles.color_1 = glm::vec4(255,240,0,255);
+                particles.color_2 = glm::vec4(255,240,0, 0);
+                
                 _current_cooldown_time = _fire_rate;
             }
         }

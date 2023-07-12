@@ -182,7 +182,7 @@ namespace mrs
 		Entity entity_b = Entity((entt::entity)contact->GetFixtureB()->GetBody()->GetUserData().pointer, _scene);
 
 		if (entity_a.HasComponent<Script>()) {
-			entity_a.GetComponent<Script>().script->OnCollisionEnter(entity_b);
+		entity_a.GetComponent<Script>().script->OnCollisionEnter(entity_b);
 		}
 
 		if (entity_b.HasComponent<Script>()) {

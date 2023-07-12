@@ -1,7 +1,5 @@
 #include "Application.h"
 
-#include <imgui_impl_sdl2.h>
-
 #include "Core/Log.h"
 #include "Core/Input.h"
 #include "Toolbox/TimeToolBox.h"
@@ -85,8 +83,7 @@ namespace mrs {
 			{
 				return false;
 			}
-
-			ImGui_ImplSDL2_ProcessEvent(&event);
+			
 			Event e(event);
 
 			// Propogate event through layers

@@ -12,6 +12,7 @@
 #include "Panels/InspectorPanel.h"
 
 #include "GameLayer/GameLayer.h"
+#include <imgui_impl_sdl2.h>
 
 namespace mrs {
 	class EditorLayer : public Layer
@@ -24,6 +25,19 @@ namespace mrs {
 
 			_name = "EditorLayer";
 		}
+
+        virtual void OnEvent(Event& event) 
+		{
+			if(Input::IsKeyPressed(SDLK_ESCAPE))
+			{
+				Pause();
+			}
+
+			if(!_playing)
+			{
+				ImGui_ImplSDL2_ProcessEvent(&event._event);
+			}
+		};
 
 		virtual void OnDetatch() override
 		{

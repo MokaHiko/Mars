@@ -9,7 +9,7 @@
 class Projectile : public mrs::ScriptableEntity
 {
 public:
-    float _life_span = 1.25f;
+    float _life_span = 5.0f;
     float _time_alive = 0.0f;
 
     mrs::ParticleSystem* _collision_particle_system;
