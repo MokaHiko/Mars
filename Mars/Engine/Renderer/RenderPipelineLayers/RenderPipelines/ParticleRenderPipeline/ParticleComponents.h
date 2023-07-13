@@ -32,6 +32,7 @@ namespace mrs
         EmissionShape emission_shape = EmissionShape::Cone;
         std::shared_ptr<Material> texture; 
         float particle_size = 0.15f;
+        float spread_angle = 45.0f;
 
         // Emission properties
         uint32_t max_particles = 48;

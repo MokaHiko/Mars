@@ -286,11 +286,11 @@ void mrs::ParticleRenderPipeline::FillParticleArray(const ParticleSystem &partic
 		for (uint32_t i = 0; i < particle_system.max_particles; i++)
 		{
 			float r = 0.5f * _random_generator.Next();
-			float theta = _random_generator.Next() * glm::radians(25.0f);
+			float theta = _random_generator.Next() * glm::radians(particle_system.spread_angle);
 			float x = r * cos(theta);
 			float y = r * sin(theta);
 			particles[i].position = glm::vec2(x, y);
-			particles[i].velocity = { _random_generator.Next() * particle_system.velocity.x, _random_generator.Next() * particle_system.velocity.y };
+			particles[i].velocity = particles[i].position * particle_system.velocity;
 			particles[i].color = particle_system.color_1;
 		}
 	}

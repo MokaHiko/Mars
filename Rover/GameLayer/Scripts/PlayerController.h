@@ -29,7 +29,7 @@ public:
 
     // Player info
     PlayerState _state;
-    float _movement_speed = 100.0f;
+    float _movement_speed = 50.0f;
     float _turning_speed = 100.0f;
 
     float _fire_rate = 0.35f;
@@ -133,16 +133,18 @@ private:
 
                 auto& particles = e.AddComponent<mrs::ParticleSystem>();
                 particles.max_particles = 12;
-                particles.velocity = glm::vec2(750.0f);
-                particles.life_time = 10.0f;
-                particles.particle_size = 0.5f;
-                particles.emission_rate = 254.0f;
-                particles.emission_shape = mrs::EmissionShape::Circle;
-                particles.running = false;
+                particles.velocity = glm::vec2(-750.0f);
+                particles.life_time = 0.2f;
+                particles.particle_size = 0.25f;
+                particles.emission_rate = 512.0f;
+                particles.emission_shape = mrs::EmissionShape::Cone;
+                particles.running = true;
+                particles.repeating = true;
+                particles.spread_angle = 5.0f;
 
-                particles.color_1 = glm::vec4(255,240,0,255);
-                particles.color_2 = glm::vec4(255,240,0, 0);
-                
+                particles.color_1 = glm::vec4(0,10,155,255);
+                particles.color_2 = glm::vec4(0,10,155,55);
+
                 _current_cooldown_time = _fire_rate;
             }
         }

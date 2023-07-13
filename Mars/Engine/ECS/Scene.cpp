@@ -15,7 +15,7 @@ namespace mrs
 			Entity e(entity, this);
 			Script &script_component = e.GetComponent<Script>();
 			script_component.script = script_component.InstantiateScript();
-			script_component.DestroyScript(script_component.script);
+			script_component.DestroyScript();
 		}
 	}
 
@@ -63,9 +63,8 @@ namespace mrs
 		// Fire of signal
         _entity_destroyed(entity);
 
-		_registry.destroy(entity._id);
-
 		// Add to free to be recycled
+		_registry.destroy(entity);
 		_free_queue.push_back(entity);
 	}
 }

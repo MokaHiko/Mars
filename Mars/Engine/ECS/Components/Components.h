@@ -59,10 +59,10 @@ namespace mrs
     struct Script
     {
         ScriptableEntity *script = nullptr;
-        std::string binding = "";
+        std::string binding = {};
 
-        std::function<ScriptableEntity *()> InstantiateScript;
-        std::function<void(ScriptableEntity *script)> DestroyScript;
+        std::function<ScriptableEntity *()> InstantiateScript = nullptr;
+        std::function<void()> DestroyScript = nullptr;
 
         bool enabled = true;
 
@@ -81,10 +81,13 @@ namespace mrs
 
             InstantiateScript = [&]()
             {
-                return static_cast<ScriptableEntity *>((script_instantion_bindings.find(binding)->second)());
+                auto& it = script_instantion_bindings.find(binding);
+                assert(it != script_instantion_bindings.end() && "Script binding not registerd!");
+
+                return static_cast<ScriptableEntity *>((it->second)());
             };
 
-            DestroyScript = [](ScriptableEntity *script)
+            DestroyScript = [&]()
             {
                 delete script;
                 script = nullptr;
@@ -105,7 +108,7 @@ namespace mrs
                 return static_cast<ScriptableEntity *>((script_instantion_bindings.find(binding)->second)());
             };
 
-            DestroyScript = [](ScriptableEntity *script)
+            DestroyScript = [&]()
             {
                 delete script;
                 script = nullptr;

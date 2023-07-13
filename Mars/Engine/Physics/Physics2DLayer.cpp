@@ -182,11 +182,21 @@ namespace mrs
 		Entity entity_b = Entity((entt::entity)contact->GetFixtureB()->GetBody()->GetUserData().pointer, _scene);
 
 		if (entity_a.HasComponent<Script>()) {
-		entity_a.GetComponent<Script>().script->OnCollisionEnter(entity_b);
+			ScriptableEntity* script = (entity_a.GetComponent<Script>().script);
+
+			if(script != nullptr)
+			{
+				script->OnCollisionEnter(entity_b);
+			}
 		}
 
 		if (entity_b.HasComponent<Script>()) {
-			entity_b.GetComponent<Script>().script->OnCollisionEnter(entity_a);
+			ScriptableEntity* script = (entity_b.GetComponent<Script>().script);
+
+			if (script)
+			{
+				script->OnCollisionEnter(entity_a);
+			}
 		}
 	}
 	void ContactListener::EndContact(b2Contact *contact)

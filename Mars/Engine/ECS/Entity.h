@@ -66,6 +66,7 @@ namespace mrs
 
         bool operator==(const Entity &other) const { return _id == other._id; }
         operator bool() const { return _id != entt::null; }
+        operator entt::entity() const { return _id; }
 
     private:
         friend class Scene;

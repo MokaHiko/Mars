@@ -26,6 +26,7 @@ add_executable(Rover
 	"GameLayer/Scripts/PlayerController.cpp"
 	"GameLayer/Scripts/PlayerCamera.h"
 	"GameLayer/Scripts/PlayerCamera.cpp"
+	"GameLayer/Scripts/Effect.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Mars Vendor imgui vulkan-1)

@@ -751,11 +751,11 @@ namespace mrs
 			break;
 		}
 
-		// Renderable Objects
+		// Objects positions
 		memcpy(global_data, &global_info, sizeof(GlobalDescriptorData));
 		vmaUnmapMemory(_allocator, _global_descriptor_buffer.allocation);
 
-		auto view = scene->Registry()->view<Transform, RenderableObject>();
+		auto view = scene->Registry()->view<Tag, Transform>();
 
 		// Update object data storage buffer
 		char *objectData;

@@ -68,6 +68,7 @@ void mrs::NativeScriptingLayer::OnUpdate(float dt)
 {
 	// Scripts: Update
 	auto view = _scene->Registry()->view<Transform, Script>();
+
 	for (auto entity : view)
 	{
 		Entity e(entity, _scene);
@@ -101,7 +102,6 @@ void mrs::NativeScriptingLayer::OnEntityDestroyed(Entity e)
 {
     if (e.HasComponent<Script>())
     {
-        auto &script = e.GetComponent<Script>();
-        script.DestroyScript(script.script);
+        e.GetComponent<Script>().DestroyScript();
     }
 }

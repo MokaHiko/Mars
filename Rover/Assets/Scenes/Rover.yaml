@@ -60,16 +60,6 @@ Entities:
     RigidBody2D:
       Type: 2
       UseGravity: false
-    ParticleSystem:
-      MaxParticles: 128
-      ParticleSize: 0.25
-      LifeTime: 5
-      EmissionRate: 418
-      Velocity: [500, 500]
-      Running: true
-      Color1: [0.5, 0.5, 0, 1]
-      Color2: [1, 0, 0, 1]
-      Texture: default_material
   - Entity: 1729822048
     Tag:
       Tag: Ball
@@ -85,16 +75,6 @@ Entities:
     RigidBody2D:
       Type: 2
       UseGravity: false
-    ParticleSystem:
-      MaxParticles: 128
-      ParticleSize: 0.25
-      LifeTime: 5
-      EmissionRate: 418
-      Velocity: [500, 500]
-      Running: true
-      Color1: [0.5, 0.5, 0, 1]
-      Color2: [1, 0, 0, 1]
-      Texture: default_material
   - Entity: 1154764743
     Tag:
       Tag: Ball
@@ -110,16 +90,6 @@ Entities:
     RigidBody2D:
       Type: 2
       UseGravity: false
-    ParticleSystem:
-      MaxParticles: 128
-      ParticleSize: 0.25
-      LifeTime: 5
-      EmissionRate: 418
-      Velocity: [500, 500]
-      Running: true
-      Color1: [0.5, 0.5, 0, 1]
-      Color2: [1, 0, 0, 1]
-      Texture: default_material
   - Entity: 3295939934
     Tag:
       Tag: Ball
@@ -135,16 +105,6 @@ Entities:
     RigidBody2D:
       Type: 2
       UseGravity: false
-    ParticleSystem:
-      MaxParticles: 128
-      ParticleSize: 0.25
-      LifeTime: 5
-      EmissionRate: 418
-      Velocity: [500, 500]
-      Running: true
-      Color1: [0.5, 0.5, 0, 1]
-      Color2: [1, 0, 0, 1]
-      Texture: default_material
   - Entity: 1114958010
     Tag:
       Tag: Ball
@@ -160,16 +120,6 @@ Entities:
     RigidBody2D:
       Type: 2
       UseGravity: false
-    ParticleSystem:
-      MaxParticles: 128
-      ParticleSize: 0.25
-      LifeTime: 5
-      EmissionRate: 418
-      Velocity: [500, 500]
-      Running: true
-      Color1: [0.5, 0.5, 0, 1]
-      Color2: [1, 0, 0, 1]
-      Texture: default_material
   - Entity: 1445797466
     Tag:
       Tag: Directional Light

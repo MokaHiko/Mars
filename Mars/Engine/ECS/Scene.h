@@ -30,9 +30,9 @@ namespace mrs
         template<typename T>
         Entity FindEntityWithComponent()
         {
-            for(auto e : _game_object._scene->Registry()->view<T>())
+            for(auto e : _registry->view<T>())
             {
-                return {e, _game_object._scene};
+                return {e, this};
             }
 
             return {};
