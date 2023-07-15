@@ -64,7 +64,7 @@ namespace mrs {
 				}
 			}
 
-			//_scene->FlushDestructionQueue();
+			_scene->FlushDestructionQueue();
 		}
 	}
 
