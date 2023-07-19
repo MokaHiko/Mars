@@ -25,8 +25,13 @@ namespace mrs
 	{
 		InitVulkan();
 		InitSwapchain();
+
 		InitDefaultRenderPass();
 		InitFramebuffers();
+
+		InitOffScreenAttachments();
+		InitOffScreenRenderPass();
+		InitOffScreenFramebuffers();
 
 		InitCommands();
 
@@ -557,6 +562,183 @@ namespace mrs
 			{ vkDestroyRenderPass(_device.device, _render_pass, nullptr); });
 	}
 
+	void Renderer::InitOffScreenAttachments()
+	{
+		VkExtent3D extent = {};
+		extent.depth = 1;
+		extent.width = _window->GetWidth();
+		extent.height = _window->GetHeight();
+
+		_offscreen_images.resize(frame_overlaps);
+		_offscreen_images_views.resize(frame_overlaps);
+		for (uint32_t i = 0; i < frame_overlaps; i++)
+		{
+			VkImageCreateInfo image_info = vkinit::image_create_info(_offscreen_framebuffer_format, extent, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+			VmaAllocationCreateInfo alloc_info = {};
+
+			alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+			alloc_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+			VK_CHECK(vmaCreateImage(GetAllocator(), &image_info, &alloc_info, &_offscreen_images[i].image, &_offscreen_images[i].allocation, nullptr));
+			VkImageViewCreateInfo image_view_info = vkinit::image_view_create_info(_offscreen_images[i].image, _offscreen_framebuffer_format, VK_IMAGE_ASPECT_COLOR_BIT);
+
+			VK_CHECK(vkCreateImageView(_device.device, &image_view_info, nullptr, &_offscreen_images_views[i]));
+		}
+
+		// Create offscren depth attachment
+		VkExtent3D depth_extent = {};
+		depth_extent.width = _window->GetWidth();
+		depth_extent.height = _window->GetHeight();
+		depth_extent.depth = 1;
+
+		_offscreen_depth_image_format = VK_FORMAT_D32_SFLOAT;
+		VkImageCreateInfo depth_image_info = vkinit::image_create_info(_offscreen_depth_image_format, depth_extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+		VmaAllocationCreateInfo depth_alloc_info = {};
+		depth_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		depth_alloc_info.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		vmaCreateImage(GetAllocator(), &depth_image_info, &depth_alloc_info, &_offscreen_depth_image.image, &_offscreen_depth_image.allocation, nullptr);
+
+		VkImageViewCreateInfo depth_image_view_info = vkinit::image_view_create_info(_offscreen_depth_image.image, _offscreen_depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
+		VK_CHECK(vkCreateImageView(_device.device, &depth_image_view_info, nullptr, &_offscreen_depth_image_view));
+
+		// Clean up
+		GetDeletionQueue().Push([&]() {
+			vmaDestroyImage(GetAllocator(), _offscreen_depth_image.image, _offscreen_depth_image.allocation);
+			vkDestroyImageView(_device.device, _offscreen_depth_image_view, nullptr);
+
+			for (auto image_view : _offscreen_images_views)
+			{
+				vkDestroyImageView(_device.device, image_view, nullptr);
+			};
+			});
+	}
+
+	void Renderer::InitOffScreenRenderPass()
+	{
+		// Create render pass attachments and references
+		VkAttachmentDescription color_attachment = {};
+		color_attachment.format = _offscreen_framebuffer_format;
+		color_attachment.flags = 0;
+		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+
+		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		color_attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		VkAttachmentDescription depth_attachment = {};
+		depth_attachment.format = _depth_image_format;
+		depth_attachment.flags = 0;
+		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+
+		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		std::vector<VkAttachmentDescription> attachments = { color_attachment, depth_attachment };
+
+		VkAttachmentReference color_attachment_reference = {};
+		color_attachment_reference.attachment = 0;
+		color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depth_attachment_reference = {};
+		depth_attachment_reference.attachment = 1;
+		depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		// Create subpasses
+		VkSubpassDescription main_subpass = {};
+		main_subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+		main_subpass.colorAttachmentCount = 1;
+		main_subpass.pColorAttachments = &color_attachment_reference;
+
+		main_subpass.pDepthStencilAttachment = &depth_attachment_reference;
+
+		// Create dependencies
+		VkSubpassDependency color_dependency = {};
+
+		// ~ after subpass external - outputs to color attachment - using color_attachment write memory access
+		color_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		color_dependency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		color_dependency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		// ~ before this subpass - outputs to color attachment - using color_attachment write memory access
+		color_dependency.dstSubpass = 0;
+		color_dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		color_dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		VkSubpassDependency depth_dependency = {};
+
+		// ~ after subpass external - tests fragments - using depth_attachment write memory access
+		depth_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		depth_dependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		depth_dependency.srcAccessMask = 0;
+
+		// ~ before this subpass - outputs to depth attachment - using depth_attachment write memory access
+		depth_dependency.dstSubpass = 0;
+		depth_dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		depth_dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+		std::vector<VkSubpassDependency> dependencies = { color_dependency, depth_dependency };
+
+		VkRenderPassCreateInfo render_pass_info = {};
+		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		render_pass_info.pNext = nullptr;
+
+		render_pass_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+		render_pass_info.pAttachments = attachments.data();
+
+		render_pass_info.subpassCount = 1;
+		render_pass_info.pSubpasses = &main_subpass;
+
+		render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
+		render_pass_info.pDependencies = dependencies.data();
+
+		VK_CHECK(vkCreateRenderPass(_device.device, &render_pass_info, nullptr, &_offscreen_render_pass));
+
+		_deletion_queue.Push([=]()
+			{ vkDestroyRenderPass(_device.device, _offscreen_render_pass, nullptr); });
+	}
+
+	void Renderer::InitOffScreenFramebuffers()
+	{
+		_offscreen_framebuffers.resize(frame_overlaps);
+		// Link render pass attachments to swapchain images by frame buffers
+
+		for (uint32_t i = 0; i < _offscreen_framebuffers.size(); i++)
+		{
+			VkFramebufferCreateInfo frame_buffer_info = {};
+			frame_buffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			frame_buffer_info.pNext = nullptr;
+
+			std::vector<VkImageView> attachments = { _offscreen_images_views[i], _offscreen_depth_image_view };
+			frame_buffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+			frame_buffer_info.pAttachments = attachments.data();
+
+			// 2d attachments buffer
+			frame_buffer_info.width = _window->GetWidth();
+			frame_buffer_info.height = _window->GetHeight();
+			frame_buffer_info.layers = 1;
+
+			frame_buffer_info.renderPass = _offscreen_render_pass;
+			VK_CHECK(vkCreateFramebuffer(_device.device, &frame_buffer_info, nullptr, &_offscreen_framebuffers[i]));
+
+			_deletion_queue.Push([&]()
+				{ vkDestroyFramebuffer(_device.device, _offscreen_framebuffers[i], nullptr); });
+		}
+	}
+
 	void Renderer::InitFramebuffers()
 	{
 		_framebuffers.resize(_swapchain_images.size());
@@ -705,7 +887,7 @@ namespace mrs
 			auto cam_view = scene->Registry()->view<Transform, Camera>();
 			for (auto entity : cam_view)
 			{
-				Camera* camera = &Entity(entity, scene).GetComponent<Camera>();
+				Camera *camera = &Entity(entity, scene).GetComponent<Camera>();
 
 				if (camera->IsActive())
 				{
@@ -831,7 +1013,7 @@ namespace mrs
 		VK_CHECK(vkBeginCommandBuffer(cmd, &cmd_begin_info));
 	}
 
-	void Renderer::MainPassStart(VkCommandBuffer cmd)
+	void Renderer::MainPassStart(VkCommandBuffer cmd, VkFramebuffer frame_buffer, VkRenderPass render_pass)
 	{
 		VkRect2D area = {};
 		area.extent = { _window->GetWidth(), _window->GetHeight() };
@@ -839,7 +1021,6 @@ namespace mrs
 
 		// Begin main render pass
 		VkClearValue clear_value = {};
-		//clear_value.color = { 1.0f, 1.0f, 1.0f, 0.1f };
 		clear_value.color = { 0.1f, 0.1f, 0.1f, 1.0f };
 
 		VkClearValue depth_value = {};
@@ -847,7 +1028,7 @@ namespace mrs
 
 		VkClearValue clear_values[2] = { clear_value, depth_value };
 
-		VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(GetCurrentFrameBuffer(), _render_pass, area, clear_values, 2);
+		VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(frame_buffer, render_pass, area, clear_values, 2);
 		vkCmdBeginRenderPass(cmd, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
@@ -858,7 +1039,7 @@ namespace mrs
 
 	void Renderer::End()
 	{
-		auto& frame = GetCurrentFrameData();
+		auto &frame = GetCurrentFrameData();
 		VkCommandBuffer cmd = frame.command_buffer;
 
 		VK_CHECK(vkEndCommandBuffer(cmd));
@@ -880,7 +1061,6 @@ namespace mrs
 
 		VK_CHECK(vkQueueSubmit(_queues.graphics, 1, &submit_info, frame.render_fence));
 
-		// Present image
 		VkPresentInfoKHR present_info = {};
 		present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		present_info.pNext = nullptr;

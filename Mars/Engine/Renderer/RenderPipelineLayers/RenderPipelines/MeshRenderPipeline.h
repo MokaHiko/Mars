@@ -23,7 +23,6 @@ namespace mrs
     private:
         void InitDescriptors();
         void InitPipelineLayout();
-        void InitPipelines();
 
         void CreateOffScreenFramebuffer();
 

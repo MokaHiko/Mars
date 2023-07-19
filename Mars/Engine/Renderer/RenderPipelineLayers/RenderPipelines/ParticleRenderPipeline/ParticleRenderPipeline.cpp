@@ -394,7 +394,7 @@ void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
 
 	builder._pipeline_layout = _graphics_pipeline_layout;
 
-	_graphics_pipeline = builder.Build(_renderer->GetDevice().device, _default_render_pass);
+	_graphics_pipeline = builder.Build(_renderer->GetDevice().device, _renderer->_offscreen_render_pass);
 
 	if (_graphics_pipeline == VK_NULL_HANDLE)
 	{
@@ -569,7 +569,7 @@ void mrs::ParticleRenderPipeline::CacheParticleSystemType(ParticleSystem &partic
 
 	// Create and cache first instance data 
 	ParticleSystemType type;
-	type.template_instance_buffer_offset = _buffer_next_free_offset;
+	type.template_instance_buffer_offset = static_cast<uint32_t>(_buffer_next_free_offset);
 	type.buffer_size = particle_system.max_particles * _padded_particle_size;
 
 	_particle_system_type_cache[particle_system] = type;

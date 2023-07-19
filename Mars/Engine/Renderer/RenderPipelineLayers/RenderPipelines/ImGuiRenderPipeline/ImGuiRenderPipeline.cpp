@@ -58,7 +58,7 @@ void mrs::ImGuiRenderPipeline::Init()
 	init_info.ImageCount = 3;
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
-	ImGui_ImplVulkan_Init(&init_info, _renderer->GetRenderPass());
+	ImGui_ImplVulkan_Init(&init_info, _renderer->_offscreen_render_pass);
 
 	SetupImGuiStyle(1, 1.0f);
 

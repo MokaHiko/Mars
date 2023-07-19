@@ -76,10 +76,10 @@ std::shared_ptr<mrs::Mesh> mrs::Mesh::LoadFromAsset(const std::string& path, con
 	boop::MeshInfo mesh_info = boop::read_mesh_info(&asset);
 
 	mesh->_vertices.resize(mesh_info.vertex_buffer_size / sizeof(Vertex));
-	mesh->_vertex_count = mesh->_vertices.size();
+	mesh->_vertex_count = static_cast<uint32_t>(mesh->_vertices.size());
 
 	mesh->_indices.resize(mesh_info.index_buffer_size / sizeof(uint32_t));
-	mesh->_index_count = mesh->_indices.size();
+	mesh->_index_count = static_cast<uint32_t>(mesh->_indices.size());
 
 	boop::unpack_mesh(&mesh_info, asset.raw_data.data(), asset.raw_data.size(), (char*)mesh->_vertices.data(), (char*)mesh->_indices.data());
 

@@ -95,8 +95,8 @@ namespace mrs
 			(*it)->OnPreRenderPass(cmd);
 		}
 
-		// Main pass start
-		_renderer->MainPassStart(cmd);
+		// Begins a mesh pass
+		_renderer->MainPassStart(cmd, _renderer->_offscreen_framebuffers[current_frame_index], _renderer->_offscreen_render_pass);
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
 			(*it)->Begin(cmd, current_frame_index);
@@ -108,7 +108,7 @@ namespace mrs
 			layer->OnImGuiRender();
 		}
 
-		// Main pass end
+		// Ends a mesh pass
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
 			(*it)->End(cmd);

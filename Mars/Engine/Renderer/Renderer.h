@@ -64,8 +64,8 @@ namespace mrs
 		// Starts the current frame and the recording of the command buffer
 		void Begin(Scene *scene);
 
-		// Starts the main render pass
-		void MainPassStart(VkCommandBuffer cmd);
+		// Starts mesh render pass
+		void MainPassStart(VkCommandBuffer cmd, VkFramebuffer frame_buffer, VkRenderPass render_pass);
 
 		// Ends the main render pass
 		void MainPassEnd(VkCommandBuffer cmd);
@@ -89,8 +89,36 @@ namespace mrs
 		std::shared_ptr<vkutil::DescriptorAllocator> _descriptor_allocator;
 		std::shared_ptr<vkutil::DescriptorLayoutCache> _descriptor_layout_cache;
 	public:
+		// ~ OffScreen Rendering
+		void InitOffScreenAttachments();
+
+		// Creates an offscreen render_pass;
+		void InitOffScreenRenderPass();
+
+		// Creates framebuffer that points the attachments in offscreen render pass to images
+		void InitOffScreenFramebuffers();
+
+		VkRenderPass _offscreen_render_pass = {};
+
+        // Offscreen frame buffers
+        const VkFormat _offscreen_framebuffer_format = VK_FORMAT_R8G8B8A8_UNORM;
+        std::vector<AllocatedImage> _offscreen_images; 
+        std::vector<VkImageView> _offscreen_images_views; 
+        std::vector<VkFramebuffer> _offscreen_framebuffers;
+
+        // Offscreen depth attachments
+		AllocatedImage _offscreen_depth_image = {};
+		VkFormat _offscreen_depth_image_format = {};
+		VkImageView _offscreen_depth_image_view = {};
+	public:
+		// Const 
+		const VkRenderPass GetSwapchainRenderPass() const {return _render_pass;}
+
 		// Gets handle to the vulkan instance
 		const VkInstance GetInstance() const { return _instance; }
+
+		// Gets format of swapchain
+		const VkFormat GetSwapchainImageFormat() const {return _swapchain_image_format;}
 
 		// Gets handle to default render pass
 		const VkRenderPass GetRenderPass() const { return _render_pass; }
@@ -197,6 +225,7 @@ namespace mrs
 		std::vector<AllocatedBuffer> _object_descriptor_buffer;
 		VkDescriptorSetLayout _object_descriptor_set_layout;
 
+	public:
 		VkSampler _default_image_sampler;
 		VkDescriptorSetLayout _default_image_set_layout;
 

@@ -32,7 +32,7 @@ namespace mrs
         // Called after command buffer recording and before main render pass (where you should place your own renderpasses)
         virtual void OnPreRenderPass(VkCommandBuffer cmd) {};
 
-        // Called after main render pass
+        // Called after mesh render pass
         virtual void OnPostRenderpass(VkCommandBuffer cmd) {};
 
         // Called on renderable destroyed

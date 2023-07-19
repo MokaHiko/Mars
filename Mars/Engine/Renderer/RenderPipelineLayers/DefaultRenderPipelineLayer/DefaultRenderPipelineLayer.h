@@ -5,9 +5,10 @@
 
 #include "Renderer/RenderPipelineLayers/IRenderPipelineLayer.h"
 
-#include "Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleRenderPipeline.h"
 #include "Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.h"
+#include "Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleRenderPipeline.h"
 #include "Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline/ImGuiRenderPipeline.h"
+#include "Renderer/RenderPipelineLayers/RenderPipelines/PostProcessingRenderPipeline/PostProcessingRenderPipeline.h"
 
 namespace mrs
 {
@@ -19,6 +20,7 @@ namespace mrs
             PushRenderPipeline(new ImGuiRenderPipeline());
             PushRenderPipeline(new ParticleRenderPipeline(10000));
             PushRenderPipeline(new MeshRenderPipeline());
+            PushRenderPipeline(new PostProcessingRenderPipeline());
         };
         ~DefaultRenderPipelineLayer() {};
     };

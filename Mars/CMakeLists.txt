@@ -78,10 +78,14 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline/ImGuiRenderPipeline.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ShadowRenderPipeline/ShadowRenderPipeline.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ShadowRenderPipeline/ShadowRenderPipeline.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleRenderPipeline.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/PostProcessingRenderPipeline/PostProcessingRenderPipeline.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/PostProcessingRenderPipeline/PostProcessingRenderPipeline.cpp
 
 			Engine/Scripting/NativeScriptingLayer.h
 			Engine/Scripting/NativeScriptingLayer.cpp

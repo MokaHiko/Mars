@@ -26,14 +26,14 @@ namespace mrs {
 			_name = "EditorLayer";
 		}
 
-        virtual void OnEvent(Event& event) 
+		virtual void OnEvent(Event &event)
 		{
-			if(Input::IsKeyPressed(SDLK_ESCAPE))
+			if (Input::IsKeyPressed(SDLK_ESCAPE))
 			{
 				Pause();
 			}
 
-			if(!_playing)
+			if (!_playing)
 			{
 				ImGui_ImplSDL2_ProcessEvent(&event._event);
 			}
@@ -43,19 +43,19 @@ namespace mrs {
 		{
 		}
 
-        virtual void OnEnable()
+		virtual void OnEnable()
 		{
 		};
 
 		virtual void OnUpdate(float dt) override
 		{
 			// Pause on start start
-			static bool start_paused = [&](){
+			static bool start_paused = [&]() {
 				Pause();
 				return true;
-			}();
+				}();
 
-			_dt = dt;
+				_dt = dt;
 		}
 
 		// Focuses editor on entity
@@ -114,7 +114,7 @@ namespace mrs {
 			std::string state = _playing ? "Pause" : "Play";
 			if (ImGui::Button(state.c_str()))
 			{
-				if(_playing)
+				if (_playing)
 				{
 					Pause();
 				}
@@ -132,7 +132,7 @@ namespace mrs {
 			Application::GetInstance().EnableLayer("NativeScriptingLayer");
 
 			// Disable editor controls and camera 
-			EditorManager* em_script = dynamic_cast<EditorManager*>(_editor_manager.GetComponent<Script>().script);
+			EditorManager *em_script = dynamic_cast<EditorManager *>(_editor_manager.GetComponent<Script>().script);
 			em_script->_camera.GetComponent<Camera>().SetActive(false);
 
 			_playing = true;
@@ -145,10 +145,10 @@ namespace mrs {
 			Application::GetInstance().DisableLayer("NativeScriptingLayer");
 
 			// Enable editor controls and camera 
-			EditorManager* em_script = dynamic_cast<EditorManager*>(_editor_manager.GetComponent<Script>().script);
+			EditorManager *em_script = dynamic_cast<EditorManager *>(_editor_manager.GetComponent<Script>().script);
 			em_script->_camera.GetComponent<Camera>().SetActive(true);
 
-			_playing = false; 
+			_playing = false;
 		}
 
 		void LoadEditorResources()
@@ -171,6 +171,21 @@ namespace mrs {
 			Mesh::LoadFromAsset("Assets/Models/cone.boop_obj", "cone");
 			Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj", "monkey");
 			Mesh::LoadFromAsset("Assets/Models/quad.boop_obj", "quad");
+
+			// Post processing demo
+			Texture::LoadFromAsset("Assets/Textures/ChicagoTraffic.boop_jpg", "chicago_traffic");
+
+			auto screen_quad = Mesh::Create("screen_quad");
+
+			screen_quad->_vertices.push_back({ { -1.0f, -1.0f, 0.0f }, {}, {}, {} });
+			screen_quad->_vertices.push_back({ { -1.0f, 1.0f, 0.0f }, {}, {}, {} });
+			screen_quad->_vertices.push_back({ { 1.0f, -1.0f, 0.0f }, {}, {}, {} });
+			screen_quad->_vertices.push_back({ { 1.0f,  1.0f, 0.0f }, {}, {}, {} });
+
+			screen_quad->_vertex_count = 4;
+
+			screen_quad->_indices = {0,2,1,1,2,3};
+			screen_quad->_index_count = 6;
 		}
 
 		void LoadScene()

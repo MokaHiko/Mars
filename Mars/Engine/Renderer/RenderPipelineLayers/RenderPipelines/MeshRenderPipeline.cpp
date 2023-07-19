@@ -42,11 +42,7 @@ void mrs::MeshRenderPipeline::Init()
 
     InitDescriptors();
     InitPipelineLayout();
-    InitPipelines();
-}
 
-void mrs::MeshRenderPipeline::InitPipelines()
-{
     InitOffScreenPipeline();
     InitMeshPipeline();
 }
@@ -193,7 +189,7 @@ void mrs::MeshRenderPipeline::InitMeshPipeline()
 
     pipeline_builder._pipeline_layout = _default_pipeline_layout;
 
-    _default_pipeline = pipeline_builder.Build(_device->device, _default_render_pass);
+    _default_pipeline = pipeline_builder.Build(_device->device, _renderer->_offscreen_render_pass);
 
     if (_default_pipeline == VK_NULL_HANDLE)
     {
@@ -427,24 +423,21 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
 
     // Between external subpass and current subpass
     dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    ;
     dependencies[0].dstSubpass = 0;
     dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependencies[0].srcAccessMask =
-        VK_ACCESS_SHADER_READ_BIT; // reading of last frame
+    dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT; // reading of last frame
     dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     dependencies[1].srcSubpass = 0;
     dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL; // our color render pass
-    dependencies[1].srcStageMask =
-        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT; // after depth testing has
+    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT; // after depth testing has
+
     // finished
     dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     dependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dstAccessMask =
-        VK_ACCESS_SHADER_READ_BIT; // before shader reads data
+    dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT; // before shader reads data
     dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     VkRenderPassCreateInfo _offscreen_render_pass_info = {};
@@ -458,12 +451,10 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
     _offscreen_render_pass_info.pSubpasses = &subpass;
 
     // dependencies between subpasses
-    _offscreen_render_pass_info.dependencyCount =
-        static_cast<uint32_t>(dependencies.size());
+    _offscreen_render_pass_info.dependencyCount = static_cast<uint32_t>(dependencies.size());
     _offscreen_render_pass_info.pDependencies = dependencies.data();
 
-    VK_CHECK(vkCreateRenderPass(_device->device, &_offscreen_render_pass_info,
-        nullptr, &_offscreen_render_pass));
+    VK_CHECK(vkCreateRenderPass(_device->device, &_offscreen_render_pass_info, nullptr, &_offscreen_render_pass));
 
     // Create Frame buffer
     VkFramebufferCreateInfo offscreen_framebuffer_info = {};
@@ -481,8 +472,7 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
         nullptr, &_offscreen_framebuffer));
 
     // Shadow map image sampeler
-    VkSamplerCreateInfo shadow_map_sampler_info = vkinit::sampler_create_info(
-        VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+    VkSamplerCreateInfo shadow_map_sampler_info = vkinit::sampler_create_info(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
     shadow_map_sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
     shadow_map_sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     shadow_map_sampler_info.mipLodBias = 0.0f;
