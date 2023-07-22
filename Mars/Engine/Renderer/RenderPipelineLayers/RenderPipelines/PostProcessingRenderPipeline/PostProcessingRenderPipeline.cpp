@@ -9,7 +9,7 @@ void mrs::PostProcessingRenderPipeline::Init()
 
 	// Create screen sampler
 	VkSamplerCreateInfo sampler_info = vkinit::sampler_create_info(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
-	VK_CHECK(vkCreateSampler(_device->device, &sampler_info, nullptr, &_screen_sampler), "Failed to create sampler!");
+	VK_CHECK(vkCreateSampler(_device->device, &sampler_info, nullptr, &_screen_sampler));
 
 	InitDescriptors();
 	InitPostProcessPipeline();
@@ -68,7 +68,7 @@ void mrs::PostProcessingRenderPipeline::InitPostProcessPipeline()
 
 	builder._pipeline_layout = _post_process_pipeline_layout;
 
-	_post_process_pipeline = builder.Build(_renderer->GetDevice().device, _default_render_pass);
+	_post_process_pipeline = builder.Build(_renderer->GetDevice().device, _render_pass);
 
 	if (_post_process_pipeline == VK_NULL_HANDLE)
 	{

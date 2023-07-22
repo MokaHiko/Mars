@@ -60,15 +60,30 @@ namespace mrs
 	void DrawComponent<RenderableObject>(Entity entity)
 	{
 		DrawComponentUI<RenderableObject>("Renderable Object", entity, [](RenderableObject &renderable) {
-			ImGui::Text("Mesh: %s", renderable.mesh->_mesh_name.c_str());
-
+			ImGui::Text("Mesh: %s", renderable.GetMesh()->_mesh_name.c_str());
 			ImVec2 region_size = ImGui::GetContentRegionAvail();
-			ImGui::Text("Diffuse"); ImGui::SameLine();
-			ImGui::Text("Specular"); ImGui::SameLine();
-			ImGui::Text("Emissive");
-			ImGui::Image(renderable.material->texture_set, { region_size.x / 3.0f, region_size.y / 5.0f }); ImGui::SameLine();
-			ImGui::Image(renderable.material->texture_set, { region_size.x / 3.0f, region_size.y / 5.0f }); ImGui::SameLine();
-			ImGui::Image(renderable.material->texture_set, { region_size.x / 3.0f, region_size.y / 5.0f });
+
+			ImGui::Text("Material: %s", renderable.GetMaterial()->MaterialName().c_str());
+			if(ImGui::CollapsingHeader("Albedo"))
+			{
+				//ImGui::ColorPicker4("Color", glm::value_ptr(renderable.material->AlbedoColor()));
+				ImGui::ColorPicker4("Color", glm::value_ptr(renderable.GetMaterial()->AlbedoColor()));
+				ImGui::Text("Diffuse");
+				ImGui::Image(renderable.GetMaterial()->material_descriptor_set, { region_size.x / 3.0f, region_size.y / 5.0f }); ImGui::SameLine();
+			}
+			});
+	}
+
+	template<>
+	void DrawComponent<DirectionalLight>(Entity entity)
+	{
+		DrawComponentUI<DirectionalLight>("Directional Light", entity, [](DirectionalLight &dir_light) {
+			ImGui::Text("Intensity: %s", dir_light.intensity);
+
+			static bool view_dir_light_camera = false;
+			if (ImGui::Checkbox("Set Channel", &view_dir_light_camera))
+			{
+			}
 			});
 	}
 
@@ -119,7 +134,7 @@ namespace mrs
 	template<>
 	void DrawComponent<RigidBody2D>(Entity entity)
 	{
-		static char *body_types[] = { "UNKNOWN", "STATIC", "DYNAMIC"};
+		static char *body_types[] = { "UNKNOWN", "STATIC", "DYNAMIC" };
 		DrawComponentUI<RigidBody2D>("RigidBody2D", entity, [](RigidBody2D &rb) {
 			ImGui::Checkbox("Use Gravity", &rb.use_gravity);
 			ImGui::Text("Body Type: %s", body_types[(int)rb.type]);

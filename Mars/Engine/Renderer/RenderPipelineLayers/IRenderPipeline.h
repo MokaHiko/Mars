@@ -16,11 +16,22 @@ namespace mrs
     class IRenderPipeline
     {
     public:
-        IRenderPipeline() {};
+        IRenderPipeline() = default;
+
+        IRenderPipeline(Renderer *renderer, VkRenderPass _render_pass = nullptr, VkFormat _render_pass_format = VK_FORMAT_UNDEFINED)
+        {
+            _renderer = renderer;
+
+            _render_pass = _render_pass;
+            _render_pass_format = _render_pass_format;
+        };
+
         virtual ~IRenderPipeline() {};
 
-        virtual void Init() {};
+    public:
+        virtual void Init() {}
 
+        // Called in in compute pass
         virtual void Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt) {};
 
         // Called at start of render pass 
@@ -37,6 +48,9 @@ namespace mrs
 
         // Called on renderable destroyed
         virtual void OnEntityDestroyed(Entity e) {};
+
+        // Called when a material's properties are changed or entity material changed
+        virtual void OnMaterialsUpdate() {};
     protected:
         friend class IRenderPipelineLayer;
 
@@ -48,13 +62,14 @@ namespace mrs
         Renderer *_renderer = nullptr;
         VulkanDevice *_device = nullptr;
 
-        // Main Render pass
-        VkRenderPass _default_render_pass = VK_NULL_HANDLE;
+        // Render pass
+        VkRenderPass _render_pass = VK_NULL_HANDLE;
+        VkFormat _render_pass_format = VK_FORMAT_UNDEFINED;
 
         // Shared Global Descriptor sets
         VkDescriptorSetLayout _global_descriptor_set_layout = VK_NULL_HANDLE;
         VkDescriptorSetLayout _object_descriptor_set_layout = VK_NULL_HANDLE;
-        VkDescriptorSetLayout _default_image_set_layout = VK_NULL_HANDLE;
+        VkDescriptorSetLayout _default_material_set_layout = VK_NULL_HANDLE;
 
         VkDescriptorSet _global_descriptor_set = VK_NULL_HANDLE;
     };

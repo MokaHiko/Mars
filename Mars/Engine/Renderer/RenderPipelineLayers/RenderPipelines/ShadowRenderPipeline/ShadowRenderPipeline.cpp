@@ -88,9 +88,7 @@ void mrs::ShadowRenderPipeline::InitOffScreenPipeline() {
   VkPipelineLayoutCreateInfo pipeline_layout_info =
       vkinit::pipeline_layout_create_info();
 
-  std::vector<VkDescriptorSetLayout> descriptor_layouts = {
-      _global_descriptor_set_layout, _object_descriptor_set_layout,
-      _default_image_set_layout};
+  std::vector<VkDescriptorSetLayout> descriptor_layouts = {_global_descriptor_set_layout, _object_descriptor_set_layout, _default_material_set_layout};
   pipeline_layout_info.setLayoutCount =
       static_cast<uint32_t>(descriptor_layouts.size());
   pipeline_layout_info.pSetLayouts = descriptor_layouts.data();

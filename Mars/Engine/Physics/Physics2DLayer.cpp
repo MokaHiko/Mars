@@ -78,6 +78,8 @@ namespace mrs
 		{
 			b2BodyDef static_body_def = {};
 			static_body_def.position.Set(transform.position.x, transform.position.y);
+			static_body_def.angle = glm::radians(transform.rotation.z);
+
 			rb.body = _physics_world->CreateBody(&static_body_def);
 			rb.body->GetUserData().pointer = entity.Id();
 
@@ -88,6 +90,8 @@ namespace mrs
 			b2BodyDef dynamic_body_def = {};
 			dynamic_body_def.type = b2_dynamicBody;
 			dynamic_body_def.position = b2Vec2(transform.position.x, transform.position.y);
+			dynamic_body_def.angle = glm::radians(transform.rotation.z);
+
 			rb.body = _physics_world->CreateBody(&dynamic_body_def);
 			rb.body->GetUserData().pointer = entity.Id();
 

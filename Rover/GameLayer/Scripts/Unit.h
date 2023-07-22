@@ -16,7 +16,8 @@ public:
     {
         Idle = 1 << 1,
         Moving = 1 << 2,
-        Hit = 1 << 3
+        Hit = 1 << 3,
+        Dead = 1 << 4
     };
 
     float _health = 20.0f;
@@ -33,11 +34,9 @@ public:
     float _search_interval = 1.0f;
     float _time_moving = 0.0f;
 
-
     // Hit state
     float _time_stunned = 0.0f;
     float _stun_time = 2.0f;
-
 
     virtual void OnStart() 
     {
@@ -62,6 +61,10 @@ public:
         {
             HitState(dt);
         }
+        else if (_state & UnitState::Dead)
+        {
+            DeadState();
+        }
     }
 
     virtual void OnCollisionEnter(mrs::Entity other) override 
@@ -75,6 +78,14 @@ public:
                 auto& projectile_transform = other.GetComponent<mrs::Transform>();
 				glm::vec3 dir = glm::normalize(_transform->position - projectile_transform.position);
 				_rb->AddImpulse(dir * 50.0f);
+
+                _health -= 5.0f;
+
+                if(_health <= 0)
+                {
+                    _state = UnitState::Dead;
+                    return;
+                }
 
                 _state = UnitState::Hit;
             }
@@ -113,6 +124,11 @@ public:
 
 			_state = UnitState::Moving;
         }
+    }
+
+    void DeadState()
+    {
+        QueueDestroy();
     }
 };
 

@@ -191,8 +191,8 @@ bool mrs::SceneSerializer::DeserializeText(const std::string &scene_path)
 		if (renderable_node)
 		{
 			auto &renderable_object = new_entity.AddComponent<RenderableObject>();
-			renderable_object.mesh = Mesh::Get(renderable_node["Mesh"].as<std::string>());
-			renderable_object.material = Material::Get(renderable_node["Material"].as<std::string>());
+			renderable_object.SetMesh(Mesh::Get(renderable_node["Mesh"].as<std::string>()));
+			renderable_object.SetMaterial(Material::Get(renderable_node["Material"].as<std::string>()));
 		}
 
 		auto camera_node = entity["Camera"];
@@ -296,8 +296,8 @@ void mrs::SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::BeginMap;
 
 		auto &renderable = entity.GetComponent<RenderableObject>();
-		out << YAML::Key << "Mesh" << YAML::Value << renderable.mesh->_mesh_name;
-		out << YAML::Key << "Material" << YAML::Value << renderable.material->_material_name;
+		out << YAML::Key << "Mesh" << YAML::Value << renderable.GetMesh()->_mesh_name;
+		out << YAML::Key << "Material" << YAML::Value << renderable.GetMaterial()->MaterialName();
 
 		out << YAML::EndMap;
 	}
@@ -382,7 +382,7 @@ void mrs::SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::Key << "Running" << YAML::Value << particles.running;
 		out << YAML::Key << "Color1" << YAML::Value << particles.color_1;
 		out << YAML::Key << "Color2" << YAML::Value << particles.color_2;
-		out << YAML::Key << "Texture" << YAML::Value << particles.texture->_material_name;
+		out << YAML::Key << "Texture" << YAML::Value << particles.texture->MaterialName();
 
 		out << YAML::EndMap;
 	}

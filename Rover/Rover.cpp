@@ -184,8 +184,11 @@ namespace mrs {
 
 			screen_quad->_vertex_count = 4;
 
-			screen_quad->_indices = {0,2,1,1,2,3};
+			screen_quad->_indices = { 0,2,1,1,2,3 };
 			screen_quad->_index_count = 6;
+
+			// TODO: Put in Applicatiction Load
+			Material::Create("damaged_material")->AlbedoColor() = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		}
 
 		void LoadScene()

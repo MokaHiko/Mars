@@ -17,7 +17,7 @@
 namespace mrs
 {
 	Renderer::Renderer(RendererInfo &info)
-		: _window(info.window) {}
+		: _info(info), _window(info.window) {}
 
 	Renderer::~Renderer() {}
 
@@ -226,16 +226,22 @@ namespace mrs
 
 			for (auto &it : ResourceManager::Get()._materials)
 			{
+				// Point to material bufffer
+				VkDescriptorBufferInfo material_buffer_info = {};
+				material_buffer_info.buffer = _material_descriptor_buffer.buffer;
+				material_buffer_info.offset = 0;
+				material_buffer_info.range = sizeof(MaterialData);
 
 				// Diffuse texture
 				VkDescriptorImageInfo image_buffer_info = {};
 				image_buffer_info.sampler = _default_image_sampler;
-				image_buffer_info.imageView = Texture::Get(it.second->diffuse_texture_path)->_image_view;
+				image_buffer_info.imageView = Texture::Get(it.second->_diffuse_texture_path)->_image_view;
 				image_buffer_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 				vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
-					.BindImage(0, &image_buffer_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-					.Build(&it.second->texture_set, &_default_image_set_layout);
+					.BindBuffer(0, &material_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+					.BindImage(1, &image_buffer_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+					.Build(&it.second->material_descriptor_set, &_default_material_set_layout);
 			}
 
 			_deletion_queue.Push([=]()
@@ -839,7 +845,7 @@ namespace mrs
 			for (uint32_t i = 0; i < frame_overlaps; i++)
 			{
 				// Create buffer to store per object data per frame
-				size_t buffer_size = PadToStorageBufferSize(sizeof(ObjectData)) * max_objects;
+				size_t buffer_size = PadToStorageBufferSize(sizeof(ObjectData)) * _info.max_objects;
 				_object_descriptor_buffer[i] = CreateBuffer(buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 				// Copy Default values to GPU
@@ -849,7 +855,7 @@ namespace mrs
 
 				char *data;
 				vmaMapMemory(_allocator, _object_descriptor_buffer[i].allocation, (void **)&data);
-				for (uint32_t i = 0; i < max_objects; i++)
+				for (uint32_t i = 0; i < _info.max_objects; i++)
 				{
 					memcpy(data, &object_data, sizeof(ObjectData));
 					data += PadToStorageBufferSize(sizeof(ObjectData));
@@ -860,7 +866,7 @@ namespace mrs
 				VkDescriptorBufferInfo _object_descriptor_buffer_info = {};
 				_object_descriptor_buffer_info.buffer = _object_descriptor_buffer[i].buffer;
 				_object_descriptor_buffer_info.offset = 0;
-				_object_descriptor_buffer_info.range = PadToStorageBufferSize(sizeof(ObjectData)) * max_objects;
+				_object_descriptor_buffer_info.range = PadToStorageBufferSize(sizeof(ObjectData)) * _info.max_objects;
 
 				// Build descriptors
 				vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
@@ -873,10 +879,25 @@ namespace mrs
 			}
 		}
 
-		// Default cache texture descriptors layout
-		vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
-			.BindImage(0, nullptr, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-			.Build(nullptr, &_default_image_set_layout);
+		// Material
+		{
+			size_t buffer_size = PadToUniformBufferSize(sizeof(MaterialData));
+
+			//_materials_descriptor_buffer
+			_material_descriptor_buffer = CreateBuffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+			// Cache material descriptors layout
+			vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
+				.BindBuffer(0, nullptr, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+				.BindImage(1, nullptr, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+				.Build(nullptr, &_default_material_set_layout);
+
+			_deletion_queue.Push([=](){
+				{
+					vmaDestroyBuffer(_allocator, _material_descriptor_buffer.buffer, _material_descriptor_buffer.allocation);
+				}
+			});
+		}
 	}
 
 	void Renderer::UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index)
@@ -955,6 +976,7 @@ namespace mrs
 			model = glm::scale(model, transform.scale);
 
 			ObjectData obj_info = {};
+			obj_info.color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 			obj_info.model_matrix = model;
 
 			static size_t padded_object_buffer_size = PadToStorageBufferSize(sizeof(ObjectData));

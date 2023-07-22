@@ -75,14 +75,10 @@ void main()
 
     mat4 model_matrix = _object_buffer.s_objects[gl_BaseInstance].model_matrix;
 
-    model_matrix[0][0] *= particle_parameters.scale;
-    model_matrix[1][1] *= particle_parameters.scale;
-    model_matrix[2][2] *= particle_parameters.scale;
-
     Particle particle = _particles.particles[global_particle_index];
     v_color = particle.color;
     v_uv = _uv;
 
-    vec4 pos = vec4(_position + vec3(particle.position, 0.0f), 1.0f);
+    vec4 pos = vec4((_position *particle_parameters.scale) + vec3(particle.position, 0.0f), 1.0f);
     gl_Position = view_proj * model_matrix * pos;
 }

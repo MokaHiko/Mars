@@ -27,6 +27,7 @@ namespace mrs
                 DrawComponent<Script>(entity);  
                 DrawComponent<RigidBody2D>(entity);  
                 DrawComponent<ParticleSystem>(entity);
+                DrawComponent<DirectionalLight>(entity);
                 
                 DrawAddComponent(entity);
             }

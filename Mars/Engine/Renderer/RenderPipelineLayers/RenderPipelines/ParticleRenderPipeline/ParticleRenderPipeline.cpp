@@ -377,7 +377,7 @@ void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
 
 	// Pipeline layouts
 	VkPipelineLayoutCreateInfo layout_info = vkinit::pipeline_layout_create_info();
-	std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, _default_image_set_layout, _graphics_descriptor_set_layout };
+	std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout,_default_material_set_layout, _graphics_descriptor_set_layout };
 
 	layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
 	layout_info.pSetLayouts = set_layouts.data();
@@ -473,7 +473,13 @@ void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_fr
 		// Bind material if present
 		if (material)
 		{
-			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 2, 1, &material->texture_set, 0, 0);
+            void* material_data;
+            vmaMapMemory(_renderer->GetAllocator(), _renderer->_material_descriptor_buffer.allocation, &material_data);
+            MaterialData material_description = {};
+            memcpy(material_data, &material_description, sizeof(material_description));
+            vmaUnmapMemory(_renderer->GetAllocator(), _renderer->_material_descriptor_buffer.allocation);
+
+			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 2, 1, &material->material_descriptor_set, 0, 0);
 		}
 
 		// Draw using instancing

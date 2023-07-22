@@ -15,14 +15,24 @@ layout(set = 0, binding = 0) uniform GlobalBuffer{
 	vec4 direction_light_position;
 } _global_buffer;
 
-layout(set = 2, binding = 0) uniform sampler2D _diffuse_texture;
+layout(set = 2, binding = 0) uniform MaterialData {
+	// Albedo
+	vec4 diffuse_color;
+
+	// Metallic
+	float metallic;
+	float specular;
+	int texture_channel;
+} _material;
+
+layout(set = 2, binding = 1) uniform sampler2D _diffuse_texture;
+
 layout(set = 3, binding = 0) uniform sampler2D _shadow_map_texture;
 
+// TODO: Move to configurable
 const float AMBIENT = 0.01f;
-
 float near = 0.1f; 
 float far  = 1000.0f; 
-
 void main()
 {
 	// ~ Shadow shadow
@@ -40,7 +50,7 @@ void main()
 	}
 
 	//  ~ Diffuse
-	vec3 color = texture(_diffuse_texture, v_uv).xyz;
+	vec3 color = texture(_diffuse_texture, v_uv).xyz * _material.diffuse_color.xyz;
 
 	// ~ Directional
 	float diff = max(dot(v_normal_world_space, normalize(_global_buffer.direction_light_position.xyz)), 0);

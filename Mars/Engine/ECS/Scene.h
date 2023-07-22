@@ -52,6 +52,7 @@ namespace mrs
 
         // ECS signals
         tbx::Signal<Entity> _entity_destroyed;
+        tbx::Signal<Entity> _entity_created;
     private:
         friend class Entity;
         entt::registry _registry;

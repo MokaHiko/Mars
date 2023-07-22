@@ -15,7 +15,7 @@
 
 namespace mrs
 {
-    // Manages render pipelines and their lifetimes
+    // RenderPipeline Stack
     class RenderPipelineStack
     {
     public:
@@ -32,6 +32,7 @@ namespace mrs
         std::vector<IRenderPipeline*>::reverse_iterator rend() { return _pipeline_stack.rend(); }
     private:
         std::vector<IRenderPipeline*> _pipeline_stack;
+        
         uint32_t _insert_index = 0;
     };
 
@@ -53,6 +54,7 @@ namespace mrs
 		void PopRenderPipeline(IRenderPipeline* pipeline);
 
         void OnEntityDestroyed(Entity e);
+        void OnMaterialsUpdate();
     private:
         std::shared_ptr<Renderer> _renderer = nullptr;
 		RenderPipelineStack _render_pipeline_layers;

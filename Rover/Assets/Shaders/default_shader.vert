@@ -32,7 +32,7 @@ void main()
 	mat4 model_matrix = _object_buffer.s_objects[gl_BaseInstance].model_matrix;
 
 	// Direct values
-	v_color = _color;
+	v_color = _object_buffer.s_objects[gl_BaseInstance].color.xyz;
 	v_uv = _uv;
 
 	// Converted to world space

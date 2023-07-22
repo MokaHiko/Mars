@@ -76,6 +76,8 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/RenderPipelineLayers/DefaultRenderPipelineLayer/DefaultRenderPipelineLayer.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline/ImGuiRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline/ImGuiRenderPipeline.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/RenderableComponents.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/RenderableComponents.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ShadowRenderPipeline/ShadowRenderPipeline.h

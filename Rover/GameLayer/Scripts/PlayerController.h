@@ -26,6 +26,8 @@ public:
     mrs::Transform *_transform;
     mrs::RigidBody2D *_rb;
     mrs::ParticleSystem *_particles;
+    mrs::RenderableObject* _renderable;
+    std::shared_ptr<mrs::Material> _damaged_material;
 
     // Player info
     PlayerState _state;
@@ -42,7 +44,10 @@ public:
         // Get handles
         _transform = &GetComponent<mrs::Transform>();
         _rb = &GetComponent<mrs::RigidBody2D>();
-        //_particles = &GetComponent<mrs::ParticleSystem>();
+        _particles = &GetComponent<mrs::ParticleSystem>();
+        _renderable = &GetComponent<mrs::RenderableObject>();
+
+        _damaged_material = mrs::Material::Get("damaged_material");
 
         // Set initial state
         _state = PlayerState::Idle;
@@ -59,6 +64,10 @@ public:
 
     virtual void OnCollisionEnter(mrs::Entity other) override
     {
+        if(_renderable->GetMaterial() != _damaged_material)
+        {
+            _renderable->SetMaterial(_damaged_material);
+        }
     }
 
 private:
@@ -121,6 +130,7 @@ private:
                 glm::vec2 target_dir = glm::normalize(mrs::Input::GetMousePosition());
 
                 e.GetComponent<mrs::Transform>().position = _transform->position + glm::vec3(target_dir * 2.0f, _transform->position.z);
+                e.GetComponent<mrs::Transform>().rotation = glm::vec3(0.0f, 0.0f, glm::degrees(atan2f(target_dir.y, target_dir.x)));
                 e.GetComponent<mrs::Transform>().scale = glm::vec3(_projectile_scale);
 
                 e.AddComponent<mrs::RenderableObject>();
@@ -129,11 +139,10 @@ private:
                 auto& rb = e.AddComponent<mrs::RigidBody2D>();
                 rb.use_gravity = false;
                 rb.AddImpulse(target_dir * _projecitle_velocity);
-                rb.SetFixedRotation(true);
 
                 auto& particles = e.AddComponent<mrs::ParticleSystem>();
-                particles.max_particles = 12;
-                particles.velocity = glm::vec2(-750.0f);
+                particles.max_particles = 24;
+                particles.velocity = glm::vec2(-1950.0f);
                 particles.life_time = 0.2f;
                 particles.particle_size = 0.25f;
                 particles.emission_rate = 512.0f;
@@ -150,10 +159,7 @@ private:
         }
     }
 
-    void MovingState()
-    {
-
-    }
+    void MovingState() {}
 
 private:
 };

@@ -34,6 +34,7 @@ namespace mrs
 	{
 		std::shared_ptr<Window> window;
 		GraphicsSettings graphics_settings = {};
+		uint32_t max_objects = 1000;
 	};
 
 	// Common object data unique to each entity (Model matrix, ...)
@@ -51,10 +52,10 @@ namespace mrs
 		glm::vec4 directional_light_position;
 	};
 
+	// Main vulkan state wrapper that manages the lifetime of vulkan resources and execution of renderpasses and renderpipelines
 	class Renderer
 	{
 	public:
-		const uint32_t max_objects = 1000;
 		Renderer(RendererInfo &info);
 		~Renderer();
 
@@ -90,6 +91,7 @@ namespace mrs
 		std::shared_ptr<vkutil::DescriptorLayoutCache> _descriptor_layout_cache;
 	public:
 		// ~ OffScreen Rendering
+
 		void InitOffScreenAttachments();
 
 		// Creates an offscreen render_pass;
@@ -98,6 +100,7 @@ namespace mrs
 		// Creates framebuffer that points the attachments in offscreen render pass to images
 		void InitOffScreenFramebuffers();
 
+        // Offscreen renderpass
 		VkRenderPass _offscreen_render_pass = {};
 
         // Offscreen frame buffers
@@ -110,18 +113,17 @@ namespace mrs
 		AllocatedImage _offscreen_depth_image = {};
 		VkFormat _offscreen_depth_image_format = {};
 		VkImageView _offscreen_depth_image_view = {};
-	public:
-		// Const 
-		const VkRenderPass GetSwapchainRenderPass() const {return _render_pass;}
 
+		// ~ OffScreen Rendering
+	public:
 		// Gets handle to the vulkan instance
 		const VkInstance GetInstance() const { return _instance; }
 
 		// Gets format of swapchain
 		const VkFormat GetSwapchainImageFormat() const {return _swapchain_image_format;}
 
-		// Gets handle to default render pass
-		const VkRenderPass GetRenderPass() const { return _render_pass; }
+		// Returns the render pass used by the swapchain images
+		const VkRenderPass GetSwapchainRenderPass() const {return _render_pass;}
 
 		// Gets index of current frame
 		const uint32_t GetCurrentFrame() const { return _frame_count % frame_overlaps; }
@@ -141,8 +143,8 @@ namespace mrs
 		// Get shared global object descriptor set layout
 		const VkDescriptorSetLayout GetGlobalObjectSetLayout() const { return _object_descriptor_set_layout; }
 
-		// Get shared default image descriptor set layout
-		const VkDescriptorSetLayout GetDefaultImageSetLayout() const { return _default_image_set_layout; }
+		// Get shared default material descriptor set layout
+		const VkDescriptorSetLayout GetDefaultMaterialSetLayout() const { return _default_material_set_layout; }
 
 		// Gets index of current frame data
 		const VulkanFrameContext &GetCurrentFrameData() const { return _frame_data[_frame_count % frame_overlaps]; }
@@ -161,7 +163,7 @@ namespace mrs
 
 		// Gets handle to vulkan queues struct
 		VulkanQueueFamilyIndices &GetQueueIndices() { return _queue_indices; }
-	public:
+
 		// Creates and allocates buffer with given size
 		AllocatedBuffer CreateBuffer(size_t size, VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, VkMemoryPropertyFlags memory_props = 0);
 
@@ -171,19 +173,17 @@ namespace mrs
 		// Pads size to be compatible with minimum storage buffer alignment of physical device
 		size_t PadToStorageBufferSize(size_t original_size);
 
-	public:
+		// Returns whether or not shader module was created succesefully
+		bool LoadShaderModule(const char *path, VkShaderModule *module);
+
 		// Upload texture to GPU via immediate command buffers
 		void UploadTexture(std::shared_ptr<Texture> texture);
 
 		// Upload mesh to GPU via immediate command buffers
 		void UploadMesh(std::shared_ptr<Mesh> mesh);
 
-		// Returns whether or not shader module was created succesefully
-		bool LoadShaderModule(const char *path, VkShaderModule *module);
-
 		// Used for immedaite time and blocking execution of commands
 		void ImmediateSubmit(std::function<void(VkCommandBuffer)> &&fn);
-
 	private:
 		// Initializes core vulkan structures
 		void InitVulkan();
@@ -208,7 +208,10 @@ namespace mrs
 
 		// Update Global Descriptor Sets
 		void UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index);
-	private:
+	public:
+		// General renderer info
+		RendererInfo _info = {};
+
 		// Handle to window being rendered to
 		const std::shared_ptr<Window> _window;
 
@@ -225,9 +228,12 @@ namespace mrs
 		std::vector<AllocatedBuffer> _object_descriptor_buffer;
 		VkDescriptorSetLayout _object_descriptor_set_layout;
 
+		// Materials descriptor layout
+		VkDescriptorSetLayout _material_descriptor_set_layout;
+		AllocatedBuffer _material_descriptor_buffer;
 	public:
 		VkSampler _default_image_sampler;
-		VkDescriptorSetLayout _default_image_set_layout;
+		VkDescriptorSetLayout _default_material_set_layout;
 
 		VulkanFrameContext _frame_data[frame_overlaps];
 	private:

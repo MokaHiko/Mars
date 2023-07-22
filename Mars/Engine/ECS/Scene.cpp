@@ -37,6 +37,9 @@ namespace mrs
 		e.AddComponent<Tag>(name);
 		e.AddComponent<Transform>();
 
+		// Emit created signal
+		_entity_created.Call(e);
+
 		return e;
 	}
 
@@ -60,7 +63,7 @@ namespace mrs
 
 	void Scene::Destroy(Entity entity)
 	{
-		// Fire of signal
+		// Emit destroyed signal
         _entity_destroyed(entity);
 
 		// Add to free to be recycled
