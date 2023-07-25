@@ -61,16 +61,16 @@ layout(std140, set = 3, binding = 1) readonly buffer Particles{
     Particle particles[];
 } _particles;
 
-//push constants block
-layout( push_constant ) uniform constants {
-    uint count; // the nth particle system this frame
-} p_particle_system_count;
+layout( push_constant ) uniform ParticleSystemPushConstant{
+	uint count;
+    uint material_index; 
+} _particle_push_constant;
 
 void main()
 {
     const mat4 view_proj = _global_buffer.view_proj;
 
-    ParticleParameters particle_parameters = _particle_parameters_array.parameters[p_particle_system_count.count];
+    ParticleParameters particle_parameters = _particle_parameters_array.parameters[_particle_push_constant.count];
     uint global_particle_index = (gl_InstanceIndex - gl_BaseInstance) + particle_parameters.buffer_index;
 
     mat4 model_matrix = _object_buffer.s_objects[gl_BaseInstance].model_matrix;

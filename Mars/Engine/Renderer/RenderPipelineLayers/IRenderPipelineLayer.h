@@ -47,6 +47,8 @@ namespace mrs
         virtual void OnAttach() final;
         virtual void OnDetatch() final;
 
+        virtual void OnEnable() final;
+
         virtual void OnUpdate(float dt) final;
         virtual void OnImGuiRender() final;
 

@@ -37,6 +37,8 @@ namespace mrs
 
 		InitSyncStructures();
 		InitGlobalDescriptors();
+
+		_asset_manager = std::make_unique<VulkanAssetManager>(this);
 	}
 
 	void Renderer::Shutdown()
@@ -48,97 +50,6 @@ namespace mrs
 		_descriptor_allocator->CleanUp();
 
 		_deletion_queue.Flush();
-	}
-
-	void Renderer::UploadTexture(std::shared_ptr<Texture> texture)
-	{
-		void *pixel_ptr = nullptr;
-
-		// Copy to staging buffer
-		AllocatedBuffer staging_buffer = CreateBuffer(texture->pixel_data.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
-		vmaMapMemory(_allocator, staging_buffer.allocation, &pixel_ptr);
-		memcpy(pixel_ptr, texture->pixel_data.data(), texture->pixel_data.size());
-		vmaUnmapMemory(_allocator, staging_buffer.allocation);
-
-		// Free pixel data
-		texture->pixel_data.clear();
-		texture->pixel_data.shrink_to_fit();
-
-		// Create texture
-		VkExtent3D extent;
-		extent.width = texture->_width;
-		extent.height = texture->_height;
-		extent.depth = 1;
-
-		VkImageCreateInfo image_create_info = vkinit::image_create_info(texture->_format, extent, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-
-		VmaAllocationCreateInfo vma_alloc_info = {};
-		vma_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-		vmaCreateImage(_allocator, &image_create_info, &vma_alloc_info, &texture->_image.image, &texture->_image.allocation, nullptr);
-
-		// Copy data to texture via immediate mode submit
-		ImmediateSubmit([&](VkCommandBuffer cmd)
-			{
-
-				// ~ Transition to transfer optimal
-				VkImageSubresourceRange range = {};
-				range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				range.layerCount = 1;
-				range.baseArrayLayer = 0;
-				range.levelCount = 1;
-				range.baseMipLevel = 0;
-
-				VkImageMemoryBarrier image_to_transfer_barrier = {};
-				image_to_transfer_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-				image_to_transfer_barrier.pNext = nullptr;
-
-				image_to_transfer_barrier.image = texture->_image.image;
-				image_to_transfer_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-				image_to_transfer_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-				image_to_transfer_barrier.srcAccessMask = 0;
-				image_to_transfer_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-				image_to_transfer_barrier.subresourceRange = range;
-
-				vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_to_transfer_barrier);
-
-				// ~ Copy to from staging to texture
-				VkBufferImageCopy region = {};
-				region.bufferImageHeight = 0;
-				region.bufferRowLength = 0;
-				region.bufferOffset = 0;
-
-				region.imageExtent = extent;
-				region.imageOffset = { 0 };
-				region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				region.imageSubresource.baseArrayLayer = 0;
-				region.imageSubresource.layerCount = 1;
-				region.imageSubresource.mipLevel = 0;
-
-				vkCmdCopyBufferToImage(cmd, staging_buffer.buffer, texture->_image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-				// ~ Transition to from shader read only 
-				VkImageMemoryBarrier image_to_shader_barrier = image_to_transfer_barrier;
-				image_to_shader_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-				image_to_shader_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-				image_to_shader_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-				image_to_shader_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-				vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_to_shader_barrier); });
-
-		// Create iamge view
-		VkImageViewCreateInfo image_view_info = vkinit::image_view_create_info(texture->_image.image, texture->_format, VK_IMAGE_ASPECT_COLOR_BIT);
-		VK_CHECK(vkCreateImageView(_device.device, &image_view_info, nullptr, &texture->_image_view));
-
-		// Clean up
-		vmaDestroyBuffer(_allocator, staging_buffer.buffer, staging_buffer.allocation);
-		_deletion_queue.Push([=]()
-			{
-				vkDestroyImageView(_device.device, texture->_image_view, nullptr);
-				vmaDestroyImage(_allocator, texture->_image.image, texture->_image.allocation); });
 	}
 
 	void Renderer::UploadMesh(std::shared_ptr<Mesh> mesh)
@@ -207,45 +118,20 @@ namespace mrs
 
 	void Renderer::UploadResources()
 	{
-		// Upload each resource type
 		for (auto &it : ResourceManager::Get()._meshes)
 		{
 			UploadMesh(it.second);
 		}
 
+		// Upload Textures then materials in order
 		for (auto &it : ResourceManager::Get()._textures)
 		{
-			UploadTexture(it.second);
+			_asset_manager->UploadTexture(it.second);
 		}
 
-		// ~ Materials
+		for (auto &it : ResourceManager::Get()._materials)
 		{
-			// Create Texture Sampler
-			VkSamplerCreateInfo default_sampler_info = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
-			VK_CHECK(vkCreateSampler(_device.device, &default_sampler_info, nullptr, &_default_image_sampler));
-
-			for (auto &it : ResourceManager::Get()._materials)
-			{
-				// Point to material bufffer
-				VkDescriptorBufferInfo material_buffer_info = {};
-				material_buffer_info.buffer = _material_descriptor_buffer.buffer;
-				material_buffer_info.offset = 0;
-				material_buffer_info.range = sizeof(MaterialData);
-
-				// Diffuse texture
-				VkDescriptorImageInfo image_buffer_info = {};
-				image_buffer_info.sampler = _default_image_sampler;
-				image_buffer_info.imageView = Texture::Get(it.second->_diffuse_texture_path)->_image_view;
-				image_buffer_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-				vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
-					.BindBuffer(0, &material_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-					.BindImage(1, &image_buffer_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-					.Build(&it.second->material_descriptor_set, &_default_material_set_layout);
-			}
-
-			_deletion_queue.Push([=]()
-				{ vkDestroySampler(_device.device, _default_image_sampler, nullptr); });
+			_asset_manager->UploadMaterial(it.second);
 		}
 	}
 
@@ -878,26 +764,6 @@ namespace mrs
 					{ vmaDestroyBuffer(_allocator, _object_descriptor_buffer[i].buffer, _object_descriptor_buffer[i].allocation); });
 			}
 		}
-
-		// Material
-		{
-			size_t buffer_size = PadToUniformBufferSize(sizeof(MaterialData));
-
-			//_materials_descriptor_buffer
-			_material_descriptor_buffer = CreateBuffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-			// Cache material descriptors layout
-			vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
-				.BindBuffer(0, nullptr, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-				.BindImage(1, nullptr, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-				.Build(nullptr, &_default_material_set_layout);
-
-			_deletion_queue.Push([=](){
-				{
-					vmaDestroyBuffer(_allocator, _material_descriptor_buffer.buffer, _material_descriptor_buffer.allocation);
-				}
-			});
-		}
 	}
 
 	void Renderer::UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index)
@@ -1043,7 +909,8 @@ namespace mrs
 
 		// Begin main render pass
 		VkClearValue clear_value = {};
-		clear_value.color = { 0.1f, 0.1f, 0.1f, 1.0f };
+		clear_value.color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		//clear_value.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 		VkClearValue depth_value = {};
 		depth_value.depthStencil = { 1.0f, 0 };

@@ -33,38 +33,16 @@ namespace mrs
 
 	void IRenderPipelineLayer::OnAttach()
 	{
-		// Initialize rendererer
+		// Initialize rendererer systems
 		RendererInfo renderer_info = {};
 		renderer_info.window = Application::GetInstance().GetWindow();
 		renderer_info.graphics_settings = {};
 
 		_renderer = std::make_shared<Renderer>(renderer_info);
 		_renderer->Init();
-
-		_renderer->UploadResources();
 		_name = "IRenderPipelineLayer";
 
-		// Initialize render pipelines
-		for(auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
-		{
-			IRenderPipeline* pipeline = (*it);
-
-			// Get scene handles
-			pipeline->_scene = Application::GetInstance().GetScene();
-			pipeline->_window = Application::GetInstance().GetWindow().get();
-			pipeline->_renderer = _renderer.get();
-			pipeline->_device = &_renderer->GetDevice();
-			pipeline->_render_pass = _renderer->GetSwapchainRenderPass();
-			pipeline->_render_pass_format = _renderer->GetSwapchainImageFormat();
-			pipeline->_global_descriptor_set_layout = _renderer->GetGlobalSetLayout();
-			pipeline->_object_descriptor_set_layout = _renderer->GetGlobalObjectSetLayout();
-			pipeline->_default_material_set_layout = _renderer->GetDefaultMaterialSetLayout();
-			pipeline->_global_descriptor_set = _renderer->GetGlobalDescriptorSet();
-
-			pipeline->Init();
-		}
-
-		// Subscribe to signals
+		// Subscribe to application signals
 		Application::GetInstance().GetScene()->_entity_destroyed += [&](Entity e){
 			OnEntityDestroyed(e);
 		};
@@ -73,6 +51,35 @@ namespace mrs
 	void IRenderPipelineLayer::OnDetatch()
 	{
 		_renderer->Shutdown();
+	}
+
+	void IRenderPipelineLayer::OnEnable()
+	{
+		// Upload resources in resource manager
+		_renderer->UploadResources();
+
+		// Initialize render pipelines
+		for(auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
+		{
+			IRenderPipeline* pipeline = (*it);
+
+			// Convenience handles
+			pipeline->_scene = Application::GetInstance().GetScene();
+			pipeline->_window = Application::GetInstance().GetWindow().get();
+			pipeline->_renderer = _renderer.get();
+			pipeline->_device = &_renderer->GetDevice();
+
+			pipeline->_render_pass = _renderer->GetSwapchainRenderPass();
+			pipeline->_render_pass_format = _renderer->GetSwapchainImageFormat();
+
+			pipeline->_global_descriptor_set_layout = _renderer->GetGlobalSetLayout();
+			pipeline->_object_descriptor_set_layout = _renderer->GetGlobalObjectSetLayout();
+			pipeline->_global_descriptor_set = _renderer->GetGlobalDescriptorSet();
+
+			pipeline->_asset_manager = _renderer->GetAssetManager();
+		
+			pipeline->Init();
+		}
 	}
 
 	void IRenderPipelineLayer::OnUpdate(float dt)

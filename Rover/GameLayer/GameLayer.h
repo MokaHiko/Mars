@@ -18,6 +18,9 @@ public:
         // Load Game Resources
 		mrs::Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj", "monkey");
 
+		mrs::Material::Create("damaged_material")->GetAlbedoColor() = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+        mrs::Material::Create("player_material")->GetAlbedoColor() = glm::vec4(0,255,251,255);
+
         // Register Scripts
         mrs::Script::Register<GameManager>();
         mrs::Script::Register<PlayerController>();

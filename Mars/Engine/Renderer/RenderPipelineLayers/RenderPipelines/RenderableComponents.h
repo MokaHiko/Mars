@@ -11,7 +11,7 @@
 
 namespace mrs
 {
-    // Base renderer class component that makes an object appear on the screen. Inherited by all game object renderers
+    // Base renderer class component that makes an object appear on the screen. Inherited by all rendererable types.
     struct RenderableObject
     {
         RenderableObject()

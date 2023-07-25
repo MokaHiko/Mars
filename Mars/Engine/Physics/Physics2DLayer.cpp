@@ -10,7 +10,7 @@ namespace mrs
 	{
 		_name = "Physics2DLayer";
 		_scene = Application::GetInstance().GetScene();
-
+		
 		_scene->_entity_destroyed += [&](Entity e) {
 				OnEntityDestroyed(e);
 			};

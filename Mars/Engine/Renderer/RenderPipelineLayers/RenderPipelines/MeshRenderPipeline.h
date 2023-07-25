@@ -20,11 +20,12 @@ namespace mrs
         virtual void End(VkCommandBuffer cmd) override;
 
         virtual void OnPreRenderPass(VkCommandBuffer cmd) override;
-
-        virtual void OnMaterialsUpdate();
+        virtual void OnMaterialsUpdate() override;
     public:
-        // Application signal to listen to 
+        // Callback to entity created
         void OnEntityCreated(Entity entity);
+
+        // Callback to entity destroyed
         void OnEntityDestroyed(Entity entity);
     private:
         void InitDescriptors();
@@ -60,7 +61,6 @@ namespace mrs
         VkDescriptorSetLayout _shadow_map_descriptor_layout;
         VkDescriptorSet _shadow_map_descriptor;
     private:
-        // Indirect Draws
         struct IndirectBatch
         {
             Mesh *mesh;
@@ -73,13 +73,10 @@ namespace mrs
         // Returns vector if indirect batches from renderables from scene
         std::vector<IndirectBatch> GetRenderablesAsBatches(Scene *scene);
 
-        // Buffers for indirect render commands
-        std::vector<AllocatedBuffer> _indirect_buffers;
-
         // Flag set when draw commands need to be updated i.e Entity creation and destruction
         bool _rerecord = true;
 
-        // Indirect Draw batches
+        std::vector<AllocatedBuffer> _indirect_buffers;
         std::vector<IndirectBatch> _batches = {};
     };
 }

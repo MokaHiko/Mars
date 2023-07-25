@@ -4,9 +4,6 @@
 #include "Core/Input.h"
 #include "Toolbox/TimeToolBox.h"
 
-#include "Core/InputLayer.h"
-#include "Scripting/NativeScriptingLayer.h"
-#include "Renderer/RenderPipelineLayers/DefaultRenderPipelineLayer/DefaultRenderPipelineLayer.h"
 namespace mrs {
 	Application *Application::_instance = nullptr;
 	Application::Application(const std::string &app_name, uint32_t width, uint32_t height)
@@ -15,6 +12,7 @@ namespace mrs {
 		assert(!_instance);
 		_instance = this;
 
+		// Check system specs
 		MRS_INFO("Initializing Application");
 		Platform::CheckStorage((size_t)(4 * glm::pow(10, 8)));
 
@@ -24,18 +22,12 @@ namespace mrs {
 
 		// Create scene
 		_scene = std::make_shared<Scene>();
-
-		// Push default layers
-		PushLayer(new InputLayer());
-		PushLayer(new NativeScriptingLayer());
 	}
 
 	Application::~Application() {}
 
 	void Application::Run()
 	{
-		PushLayer(new DefaultRenderPipelineLayer());
-
 		// Enable layers
 		for (Layer *layer : _layer_stack)
 		{

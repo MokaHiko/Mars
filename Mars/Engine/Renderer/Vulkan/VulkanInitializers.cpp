@@ -36,7 +36,7 @@ VkCommandBufferBeginInfo vkinit::command_buffer_begin_info(VkCommandBufferUsageF
 	return begin;
 }
 
-VkRenderPassBeginInfo vkinit::render_pass_begin_info(VkFramebuffer frame_buffer, VkRenderPass render_pass, VkRect2D& render_area, VkClearValue* clear_value, uint32_t clear_value_count)
+VkRenderPassBeginInfo vkinit::render_pass_begin_info(VkFramebuffer frame_buffer, VkRenderPass render_pass, VkRect2D &render_area, VkClearValue *clear_value, uint32_t clear_value_count)
 {
 	VkRenderPassBeginInfo begin = {};
 	begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -52,7 +52,7 @@ VkRenderPassBeginInfo vkinit::render_pass_begin_info(VkFramebuffer frame_buffer,
 	return begin;
 }
 
-VkPipelineShaderStageCreateInfo vkinit::pipeline_shader_stage_create_info(VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char* entrypoint)
+VkPipelineShaderStageCreateInfo vkinit::pipeline_shader_stage_create_info(VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char *entrypoint)
 {
 	VkPipelineShaderStageCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -124,14 +124,25 @@ VkPipelineMultisampleStateCreateInfo vkinit::pipeline_mulitisample_state_create_
 	return info;
 }
 
-VkPipelineColorBlendAttachmentState vkinit::pipeline_color_blend_attachment_state()
+VkPipelineColorBlendAttachmentState vkinit::pipeline_color_blend_attachment_state(VkBool32 blend_enable, VkBlendFactor srcColorBlendFactor, VkBlendFactor dstColorBlendFactor, VkBlendOp colorBlendOp, VkBlendFactor srcAlphaBlendFactor, VkBlendFactor dstAlphaBlendFactor, VkBlendOp alphaBlendOp)
 {
 	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
 	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
 		VK_COLOR_COMPONENT_G_BIT |
 		VK_COLOR_COMPONENT_B_BIT |
 		VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachment.blendEnable = VK_FALSE;
+	colorBlendAttachment.blendEnable = blend_enable;
+
+	if (blend_enable)
+	{
+		colorBlendAttachment.srcColorBlendFactor = srcColorBlendFactor;
+		colorBlendAttachment.dstColorBlendFactor = dstColorBlendFactor;
+		colorBlendAttachment.colorBlendOp = colorBlendOp;
+		colorBlendAttachment.srcAlphaBlendFactor = srcAlphaBlendFactor;
+		colorBlendAttachment.dstAlphaBlendFactor = dstAlphaBlendFactor;
+		colorBlendAttachment.alphaBlendOp = alphaBlendOp;
+	}
+
 	return colorBlendAttachment;
 }
 

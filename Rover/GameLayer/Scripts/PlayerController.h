@@ -36,7 +36,7 @@ public:
 
     float _fire_rate = 0.35f;
     float _projecitle_velocity = 25.0f;
-    float _projectile_scale = 0.25f;
+    float _projectile_scale = 0.5f;
     float _current_cooldown_time = _fire_rate;
 
     virtual void OnStart() override
@@ -129,7 +129,7 @@ private:
                 auto e = Insantiate("Projectile");
                 glm::vec2 target_dir = glm::normalize(mrs::Input::GetMousePosition());
 
-                e.GetComponent<mrs::Transform>().position = _transform->position + glm::vec3(target_dir * 2.0f, _transform->position.z);
+                e.GetComponent<mrs::Transform>().position = _transform->position + glm::vec3(target_dir * 3.0f, _transform->position.z);
                 e.GetComponent<mrs::Transform>().rotation = glm::vec3(0.0f, 0.0f, glm::degrees(atan2f(target_dir.y, target_dir.x)));
                 e.GetComponent<mrs::Transform>().scale = glm::vec3(_projectile_scale);
 

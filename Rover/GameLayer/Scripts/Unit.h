@@ -20,7 +20,7 @@ public:
         Dead = 1 << 4
     };
 
-    float _health = 20.0f;
+    float _health = 5.0f;
     float _movement_speed = 20.0f;
     UnitState _state = UnitState::Idle;
 

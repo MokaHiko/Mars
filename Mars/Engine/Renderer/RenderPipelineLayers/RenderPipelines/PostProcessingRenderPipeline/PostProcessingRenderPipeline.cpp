@@ -3,6 +3,9 @@
 
 #include "Renderer/Vulkan/VulkanInitializers.h"
 
+#include "Renderer/Vulkan/VulkanTexture.h"
+#include "Renderer/Vulkan/VulkanMesh.h"
+
 void mrs::PostProcessingRenderPipeline::Init()
 {
 	_screen_quad = Mesh::Get("quad");

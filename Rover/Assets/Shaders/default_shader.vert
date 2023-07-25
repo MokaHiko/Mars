@@ -31,11 +31,9 @@ void main()
 {
 	mat4 model_matrix = _object_buffer.s_objects[gl_BaseInstance].model_matrix;
 
-	// Direct values
 	v_color = _object_buffer.s_objects[gl_BaseInstance].color.xyz;
 	v_uv = _uv;
 
-	// Converted to world space
 	v_position_world_space = mat3(model_matrix) * _position; // position in world space
 	v_normal_world_space = normalize(mat3(model_matrix) * _normal); // Scaling must be uniform
 	v_uv_world_space = _global_buffer.view_proj_light * vec4(v_position_world_space, 1.0f); // fragment uv in clip space

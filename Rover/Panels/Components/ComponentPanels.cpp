@@ -63,14 +63,15 @@ namespace mrs
 			ImGui::Text("Mesh: %s", renderable.GetMesh()->_mesh_name.c_str());
 			ImVec2 region_size = ImGui::GetContentRegionAvail();
 
-			ImGui::Text("Material: %s", renderable.GetMaterial()->MaterialName().c_str());
+			auto& material = renderable.GetMaterial();
+			ImGui::Text("Material: %s", material->GetMaterialName().c_str());
 			if(ImGui::CollapsingHeader("Albedo"))
 			{
-				//ImGui::ColorPicker4("Color", glm::value_ptr(renderable.material->AlbedoColor()));
-				ImGui::ColorPicker4("Color", glm::value_ptr(renderable.GetMaterial()->AlbedoColor()));
-				ImGui::Text("Diffuse");
-				ImGui::Image(renderable.GetMaterial()->material_descriptor_set, { region_size.x / 3.0f, region_size.y / 5.0f }); ImGui::SameLine();
+				ImGui::ColorPicker4("Color", glm::value_ptr(material->GetAlbedoColor()));
+				ImGui::Text("Texture: %s", material->GetMaterialName());
 			}
+
+			ImGui::Checkbox("Receive Shadows", &material->GetShadowFlag());
 			});
 	}
 

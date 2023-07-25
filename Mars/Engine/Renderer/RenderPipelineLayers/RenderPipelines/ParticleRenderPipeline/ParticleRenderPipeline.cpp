@@ -50,7 +50,7 @@ void mrs::ParticleRenderPipeline::UploadResources()
 		Entity e(entity, _scene);
 		auto &particle_system = e.GetComponent<ParticleSystem>();
 
-		if(!particle_system.registered)
+		if (!particle_system.registered)
 		{
 			RegisterParticleSystem(particle_system);
 		}
@@ -261,6 +261,7 @@ void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cm
 			// Bind push constant
 			ParticleSystemPushConstant pc;
 			pc.count = ctr++;
+			pc.material_index = particle_system.material->GetMaterialIndex();
 
 			vkCmdPushConstants(cmd, _compute_pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
 
@@ -287,7 +288,7 @@ void mrs::ParticleRenderPipeline::FillParticleArray(const ParticleSystem &partic
 		{
 			float r = 0.5f * _random_generator.Next();
 			float theta = _random_generator.Next() * glm::radians(particle_system.spread_angle);
-			float x = r * cos(theta);
+			float x = r * cos(theta) * glm::round(_random_generator_negative_to_one.Next());
 			float y = r * sin(theta);
 			particles[i].position = glm::vec2(x, y);
 			particles[i].velocity = particles[i].position * particle_system.velocity;
@@ -372,24 +373,30 @@ void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
 	// Graphics Settings
 	builder._rasterizer = vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
 	builder._multisampling = vkinit::pipeline_mulitisample_state_create_info();
-	builder._color_blend_attachment = vkinit::pipeline_color_blend_attachment_state();
+	builder._color_blend_attachment = vkinit::pipeline_color_blend_attachment_state(
+		VK_TRUE,
+		VK_BLEND_FACTOR_SRC_ALPHA,
+		VK_BLEND_FACTOR_ONE,
+		VK_BLEND_OP_ADD,
+		VK_BLEND_FACTOR_ONE,
+		VK_BLEND_FACTOR_ONE,
+		VK_BLEND_OP_ADD);
 	builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(false, false, VK_COMPARE_OP_ALWAYS);
 
 	// Pipeline layouts
 	VkPipelineLayoutCreateInfo layout_info = vkinit::pipeline_layout_create_info();
-	std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout,_default_material_set_layout, _graphics_descriptor_set_layout };
+	std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, _asset_manager->GetMaterialDescriptorSetLayout(), _graphics_descriptor_set_layout };
 
 	layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
 	layout_info.pSetLayouts = set_layouts.data();
 
 	VkPushConstantRange push_constant = {};
 	push_constant.offset = 0;
+	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	push_constant.size = sizeof(ParticleSystemPushConstant);
-	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 	layout_info.pPushConstantRanges = &push_constant;
 	layout_info.pushConstantRangeCount = 1;
-
 	VK_CHECK(vkCreatePipelineLayout(_renderer->GetDevice().device, &layout_info, nullptr, &_graphics_pipeline_layout));
 
 	builder._pipeline_layout = _graphics_pipeline_layout;
@@ -453,34 +460,27 @@ void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_fr
 	auto view = _scene->Registry()->view<Transform, ParticleSystem>().use<ParticleSystem>();
 	int ctr = 0;
 
+	// Bind global materials buffer
 	for (auto entity : view)
 	{
 		Entity e(entity, _scene);
 		auto &particle_system = e.GetComponent<ParticleSystem>();
 
-		if(!particle_system.running)
+		if (!particle_system.running)
 		{
 			continue;
 		}
 
-		auto &material = particle_system.texture;
+		auto &material = particle_system.material;
 
-		// Bind push constant
+		// Bind particle system properties and material index
 		ParticleSystemPushConstant pc;
 		pc.count = ctr++;
-		vkCmdPushConstants(cmd, _graphics_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
+		pc.material_index = particle_system.material->GetMaterialIndex();
+		vkCmdPushConstants(cmd, _graphics_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
 
-		// Bind material if present
-		if (material)
-		{
-            void* material_data;
-            vmaMapMemory(_renderer->GetAllocator(), _renderer->_material_descriptor_buffer.allocation, &material_data);
-            MaterialData material_description = {};
-            memcpy(material_data, &material_description, sizeof(material_description));
-            vmaUnmapMemory(_renderer->GetAllocator(), _renderer->_material_descriptor_buffer.allocation);
-
-			vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 2, 1, &material->material_descriptor_set, 0, 0);
-		}
+		// Bind material textures
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 2, 1, &material->material_descriptor_set, 0, 0);
 
 		// Draw using instancing
 		vkCmdDrawIndexed(cmd, _quad_mesh->_index_count, particle_system.live_particles, 0, 0, e.Id());

@@ -26,13 +26,22 @@ void mrs::MeshRenderPipeline::InitPipelineLayout()
     // Create pipeline layout
     VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
 
-    // Shadow Descriptor
+    // Mesh Descriptors
     std::vector<VkDescriptorSetLayout> descriptor_layouts = {
         _global_descriptor_set_layout, _object_descriptor_set_layout,
-        _default_material_set_layout, _shadow_map_descriptor_layout };
+        _asset_manager->GetMaterialDescriptorSetLayout(), _shadow_map_descriptor_layout };
 
     pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
     pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
+    
+    // Material index push constant
+    VkPushConstantRange material_push_range = {};
+    material_push_range.offset = 0;
+    material_push_range.size = sizeof(uint32_t);
+    material_push_range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    pipeline_layout_info.pushConstantRangeCount = 1;
+    pipeline_layout_info.pPushConstantRanges = &material_push_range;
 
     VK_CHECK(vkCreatePipelineLayout(_device->device, &pipeline_layout_info,
         nullptr, &_default_pipeline_layout));
@@ -111,15 +120,11 @@ void mrs::MeshRenderPipeline::DrawObjects(VkCommandBuffer cmd, Scene *scene)
     {
         // Bind batch material
         {
-            void *material_data;
-            vmaMapMemory(_renderer->GetAllocator(), _renderer->_material_descriptor_buffer.allocation, &material_data);
+            // Bind material push constnat index
+            uint32_t material_index = batch.material->GetMaterialIndex();
+            vkCmdPushConstants(cmd, _default_pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &material_index);
 
-            MaterialData material_description = {};
-            material_description.diffuse_color = batch.material->AlbedoColor();
-            memcpy(material_data, &material_description, sizeof(material_description));
-
-            vmaUnmapMemory(_renderer->GetAllocator(), _renderer->_material_descriptor_buffer.allocation);
-            
+            // Bind material buffer and material texures
             vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &batch.material->material_descriptor_set, 0, nullptr);
         }
 
@@ -321,7 +326,7 @@ void mrs::MeshRenderPipeline::InitOffScreenPipeline()
     // Create pipeline layout
     VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
 
-    std::vector<VkDescriptorSetLayout> descriptor_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, _default_material_set_layout };
+    std::vector<VkDescriptorSetLayout> descriptor_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, _asset_manager->GetMaterialDescriptorSetLayout()};
     pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
     pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
 

@@ -47,6 +47,7 @@ namespace mrs
     struct ParticleSystemPushConstant
     {
         uint32_t count;
+        uint32_t material_index;
     };
 
     class ParticleRenderPipeline : public IRenderPipeline
@@ -141,7 +142,9 @@ namespace mrs
 
         // Quad to render particles with
         std::shared_ptr<Mesh> _quad_mesh;
+
         tbx::PRNGenerator<float> _random_generator{0.0f, 1.0f};
+        tbx::PRNGenerator<float> _random_generator_negative_to_one{-1.0f, 1.0f};
 
     };
 }

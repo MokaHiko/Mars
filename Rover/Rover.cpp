@@ -11,6 +11,10 @@
 #include "Panels/Menus/MainMenu.h"
 #include "Panels/InspectorPanel.h"
 
+#include "Core/InputLayer.h"
+#include "Scripting/NativeScriptingLayer.h"
+#include "Renderer/RenderPipelineLayers/DefaultRenderPipelineLayer/DefaultRenderPipelineLayer.h"
+
 #include "GameLayer/GameLayer.h"
 #include <imgui_impl_sdl2.h>
 
@@ -186,9 +190,6 @@ namespace mrs {
 
 			screen_quad->_indices = { 0,2,1,1,2,3 };
 			screen_quad->_index_count = 6;
-
-			// TODO: Put in Applicatiction Load
-			Material::Create("damaged_material")->AlbedoColor() = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		}
 
 		void LoadScene()
@@ -227,7 +228,13 @@ namespace mrs {
 	public:
 		Rover() : Application("Rover", 1600, 900)
 		{
-			PushLayer(new mrs::Physics2DLayer());
+			// Default layers
+			PushLayer(new InputLayer());
+			PushLayer(new DefaultRenderPipelineLayer());
+			PushLayer(new Physics2DLayer());
+			PushLayer(new NativeScriptingLayer());
+
+			// Client application layers
 			PushLayer(new EditorLayer());
 			PushLayer(new GameLayer());
 		}

@@ -31,7 +31,7 @@ struct ParticleParameters
 };
 
 layout(std140, set = 0, binding = 0) readonly buffer ParticleParametersUBO {
-    ParticleParameters[] parameters;
+    ParticleParameters parameters[];
 } _particle_parameters_array;
 
 layout(std140, set = 0, binding = 1) readonly buffer ParticlesIn{
@@ -44,14 +44,14 @@ layout(std140, set = 0, binding = 2) buffer ParticlesOut{
 
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
-//push constants block
-layout( push_constant ) uniform constants {
-    uint count; // index into particle system buffer
-} p_particle_system_count;
+layout( push_constant ) uniform ParticleSystemPushConstant{
+	uint count;     // index into particle system buffer
+    uint material_index;  // index into global materials buffer
+} _particle_push_constant;
 
 void main()
 {
-    ParticleParameters particle_parameters = _particle_parameters_array.parameters[p_particle_system_count.count];
+    ParticleParameters particle_parameters = _particle_parameters_array.parameters[_particle_push_constant.count];
 
     uint local_index = gl_GlobalInvocationID.x;
     uint global_index = gl_GlobalInvocationID.x + particle_parameters.buffer_index;

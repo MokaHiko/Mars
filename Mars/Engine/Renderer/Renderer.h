@@ -10,12 +10,10 @@
 #include "Vulkan/VulkanUtils.h"
 #include "Vulkan/VulkanStructures.h"
 
-#include "Vulkan/VulkanMaterial.h"
-#include "Vulkan/VulkanTexture.h"
-#include "Vulkan/VulkanMesh.h"
-
 #include "Camera.h"
 #include "ECS/Scene.h"
+
+#include "Vulkan/VulkanAssetManager.h"
 
 namespace mrs
 {
@@ -35,6 +33,7 @@ namespace mrs
 		std::shared_ptr<Window> window;
 		GraphicsSettings graphics_settings = {};
 		uint32_t max_objects = 1000;
+		uint32_t max_materials = 100;
 	};
 
 	// Common object data unique to each entity (Model matrix, ...)
@@ -143,11 +142,11 @@ namespace mrs
 		// Get shared global object descriptor set layout
 		const VkDescriptorSetLayout GetGlobalObjectSetLayout() const { return _object_descriptor_set_layout; }
 
-		// Get shared default material descriptor set layout
-		const VkDescriptorSetLayout GetDefaultMaterialSetLayout() const { return _default_material_set_layout; }
-
 		// Gets index of current frame data
 		const VulkanFrameContext &GetCurrentFrameData() const { return _frame_data[_frame_count % frame_overlaps]; }
+
+		// Returns the vulkan asset manager
+		VulkanAssetManager* GetAssetManager() {return _asset_manager.get();}
 
 		// Gets handle to vulkan device struct
 		VulkanDevice &GetDevice() { return _device; }
@@ -175,9 +174,6 @@ namespace mrs
 
 		// Returns whether or not shader module was created succesefully
 		bool LoadShaderModule(const char *path, VkShaderModule *module);
-
-		// Upload texture to GPU via immediate command buffers
-		void UploadTexture(std::shared_ptr<Texture> texture);
 
 		// Upload mesh to GPU via immediate command buffers
 		void UploadMesh(std::shared_ptr<Mesh> mesh);
@@ -228,14 +224,9 @@ namespace mrs
 		std::vector<AllocatedBuffer> _object_descriptor_buffer;
 		VkDescriptorSetLayout _object_descriptor_set_layout;
 
-		// Materials descriptor layout
-		VkDescriptorSetLayout _material_descriptor_set_layout;
-		AllocatedBuffer _material_descriptor_buffer;
-	public:
-		VkSampler _default_image_sampler;
-		VkDescriptorSetLayout _default_material_set_layout;
-
 		VulkanFrameContext _frame_data[frame_overlaps];
+
+		std::unique_ptr<VulkanAssetManager> _asset_manager;
 	private:
 		VkInstance _instance = {};
 		VkSurfaceKHR _surface = {};

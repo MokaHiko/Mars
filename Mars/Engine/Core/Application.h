@@ -59,7 +59,6 @@ namespace mrs {
 		// Returns shared ptr to application window
 		std::shared_ptr<Window> GetWindow() { return _window; }
 	private:
-		// Core application structures
 		std::shared_ptr<Window> _window = nullptr;
 		std::shared_ptr<Scene> _scene = nullptr;
 		std::string _app_name;
@@ -67,13 +66,9 @@ namespace mrs {
 		bool _running = false;
 		float _dt = 0.0f;
 
-		// Controller layers
 		LayerStack _layer_stack;
 
-		// Application singleton instance
 		static Application* _instance;
-
-		// Application Signals
 	};
 
 	// To be implemented by client

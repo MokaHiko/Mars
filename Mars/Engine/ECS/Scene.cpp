@@ -38,14 +38,15 @@ namespace mrs
 		e.AddComponent<Transform>();
 
 		// Emit created signal
-		_entity_created.Call(e);
+		_entity_created(e);
 
 		return e;
 	}
 
 	void Scene::QueueDestroy(Entity entity)
 	{
-		_destruction_queue.push_back(entity);
+		// TODO: Properly destroy/free entities
+		//_destruction_queue.push_back(entity);
 	}
 
 	void Scene::FlushDestructionQueue()
@@ -63,11 +64,15 @@ namespace mrs
 
 	void Scene::Destroy(Entity entity)
 	{
-		// Emit destroyed signal
+		// Fire off signal
         _entity_destroyed(entity);
 
-		// Add to free to be recycled
-		_registry.destroy(entity);
+		// Add to free queue to recycled entity id
+		if(entity)
+		{
+			_registry.destroy(entity);
+		}
+
 		_free_queue.push_back(entity);
 	}
 }

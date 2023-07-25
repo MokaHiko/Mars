@@ -5,9 +5,11 @@
 
 #include "Renderer/Renderer.h"
 #include "Renderer/Vulkan/VulkanUtils.h"
+#include "Renderer/Vulkan/VulkanAssetManager.h"
 
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
+
 
 namespace mrs
 {
@@ -66,12 +68,13 @@ namespace mrs
         VkRenderPass _render_pass = VK_NULL_HANDLE;
         VkFormat _render_pass_format = VK_FORMAT_UNDEFINED;
 
-        // Shared Global Descriptor sets
+        // Global Descriptor sets
         VkDescriptorSetLayout _global_descriptor_set_layout = VK_NULL_HANDLE;
         VkDescriptorSetLayout _object_descriptor_set_layout = VK_NULL_HANDLE;
-        VkDescriptorSetLayout _default_material_set_layout = VK_NULL_HANDLE;
-
         VkDescriptorSet _global_descriptor_set = VK_NULL_HANDLE;
+
+        // Vulkan asset manager
+        VulkanAssetManager* _asset_manager = nullptr;
     };
 }
 

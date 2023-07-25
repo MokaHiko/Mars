@@ -67,6 +67,8 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/Vulkan/VulkanUtils.cpp
 			Engine/Renderer/Vulkan/VulkanInitializers.h
 			Engine/Renderer/Vulkan/VulkanInitializers.cpp
+			Engine/Renderer/Vulkan/VulkanAssetManager.h
+			Engine/Renderer/Vulkan/VulkanAssetManager.cpp
 
 			Engine/Renderer/RenderPipelineLayers/IRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/IRenderPipeline.cpp
@@ -80,8 +82,6 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/RenderableComponents.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.cpp
-			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ShadowRenderPipeline/ShadowRenderPipeline.h
-			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ShadowRenderPipeline/ShadowRenderPipeline.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleRenderPipeline.h

@@ -21,8 +21,11 @@ namespace mrs
     public:
         ParticleSystem()
         {
-            texture = Material::Get("default_material");
+            material = Material::Get("default_material");
         };
+
+        // Material
+        std::shared_ptr<Material> material; 
 
         // Color Gradient
         glm::vec4 color_1 = glm::vec4(1.0f);
@@ -30,7 +33,6 @@ namespace mrs
 
         // Shape
         EmissionShape emission_shape = EmissionShape::Cone;
-        std::shared_ptr<Material> texture; 
         float particle_size = 0.15f;
         float spread_angle = 45.0f;
 
@@ -41,6 +43,7 @@ namespace mrs
         float emission_rate = 10.0f;
         glm::vec2 velocity{ 10.0f, 25.0f };
 
+        // State
         bool running = true;
         bool repeating = true;
         float duration = 2.0f; // Duration of particle system if not repeating
