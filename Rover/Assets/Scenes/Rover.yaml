@@ -36,11 +36,12 @@ Entities:
       Type: 2
       UseGravity: false
     ParticleSystem:
-      MaxParticles: 256
+      MaxParticles: 64
       ParticleSize: 0.25
-      LifeTime: 0.667
-      EmissionRate: 542
-      Velocity: [100, -250]
+      SpreadAngle: 15
+      LifeTime: 0.1667
+      EmissionRate: 1024
+      Velocity: [20, -200]
       Running: false
       Color1: [0.5, 0.5, 0, 1]
       Color2: [1, 0, 0, 1]

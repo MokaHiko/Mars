@@ -244,6 +244,7 @@ bool mrs::SceneSerializer::DeserializeText(const std::string &scene_path)
 			auto &particles = new_entity.AddComponent<ParticleSystem>();
 			particles.max_particles = particles_node["MaxParticles"].as<uint32_t>();
 			particles.particle_size = particles_node["ParticleSize"].as<float>();
+			particles.spread_angle = particles_node["SpreadAngle"].as<float>();
 			particles.life_time = particles_node["LifeTime"].as<float>();
 			particles.emission_rate = particles_node["EmissionRate"].as<float>();
 			particles.velocity = particles_node["Velocity"].as<glm::vec2>();
@@ -376,6 +377,7 @@ void mrs::SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity)
 		auto &particles = entity.GetComponent<ParticleSystem>();
 		out << YAML::Key << "MaxParticles" << YAML::Value << particles.max_particles;
 		out << YAML::Key << "ParticleSize" << YAML::Value << particles.particle_size;
+		out << YAML::Key << "SpreadAngle" << YAML::Value << particles.spread_angle;
 		out << YAML::Key << "LifeTime" << YAML::Value << particles.life_time;
 		out << YAML::Key << "EmissionRate" << YAML::Value << particles.emission_rate;
 		out << YAML::Key << "Velocity" << YAML::Value << particles.velocity;

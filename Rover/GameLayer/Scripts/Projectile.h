@@ -45,16 +45,16 @@ public:
         script_component.Bind<Effect>();
 
         auto &particles = collision_effect.AddComponent<mrs::ParticleSystem>();
-        particles.max_particles = 12;
-        particles.velocity = glm::vec2(750.0f);
+        particles.max_particles = 32;
+        particles.velocity = glm::vec2(100.0f);
         particles.life_time = 10.0f;
         particles.particle_size = 0.15f;
-        particles.emission_rate = 254.0f;
+        particles.emission_rate = 512.0f;
         particles.emission_shape = mrs::EmissionShape::Circle;
         particles.running = true;
 
         particles.color_1 = glm::vec4(255, 240, 0, 255);
-        particles.color_2 = glm::vec4(255, 240, 0, 0);
+        particles.color_2 = glm::vec4(255, 255, 255, 100);
 
         QueueDestroy();
     }
