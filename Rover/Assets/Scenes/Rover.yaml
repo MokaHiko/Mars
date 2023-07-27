@@ -47,7 +47,7 @@ Entities:
       Color2: [1, 0, 0, 1]
       Material: default_material
   - Entity: 175762383
-    Tag:
+    Tag: 
       Tag: Ball
     Transform:
       Position: [22.1228619, 31.2420006, 0]
