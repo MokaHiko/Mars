@@ -2,13 +2,10 @@
 .vscode/*
 [Bb]uild/*
 
-# Assets
+# Raw Assets
 *.psd
 *.jpg
 *.png
-*.boop_jpg
-*.boop_png
-*.boop_obj
 
 # Prerequisites
 *.d

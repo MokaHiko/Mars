@@ -52,7 +52,7 @@ namespace mrs
 
 			_camera.AddComponent<Camera>(CameraType::Perspective, window->GetWidth(), window->GetHeight());
             _camera.AddComponent<Script>().Bind<CameraController>();
-			_camera.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, 20.0f);
+			_camera.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, 50.0f);
         };
     };
 }

@@ -136,8 +136,8 @@ namespace mrs {
 			Application::GetInstance().EnableLayer("NativeScriptingLayer");
 
 			// Disable editor controls and camera 
-			EditorManager *em_script = dynamic_cast<EditorManager *>(_editor_manager.GetComponent<Script>().script);
-			em_script->_camera.GetComponent<Camera>().SetActive(false);
+			// EditorManager *em_script = dynamic_cast<EditorManager *>(_editor_manager.GetComponent<Script>().script);
+			// em_script->_camera.GetComponent<Camera>().SetActive(false);
 
 			_playing = true;
 		}
@@ -163,7 +163,7 @@ namespace mrs {
 
 			Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
 			Texture::LoadFromAsset("Assets/Models/textures_container/Container_DiffuseMap.boop_jpg", "container");
-			Material::Create("container", "container");
+			Material::Create("container_material", "container");
 
 			Texture::LoadFromAsset("Assets/Textures/green.boop_png", "green");
 			Material::Create("green_material", "green");
@@ -176,7 +176,7 @@ namespace mrs {
 			Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj", "monkey");
 			Mesh::LoadFromAsset("Assets/Models/quad.boop_obj", "quad");
 
-			// Post processing demo
+			// Manually built meshes
 			Texture::LoadFromAsset("Assets/Textures/ChicagoTraffic.boop_jpg", "chicago_traffic");
 
 			auto screen_quad = Mesh::Create("screen_quad");
