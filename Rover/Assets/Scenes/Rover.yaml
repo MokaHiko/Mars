@@ -14,8 +14,8 @@ Entities:
     Tag: 
       Tag: Plane
     Transform:
-      Position: [0, 0, 0]
-      Rotation: [0, 0, 0]
+      Position: [0, -10, 0]
+      Rotation: [-90, 0, 0]
       Scale: [1, 1, 1]
     RenderableObject:
       Mesh: quad
@@ -24,7 +24,7 @@ Entities:
     Tag:
       Tag: Directional Light
     Transform:
-      Position: [150, 900, 500]
+      Position: [150, 900, 250]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     RenderableObject:
