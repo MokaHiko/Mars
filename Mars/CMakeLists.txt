@@ -90,6 +90,8 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/PostProcessingRenderPipeline/PostProcessingRenderPipeline.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/TerrainRenderPipeline/TerrainRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/TerrainRenderPipeline/TerrainRenderPipeline.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/TerrainRenderPipeline/TerrainComponent.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/TerrainRenderPipeline/TerrainComponent.cpp
 
 			Engine/Scripting/NativeScriptingLayer.h
 			Engine/Scripting/NativeScriptingLayer.cpp

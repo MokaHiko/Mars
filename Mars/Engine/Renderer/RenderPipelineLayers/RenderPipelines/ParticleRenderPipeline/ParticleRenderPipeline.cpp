@@ -25,6 +25,7 @@ void mrs::ParticleRenderPipeline::Init()
 	uint32_t max_particle_systems = _max_particles / 256;
 	_buffer_next_free_offset = 0;
 
+	// Pre calculate buffer sizes
 	_padded_particle_size = _renderer->PadToStorageBufferSize(sizeof(Particle));
 	_padded_particle_parameter_size = _renderer->PadToStorageBufferSize(sizeof(ParticleParameters));
 	_particle_buffer_size = _padded_particle_size * _max_particles;
