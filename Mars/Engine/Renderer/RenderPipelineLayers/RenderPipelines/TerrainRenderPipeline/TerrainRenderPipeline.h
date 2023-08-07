@@ -9,6 +9,11 @@
 
 namespace mrs
 {
+    struct TerrainGraphicsPushConstant 
+    {
+        uint32_t material_index;
+    };
+
     class TerrainRenderPipeline : public IRenderPipeline
     {
     public:
@@ -17,20 +22,15 @@ namespace mrs
         virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame) ;
 
         virtual void End(VkCommandBuffer cmd) ;
-
-		virtual void OnPreRenderPass(VkCommandBuffer cmd);
-
-        virtual void OnPostRenderpass(VkCommandBuffer cmd) ;
-
-        virtual void OnEntityDestroyed(Entity e) ;
-
-        virtual void OnMaterialsUpdate();
     private:
+        void CreateTerrainPipelineLayout();
+        void CreateTerrainPipeline();
+
         VkPipeline _terrain_render_pipeline;
-        VkPipelineLayout _terrain_pipeline_layout;
+        VkPipelineLayout _terrain_render_pipeline_layout;
 
         VkDescriptorSet _terrain_descriptor_set;
-        VkDescriptorPool _terrain_descriptor_set_layout;
+        VkDescriptorSetLayout _terrain_descriptor_set_layout;
 
         AllocatedBuffer _terrain_descriptor_set_uniform_buffer;
 

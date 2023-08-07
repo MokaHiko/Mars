@@ -56,6 +56,8 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/Renderer.cpp
 			Engine/Renderer/Camera.h
 			Engine/Renderer/Camera.cpp
+			Engine/Renderer/Textures/HeightMap.h
+			Engine/Renderer/Textures/HeightMap.cpp
 			Engine/Renderer/Vulkan/VulkanMesh.h
 			Engine/Renderer/Vulkan/VulkanMesh.cpp
 			Engine/Renderer/Vulkan/VulkanTexture.h

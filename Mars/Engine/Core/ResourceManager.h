@@ -21,6 +21,8 @@ namespace mrs {
 			return *rm;
 		}
 
+		// Loads a file as raw binary data
+		static std::vector<char> LoadBinary(const std::string& path);
 	private:
 		ResourceManager();
 		~ResourceManager();

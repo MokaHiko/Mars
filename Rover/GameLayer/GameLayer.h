@@ -10,12 +10,16 @@ class GameLayer : public mrs::Layer
 public:
     virtual void OnAttach() override 
     {
-        
+        auto height_map = mrs::Texture::LoadFromAsset("Assets/Textures/iceland_heightmap.boop_png", "iceland_height_map");
+
+        auto terrain = mrs::Application::GetInstance().GetScene()->Instantiate("IcelandTerrain");
+        auto& terrainRenderer = terrain.AddComponent<mrs::TerrainRenderer>();
+        terrainRenderer.height_map = height_map;
     };
 
     virtual void OnDetatch() override 
     {
-
+        
     };
 
     virtual void OnEnable() override

@@ -9,6 +9,8 @@ layout(location = 2) in vec2 v_uv;
 layout(location = 3) in vec3 v_normal_world_space;
 layout(location = 4) in vec4 v_uv_world_space;
 
+layout(location = 5) in float v_height;
+
 struct MaterialData {
 	// Albedo
 	vec4 diffuse_color;
@@ -30,8 +32,8 @@ layout(set = 0, binding = 0) uniform GlobalBuffer{
 layout(std140, set = 2, binding = 0) readonly buffer Materials {
 	MaterialData materials[];
 } _materials_buffer;
-
 layout(set = 2, binding = 1) uniform sampler2D _diffuse_texture;
+
 layout(set = 3, binding = 0) uniform sampler2D _shadow_map_texture;
 
 layout( push_constant ) uniform constants {
@@ -63,7 +65,8 @@ void main()
 	MaterialData material = _materials_buffer.materials[_material_index.material_index];
 
 	// ~ Shadow shadow
-	float shadow_factor = CalculateShadowFactor();
+	//float shadow_factor = CalculateShadowFactor();
+	float shadow_factor = 1;
 
 	//  ~ Diffuse
 	vec3 color = texture(_diffuse_texture, v_uv).xyz * material.diffuse_color.xyz;
@@ -72,4 +75,6 @@ void main()
 	float diff = max(dot(v_normal_world_space, normalize(_global_buffer.direction_light_position.xyz)), 0);
 	color *= diff;
 	frag_color = shadow_factor * vec4(color, 1);
+
+	frag_color = vec4(1.0f, 1.0f, 1.0f, 1.0f) * (v_height / 48.0f);
 }

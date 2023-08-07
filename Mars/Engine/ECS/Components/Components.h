@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 
 #include "Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.h"
+#include "Renderer/RenderPipelineLayers/RenderPipelines/TerrainRenderPipeline/TerrainComponent.h"
 #include "Renderer/RenderPipelineLayers/RenderPipelines/RenderableComponents.h"
 #include "Physics/Physics.h"
 #include "Scripting/NativeScriptComponent.h"
