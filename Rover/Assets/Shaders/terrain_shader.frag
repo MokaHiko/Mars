@@ -76,5 +76,5 @@ void main()
 	color *= diff;
 	frag_color = shadow_factor * vec4(color, 1);
 
-	frag_color = vec4(1.0f, 1.0f, 1.0f, 1.0f) * (v_height / 48.0f);
+	frag_color = vec4(1.0f, 1.0f, 1.0f, 1.0f) * ((v_height / 48.0f) + 0.5f);
 }
