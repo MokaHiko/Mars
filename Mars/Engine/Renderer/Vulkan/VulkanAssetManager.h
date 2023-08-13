@@ -12,8 +12,9 @@
 
 namespace mrs
 {
-    // Manages Allocating Textures & Meshes to GPU
     class Renderer;
+
+    // Manages Allocating Textures & Meshes to GPU
     class VulkanAssetManager
     {
     public:

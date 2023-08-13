@@ -109,7 +109,7 @@ void mrs::ParticleRenderPipeline::InitComputeDescriptors()
 
 void mrs::ParticleRenderPipeline::InitComputePipeline() {
 	VkPipelineLayoutCreateInfo pipeline_layout_info =
-		vkinit::pipeline_layout_create_info();
+		vkinit::PipelineLayoutCreateInfo();
 	pipeline_layout_info.setLayoutCount = 1;
 	pipeline_layout_info.pSetLayouts = &_compute_descriptor_set_layout;
 
@@ -243,7 +243,7 @@ void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_f
 
 void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cmd, uint32_t current_frame)
 {
-	VkCommandBufferBeginInfo beginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	VkCommandBufferBeginInfo beginInfo = vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	VK_CHECK(vkBeginCommandBuffer(cmd, &beginInfo));
 
 	// Dispatch per entity particle system
@@ -356,25 +356,25 @@ void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
 	_renderer->LoadShaderModule(
 		"assets/shaders/particle_graphics_shader.frag.spv", &fragment_shader);
 
-	builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader));
-	builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader));
+	builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader));
+	builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader));
 
 	// Vertex Input
 	VertexInputDescription vertex_desc = Vertex::GetDescription();
 	auto bindings = vertex_desc.bindings;
 	auto attributes = vertex_desc.attributes;
 
-	builder._vertex_input_info = vkinit::pipeline_vertex_input_state_create_info();
+	builder._vertex_input_info = vkinit::PipelineVertexInputStateCreateInfo();
 	builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(bindings.size());
 	builder._vertex_input_info.pVertexBindingDescriptions = bindings.data();
 	builder._vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes.size());
 	builder._vertex_input_info.pVertexAttributeDescriptions = attributes.data();
-	builder._input_assembly = vkinit::pipeline_input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	builder._input_assembly = vkinit::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
 	// Graphics Settings
-	builder._rasterizer = vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
-	builder._multisampling = vkinit::pipeline_mulitisample_state_create_info();
-	builder._color_blend_attachment = vkinit::pipeline_color_blend_attachment_state(
+	builder._rasterizer = vkinit::PipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL);
+	builder._multisampling = vkinit::PipelineMultisampleStateCreateInfo();
+	builder._color_blend_attachment = vkinit::PipelineColorBlendAttachmentState(
 		VK_TRUE,
 		VK_BLEND_FACTOR_SRC_ALPHA,
 		VK_BLEND_FACTOR_ONE,
@@ -382,10 +382,10 @@ void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
 		VK_BLEND_FACTOR_ONE,
 		VK_BLEND_FACTOR_ONE,
 		VK_BLEND_OP_ADD);
-	builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(false, false, VK_COMPARE_OP_ALWAYS);
+	builder._depth_stencil = vkinit::PipelineDepthStencilStateCreateInfo(false, false, VK_COMPARE_OP_ALWAYS);
 
 	// Pipeline layouts
-	VkPipelineLayoutCreateInfo layout_info = vkinit::pipeline_layout_create_info();
+	VkPipelineLayoutCreateInfo layout_info = vkinit::PipelineLayoutCreateInfo();
 	std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, _asset_manager->GetMaterialDescriptorSetLayout(), _graphics_descriptor_set_layout };
 
 	layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());

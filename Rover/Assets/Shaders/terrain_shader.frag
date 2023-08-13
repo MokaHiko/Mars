@@ -2,14 +2,14 @@
 
 layout(location = 0) out vec4 frag_color;
 
-layout(location = 0) in vec3 v_position_world_space;
-layout(location = 1) in vec3 v_color;
-layout(location = 2) in vec2 v_uv;
+layout(location = 0) in vec3 tese_position_world_space;
+layout(location = 1) in vec3 tese_color;
+layout(location = 2) in vec2 tese_uv;
 
-layout(location = 3) in vec3 v_normal_world_space;
-layout(location = 4) in vec4 v_uv_world_space;
+layout(location = 3) in vec3 tese_normal_world_space;
+layout(location = 4) in vec4 tese_uv_world_space;
 
-layout(location = 5) in float v_height;
+layout(location = 5) in float tese_height;
 
 struct MaterialData {
 	// Albedo
@@ -44,7 +44,7 @@ float CalculateShadowFactor()
 {
 	// ~ Shadow shadow
 	float shadow_factor = 1.0f;
-	vec3 shadow_coords = v_uv_world_space.xyz / v_uv_world_space.w; // to turn coords into screen space manually
+	vec3 shadow_coords = tese_uv_world_space.xyz / tese_uv_world_space.w; // to turn coords into screen space manually
 
 	// Remap to [0.0 to 1.0] 
 	shadow_coords.xy = shadow_coords.xy * 0.5 + 0.5;
@@ -69,12 +69,13 @@ void main()
 	float shadow_factor = 1;
 
 	//  ~ Diffuse
-	vec3 color = texture(_diffuse_texture, v_uv).xyz * material.diffuse_color.xyz;
+	vec3 color = texture(_diffuse_texture, tese_uv).xyz * material.diffuse_color.xyz;
 
 	// ~ Directional
-	float diff = max(dot(v_normal_world_space, normalize(_global_buffer.direction_light_position.xyz)), 0);
+	float diff = max(dot(tese_normal_world_space, normalize(_global_buffer.direction_light_position.xyz)), 0);
 	color *= diff;
-	frag_color = shadow_factor * vec4(color, 1);
+	// frag_color = shadow_factor * vec4(color, 1);
 
-	frag_color = vec4(1.0f, 1.0f, 1.0f, 1.0f) * ((v_height / 48.0f) + 0.5f);
+	float h = (tese_height + 16) / 64.0f;
+	frag_color = vec4(h, h, h, 1.0);
 }

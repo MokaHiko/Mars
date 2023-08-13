@@ -30,6 +30,7 @@ VkPipeline vkutil::PipelineBuilder::Build(VkDevice device, VkRenderPass renderPa
 	pipeline_info.pMultisampleState = &_multisampling;
 	pipeline_info.pDepthStencilState = &_depth_stencil;
 	pipeline_info.layout = _pipeline_layout;
+	pipeline_info.pTessellationState = &_tesselation_state;
 	pipeline_info.pViewportState = &view_port_state;
 	pipeline_info.pColorBlendState = &color_blending;
 

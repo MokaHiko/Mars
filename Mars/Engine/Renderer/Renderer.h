@@ -26,6 +26,7 @@ namespace mrs
 	struct GraphicsSettings
 	{
 		bool vsync = true;
+		bool tesselation = true;
 	};
 
 	struct RendererInfo

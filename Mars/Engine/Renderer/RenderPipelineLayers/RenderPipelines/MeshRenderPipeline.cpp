@@ -24,7 +24,7 @@ void mrs::MeshRenderPipeline::InitDescriptors() {
 void mrs::MeshRenderPipeline::InitPipelineLayout()
 {
     // Create pipeline layout
-    VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
+    VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::PipelineLayoutCreateInfo();
 
     // Mesh Descriptors
     std::vector<VkDescriptorSetLayout> descriptor_layouts = {
@@ -93,7 +93,7 @@ void mrs::MeshRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd)
     VkClearValue depth_value = {};
     depth_value.depthStencil = { 1.0f, 0 };
 
-    VkRenderPassBeginInfo offscreen_render_pass_begin_info = vkinit::render_pass_begin_info(_offscreen_framebuffer, _offscreen_render_pass, area, &depth_value, 1);
+    VkRenderPassBeginInfo offscreen_render_pass_begin_info = vkinit::RenderPassBeginInfo(_offscreen_framebuffer, _offscreen_render_pass, area, &depth_value, 1);
     vkCmdBeginRenderPass(cmd, &offscreen_render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
     DrawShadowMap(cmd, _scene);
     vkCmdEndRenderPass(cmd);
@@ -172,14 +172,14 @@ void mrs::MeshRenderPipeline::InitMeshPipeline()
     loaded = _renderer->LoadShaderModule("Assets/Shaders/default_shader.vert.spv", &vertex_shader_module);
     loaded = _renderer->LoadShaderModule("Assets/Shaders/default_shader.frag.spv", &fragment_shader_module);
 
-    pipeline_builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader_module));
-    pipeline_builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader_module));
+    pipeline_builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader_module));
+    pipeline_builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader_module));
 
     // Vertex input (Primitives and Vertex Input Descriptions
-    pipeline_builder._input_assembly = vkinit::pipeline_input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    pipeline_builder._input_assembly = vkinit::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     VertexInputDescription &vb_desc = Vertex::GetDescription();
 
-    pipeline_builder._vertex_input_info = vkinit::pipeline_vertex_input_state_create_info();
+    pipeline_builder._vertex_input_info = vkinit::PipelineVertexInputStateCreateInfo();
 
     pipeline_builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(vb_desc.bindings.size());
     pipeline_builder._vertex_input_info.pVertexBindingDescriptions = vb_desc.bindings.data();
@@ -188,10 +188,10 @@ void mrs::MeshRenderPipeline::InitMeshPipeline()
     pipeline_builder._vertex_input_info.pVertexAttributeDescriptions = vb_desc.attributes.data();
 
     // Graphics Settings
-    pipeline_builder._rasterizer = vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
-    pipeline_builder._multisampling = vkinit::pipeline_mulitisample_state_create_info();
-    pipeline_builder._color_blend_attachment = vkinit::pipeline_color_blend_attachment_state();
-    pipeline_builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+    pipeline_builder._rasterizer = vkinit::PipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL);
+    pipeline_builder._multisampling = vkinit::PipelineMultisampleStateCreateInfo();
+    pipeline_builder._color_blend_attachment = vkinit::PipelineColorBlendAttachmentState();
+    pipeline_builder._depth_stencil = vkinit::PipelineDepthStencilStateCreateInfo(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
     pipeline_builder._pipeline_layout = _default_pipeline_layout;
 
@@ -301,13 +301,13 @@ void mrs::MeshRenderPipeline::InitOffScreenPipeline()
     bool loaded = false;
     VkShaderModule vertex_shader_module;
     loaded = _renderer->LoadShaderModule("Assets/Shaders/offscreen_shader.vert.spv", &vertex_shader_module);
-    pipeline_builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader_module));
+    pipeline_builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader_module));
 
     // Vertex input (Primitives and Vertex Input Descriptions
-    pipeline_builder._input_assembly = vkinit::pipeline_input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    pipeline_builder._input_assembly = vkinit::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     VertexInputDescription &vb_desc = Vertex::GetDescription();
 
-    pipeline_builder._vertex_input_info = vkinit::pipeline_vertex_input_state_create_info();
+    pipeline_builder._vertex_input_info = vkinit::PipelineVertexInputStateCreateInfo();
 
     pipeline_builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(vb_desc.bindings.size());
     pipeline_builder._vertex_input_info.pVertexBindingDescriptions = vb_desc.bindings.data();
@@ -316,15 +316,15 @@ void mrs::MeshRenderPipeline::InitOffScreenPipeline()
     pipeline_builder._vertex_input_info.pVertexAttributeDescriptions = vb_desc.attributes.data();
 
     // Disable cull so all faces contribute to shadows
-    pipeline_builder._rasterizer = vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
+    pipeline_builder._rasterizer = vkinit::PipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL);
     pipeline_builder._rasterizer.cullMode = VK_CULL_MODE_NONE;
 
-    pipeline_builder._multisampling = vkinit::pipeline_mulitisample_state_create_info();
+    pipeline_builder._multisampling = vkinit::PipelineMultisampleStateCreateInfo();
     pipeline_builder._color_blend_attachment = {};
-    pipeline_builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+    pipeline_builder._depth_stencil = vkinit::PipelineDepthStencilStateCreateInfo(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
     // Create pipeline layout
-    VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
+    VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::PipelineLayoutCreateInfo();
 
     std::vector<VkDescriptorSetLayout> descriptor_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, _asset_manager->GetMaterialDescriptorSetLayout()};
     pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
@@ -419,7 +419,7 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
     extent.height = _window->GetHeight();
 
     VkFormat depth_format = VK_FORMAT_D32_SFLOAT;
-    VkImageCreateInfo depth_image_info = vkinit::image_create_info(depth_format, extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    VkImageCreateInfo depth_image_info = vkinit::ImageCreateInfo(depth_format, extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
     VmaAllocationCreateInfo vmaaloc_info = {};
     vmaaloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -430,7 +430,7 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
         &_offscreen_depth_image.allocation, nullptr));
 
     // Create offscreen attachment view
-    VkImageViewCreateInfo depth_image_view_info = vkinit::image_view_create_info(
+    VkImageViewCreateInfo depth_image_view_info = vkinit::ImageViewCreateInfo(
         _offscreen_depth_image.image, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT);
     VK_CHECK(vkCreateImageView(_device->device, &depth_image_view_info, nullptr,
         &_offscreen_depth_image_view));
@@ -509,7 +509,7 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
         nullptr, &_offscreen_framebuffer));
 
     // Shadow map image sampeler
-    VkSamplerCreateInfo shadow_map_sampler_info = vkinit::sampler_create_info(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+    VkSamplerCreateInfo shadow_map_sampler_info = vkinit::SamplerCreateInfo(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
     shadow_map_sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
     shadow_map_sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     shadow_map_sampler_info.mipLodBias = 0.0f;

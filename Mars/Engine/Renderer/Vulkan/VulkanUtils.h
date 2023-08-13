@@ -60,6 +60,7 @@ namespace vkutil {
 		VkPipelineMultisampleStateCreateInfo _multisampling = {};
 		VkPipelineColorBlendAttachmentState _color_blend_attachment = {};
 		VkPipelineDepthStencilStateCreateInfo _depth_stencil = {};
+		VkPipelineTessellationStateCreateInfo _tesselation_state = {};
 		VkPipelineLayout _pipeline_layout = {};
 
 		VkViewport _viewport = {};

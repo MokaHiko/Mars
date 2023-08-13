@@ -17,10 +17,10 @@ namespace mrs
 			});
 
 		// Create Texture Sampler
-		VkSamplerCreateInfo nearest_sampler_info = vkinit::sampler_create_info(VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+		VkSamplerCreateInfo nearest_sampler_info = vkinit::SamplerCreateInfo(VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 		VK_CHECK(vkCreateSampler(_renderer->GetDevice().device, &nearest_sampler_info, nullptr, &_nearest_image_sampler));
 
-		VkSamplerCreateInfo linear_sampler_info = vkinit::sampler_create_info(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+		VkSamplerCreateInfo linear_sampler_info = vkinit::SamplerCreateInfo(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 		VK_CHECK(vkCreateSampler(_renderer->GetDevice().device, &linear_sampler_info, nullptr, &_linear_image_sampler));
 
 		_renderer->GetDeletionQueue().Push([&]() {
@@ -91,12 +91,12 @@ namespace mrs
 		extent.height = texture->_height;
 		extent.depth = 1;
 
-		VkImageCreateInfo image_create_info = vkinit::image_create_info(texture->_format, extent, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+		VkImageCreateInfo ImageCreateInfo = vkinit::ImageCreateInfo(texture->_format, extent, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
 		VmaAllocationCreateInfo vma_alloc_info = {};
 		vma_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-		vmaCreateImage(_renderer->GetAllocator(), &image_create_info, &vma_alloc_info, &texture->_image.image, &texture->_image.allocation, nullptr);
+		vmaCreateImage(_renderer->GetAllocator(), &ImageCreateInfo, &vma_alloc_info, &texture->_image.image, &texture->_image.allocation, nullptr);
 
 		// Copy data to texture via immediate mode submit
 		_renderer->ImmediateSubmit([&](VkCommandBuffer cmd)
@@ -150,7 +150,7 @@ namespace mrs
 				vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_to_shader_barrier); });
 
 		// Create image view
-		VkImageViewCreateInfo image_view_info = vkinit::image_view_create_info(texture->_image.image, texture->_format, VK_IMAGE_ASPECT_COLOR_BIT);
+		VkImageViewCreateInfo image_view_info = vkinit::ImageViewCreateInfo(texture->_image.image, texture->_format, VK_IMAGE_ASPECT_COLOR_BIT);
 		VK_CHECK(vkCreateImageView(_renderer->GetDevice().device, &image_view_info, nullptr, &texture->_image_view));
 
 		vmaDestroyBuffer(_renderer->GetAllocator(), staging_buffer.buffer, staging_buffer.allocation);

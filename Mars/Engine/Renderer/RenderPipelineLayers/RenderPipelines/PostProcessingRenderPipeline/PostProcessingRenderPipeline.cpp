@@ -11,7 +11,7 @@ void mrs::PostProcessingRenderPipeline::Init()
 	_screen_quad = Mesh::Get("quad");
 
 	// Create screen sampler
-	VkSamplerCreateInfo sampler_info = vkinit::sampler_create_info(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	VkSamplerCreateInfo sampler_info = vkinit::SamplerCreateInfo(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 	VK_CHECK(vkCreateSampler(_device->device, &sampler_info, nullptr, &_screen_sampler));
 
 	InitDescriptors();
@@ -39,29 +39,29 @@ void mrs::PostProcessingRenderPipeline::InitPostProcessPipeline()
 	VkShaderModule fragment_shader;
 	_renderer->LoadShaderModule("assets/shaders/post_process_shader.frag.spv", &fragment_shader);
 
-	builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader));
-	builder._shader_stages.push_back(vkinit::pipeline_shader_stage_create_info(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader));
+	builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader));
+	builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader));
 
 	// Vertex Input
 	VertexInputDescription vertex_desc = Vertex::GetDescription();
 	auto bindings = vertex_desc.bindings;
 	auto attributes = vertex_desc.attributes;
 
-	builder._vertex_input_info = vkinit::pipeline_vertex_input_state_create_info();
+	builder._vertex_input_info = vkinit::PipelineVertexInputStateCreateInfo();
 	builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(bindings.size());
 	builder._vertex_input_info.pVertexBindingDescriptions = bindings.data();
 	builder._vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes.size());
 	builder._vertex_input_info.pVertexAttributeDescriptions = attributes.data();
-	builder._input_assembly = vkinit::pipeline_input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	builder._input_assembly = vkinit::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
 	// Graphics Settings
-	builder._rasterizer = vkinit::pipeline_rasterization_state_create_info(VK_POLYGON_MODE_FILL);
-	builder._multisampling = vkinit::pipeline_mulitisample_state_create_info();
-	builder._color_blend_attachment = vkinit::pipeline_color_blend_attachment_state();
-	builder._depth_stencil = vkinit::pipeline_depth_stencil_create_info(false, false, VK_COMPARE_OP_ALWAYS);
+	builder._rasterizer = vkinit::PipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL);
+	builder._multisampling = vkinit::PipelineMultisampleStateCreateInfo();
+	builder._color_blend_attachment = vkinit::PipelineColorBlendAttachmentState();
+	builder._depth_stencil = vkinit::PipelineDepthStencilStateCreateInfo(false, false, VK_COMPARE_OP_ALWAYS);
 
 	// Pipeline layouts
-	VkPipelineLayoutCreateInfo layout_info = vkinit::pipeline_layout_create_info();
+	VkPipelineLayoutCreateInfo layout_info = vkinit::PipelineLayoutCreateInfo();
 	std::vector<VkDescriptorSetLayout> set_layouts = { _post_process_descriptor_set_layout };
 
 	layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
@@ -121,7 +121,7 @@ void mrs::PostProcessingRenderPipeline::OnPostRenderpass(VkCommandBuffer cmd)
 
 	VkClearValue clear_values[2] = { clear_value, depth_value };
 
-	VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(_renderer->GetCurrentFrameBuffer(), _renderer->GetSwapchainRenderPass(), area, clear_values, 2);
+	VkRenderPassBeginInfo render_pass_begin_info = vkinit::RenderPassBeginInfo(_renderer->GetCurrentFrameBuffer(), _renderer->GetSwapchainRenderPass(), area, clear_values, 2);
 	vkCmdBeginRenderPass(cmd, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline);

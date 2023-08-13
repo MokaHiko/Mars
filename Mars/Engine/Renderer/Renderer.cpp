@@ -165,7 +165,7 @@ namespace mrs
 	{
 		VkCommandBuffer cmd = _upload_context.command_buffer;
 
-		VkCommandBufferBeginInfo begin_info = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+		VkCommandBufferBeginInfo begin_info = vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 		vkBeginCommandBuffer(cmd, &begin_info);
 
 		// Execute passed commands
@@ -232,6 +232,13 @@ namespace mrs
 		vkb::PhysicalDeviceSelector device_selector(vkb_instance);
 		VkPhysicalDeviceFeatures required_features = {};
 		required_features.multiDrawIndirect = VK_TRUE;
+
+		if(_info.graphics_settings.tesselation)
+		{
+			required_features.tessellationShader = VK_TRUE;
+			required_features.fillModeNonSolid = VK_TRUE;
+		}
+
 		auto physical_device_result = device_selector
 			.set_minimum_version(1, 1)
 			.set_required_features(required_features)
@@ -306,7 +313,7 @@ namespace mrs
 		depth_extent.depth = 1;
 
 		_depth_image_format = VK_FORMAT_D32_SFLOAT;
-		VkImageCreateInfo depth_image_info = vkinit::image_create_info(_depth_image_format, depth_extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		VkImageCreateInfo depth_image_info = vkinit::ImageCreateInfo(_depth_image_format, depth_extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 		VmaAllocationCreateInfo depth_alloc_info = {};
 		depth_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -314,7 +321,7 @@ namespace mrs
 
 		vmaCreateImage(_allocator, &depth_image_info, &depth_alloc_info, &_depth_image.image, &_depth_image.allocation, nullptr);
 
-		VkImageViewCreateInfo depth_image_view_info = vkinit::image_view_create_info(_depth_image.image, _depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
+		VkImageViewCreateInfo depth_image_view_info = vkinit::ImageViewCreateInfo(_depth_image.image, _depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
 		VK_CHECK(vkCreateImageView(_device.device, &depth_image_view_info, nullptr, &_depth_image_view));
 
 		_deletion_queue.Push([=]()
@@ -328,18 +335,18 @@ namespace mrs
 
 	void Renderer::InitCommands()
 	{
-		VkCommandPoolCreateInfo graphics_cp_info = vkinit::command_pool_create_info(_queue_indices.graphics, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-		VkCommandPoolCreateInfo compute_cp_info = vkinit::command_pool_create_info(_queue_indices.compute, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+		VkCommandPoolCreateInfo graphics_cp_info = vkinit::CommandPoolCreateInfo(_queue_indices.graphics, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+		VkCommandPoolCreateInfo compute_cp_info = vkinit::CommandPoolCreateInfo(_queue_indices.compute, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
 		// Create a command pool & buffer for each frame to send render commands async
 		for (uint32_t i = 0; i < frame_overlaps; i++)
 		{
 			vkCreateCommandPool(_device.device, &graphics_cp_info, nullptr, &_frame_data[i].command_pool);
-			VkCommandBufferAllocateInfo alloc_info = vkinit::command_buffer_alloc_info(_frame_data[i].command_pool);
+			VkCommandBufferAllocateInfo alloc_info = vkinit::CommandBufferAllocInfo(_frame_data[i].command_pool);
 			vkAllocateCommandBuffers(_device.device, &alloc_info, &_frame_data[i].command_buffer);
 
 			vkCreateCommandPool(_device.device, &compute_cp_info, nullptr, &_frame_data[i].compute_command_pool);
-			VkCommandBufferAllocateInfo compute_alloc_info = vkinit::command_buffer_alloc_info(_frame_data[i].compute_command_pool);
+			VkCommandBufferAllocateInfo compute_alloc_info = vkinit::CommandBufferAllocInfo(_frame_data[i].compute_command_pool);
 			vkAllocateCommandBuffers(_device.device, &compute_alloc_info, &_frame_data[i].compute_command_buffer);
 
 			_deletion_queue.Push([=]()
@@ -351,7 +358,7 @@ namespace mrs
 
 		// Create one commmand pool & buffer for all upload/transfer operations
 		vkCreateCommandPool(_device.device, &graphics_cp_info, nullptr, &_upload_context.command_pool);
-		VkCommandBufferAllocateInfo alloc_info = vkinit::command_buffer_alloc_info(_upload_context.command_pool);
+		VkCommandBufferAllocateInfo alloc_info = vkinit::CommandBufferAllocInfo(_upload_context.command_pool);
 		vkAllocateCommandBuffers(_device.device, &alloc_info, &_upload_context.command_buffer);
 
 		_deletion_queue.Push([=]()
@@ -465,14 +472,14 @@ namespace mrs
 		_offscreen_images_views.resize(frame_overlaps);
 		for (uint32_t i = 0; i < frame_overlaps; i++)
 		{
-			VkImageCreateInfo image_info = vkinit::image_create_info(_offscreen_framebuffer_format, extent, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+			VkImageCreateInfo image_info = vkinit::ImageCreateInfo(_offscreen_framebuffer_format, extent, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 			VmaAllocationCreateInfo alloc_info = {};
 
 			alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 			alloc_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 			VK_CHECK(vmaCreateImage(GetAllocator(), &image_info, &alloc_info, &_offscreen_images[i].image, &_offscreen_images[i].allocation, nullptr));
-			VkImageViewCreateInfo image_view_info = vkinit::image_view_create_info(_offscreen_images[i].image, _offscreen_framebuffer_format, VK_IMAGE_ASPECT_COLOR_BIT);
+			VkImageViewCreateInfo image_view_info = vkinit::ImageViewCreateInfo(_offscreen_images[i].image, _offscreen_framebuffer_format, VK_IMAGE_ASPECT_COLOR_BIT);
 
 			VK_CHECK(vkCreateImageView(_device.device, &image_view_info, nullptr, &_offscreen_images_views[i]));
 		}
@@ -484,7 +491,7 @@ namespace mrs
 		depth_extent.depth = 1;
 
 		_offscreen_depth_image_format = VK_FORMAT_D32_SFLOAT;
-		VkImageCreateInfo depth_image_info = vkinit::image_create_info(_offscreen_depth_image_format, depth_extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		VkImageCreateInfo depth_image_info = vkinit::ImageCreateInfo(_offscreen_depth_image_format, depth_extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 		VmaAllocationCreateInfo depth_alloc_info = {};
 		depth_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -492,7 +499,7 @@ namespace mrs
 
 		vmaCreateImage(GetAllocator(), &depth_image_info, &depth_alloc_info, &_offscreen_depth_image.image, &_offscreen_depth_image.allocation, nullptr);
 
-		VkImageViewCreateInfo depth_image_view_info = vkinit::image_view_create_info(_offscreen_depth_image.image, _offscreen_depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
+		VkImageViewCreateInfo depth_image_view_info = vkinit::ImageViewCreateInfo(_offscreen_depth_image.image, _offscreen_depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
 		VK_CHECK(vkCreateImageView(_device.device, &depth_image_view_info, nullptr, &_offscreen_depth_image_view));
 
 		// Clean up
@@ -716,7 +723,7 @@ namespace mrs
 
 			// Build descriptors
 			vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
-				.BindBuffer(0, &_global_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+				.BindBuffer(0, &_global_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 				.Build(&_global_descriptor_set, &_global_descriptor_set_layout);
 
 			// Clean descriptor resources
@@ -756,7 +763,7 @@ namespace mrs
 
 				// Build descriptors
 				vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
-					.BindBuffer(0, &_object_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+					.BindBuffer(0, &_object_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 					.Build(&_object_descriptor_set[i], &_object_descriptor_set_layout);
 
 				// Clean descriptor resources
@@ -899,7 +906,7 @@ namespace mrs
 
 		// ~ Begin Recording
 		VK_CHECK(vkResetCommandBuffer(cmd, 0));
-		VkCommandBufferBeginInfo cmd_begin_info = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+		VkCommandBufferBeginInfo cmd_begin_info = vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 		VK_CHECK(vkBeginCommandBuffer(cmd, &cmd_begin_info));
 	}
 
@@ -919,8 +926,8 @@ namespace mrs
 
 		VkClearValue clear_values[2] = { clear_value, depth_value };
 
-		VkRenderPassBeginInfo render_pass_begin_info = vkinit::render_pass_begin_info(frame_buffer, render_pass, area, clear_values, 2);
-		vkCmdBeginRenderPass(cmd, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+		VkRenderPassBeginInfo RenderPassBeginInfo = vkinit::RenderPassBeginInfo(frame_buffer, render_pass, area, clear_values, 2);
+		vkCmdBeginRenderPass(cmd, &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
 	void Renderer::MainPassEnd(VkCommandBuffer cmd)
