@@ -46,6 +46,9 @@ namespace mrs {
 		// Returns view projection matrix as reference
 		inline const glm::mat4& GetViewProj() const { return _view_proj; }
 
+		// Returns view matrix as reference
+		inline const glm::mat4& GetView() const { return _view; }
+
 		// Returns view projection as reference
 		inline const glm::mat4& GetProj() const { return _projection; }
 

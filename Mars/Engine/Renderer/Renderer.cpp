@@ -799,6 +799,7 @@ namespace mrs
 		if (_camera)
 		{
 			_camera->UpdateViewProj();
+			global_info.view = _camera->GetView();
 			global_info.view_proj = _camera->GetViewProj();
 		}
 

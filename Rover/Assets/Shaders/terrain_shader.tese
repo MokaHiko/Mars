@@ -19,6 +19,7 @@ layout(location = 5) out float tese_height;
 layout(set = 3, binding = 0) uniform sampler2D _height_map_texture;
 
 layout(set = 0, binding = 0) uniform GlobalBuffer{
+	mat4 view;
 	mat4 view_proj;
 	mat4 view_proj_light;
 	vec4 direction_light_position;

@@ -47,6 +47,7 @@ namespace mrs
 	// Global shared scene data
 	struct GlobalDescriptorData
 	{
+		glm::mat4 view;
 		glm::mat4 view_proj;
 		glm::mat4 view_proj_light;
 		glm::vec4 directional_light_position;
