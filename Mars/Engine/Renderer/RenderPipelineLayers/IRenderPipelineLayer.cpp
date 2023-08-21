@@ -37,6 +37,8 @@ namespace mrs
 		RendererInfo renderer_info = {};
 		renderer_info.window = Application::GetInstance().GetWindow();
 		renderer_info.graphics_settings = {};
+		renderer_info.max_objects = 10000;
+		renderer_info.max_materials = 100;
 
 		_renderer = std::make_shared<Renderer>(renderer_info);
 		_renderer->Init();

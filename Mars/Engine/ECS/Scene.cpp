@@ -23,11 +23,13 @@ namespace mrs
 
 	Entity Scene::Instantiate(const std::string &name, const glm::vec3 &position)
 	{
-		Entity e{};
+		Entity e = {};
 		if(!_free_queue.empty())
 		{
-			e = Entity{ _registry.create(_free_queue.back()._id), this };
+			Entity idx = _free_queue.back();
 			_free_queue.pop_back();
+
+			e = Entity{_registry.create(idx), this};
 		}
 		else
 		{
@@ -35,7 +37,7 @@ namespace mrs
 		}
 
 		e.AddComponent<Tag>(name);
-		e.AddComponent<Transform>();
+		e.AddComponent<Transform>().position = position;
 
 		// Emit created signal
 		_entity_created(e);
@@ -45,8 +47,7 @@ namespace mrs
 
 	void Scene::QueueDestroy(Entity entity)
 	{
-		// TODO: Properly destroy/free entities
-		//_destruction_queue.push_back(entity);
+		_destruction_queue.push_back(entity);
 	}
 
 	void Scene::FlushDestructionQueue()
@@ -64,15 +65,17 @@ namespace mrs
 
 	void Scene::Destroy(Entity entity)
 	{
-		// Fire off signal
-        _entity_destroyed(entity);
-
 		// Add to free queue to recycled entity id
 		if(entity)
 		{
-			_registry.destroy(entity);
-		}
+			// Fire off destroy signal
+			_entity_destroyed(entity);
 
-		_free_queue.push_back(entity);
+			// Store last entt
+			_free_queue.push_back(entity);
+
+			// Remove all components
+			Registry()->destroy(entity);
+		}
 	}
 }

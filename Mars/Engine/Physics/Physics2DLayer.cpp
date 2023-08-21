@@ -122,15 +122,18 @@ namespace mrs
 			fixture_def.shape = &dynamic_box;
 			fixture_def.density = 1.0f;
 			fixture_def.friction = 0.3f;
+			fixture_def.restitution = 0.2;
 			rb.body->CreateFixture(&fixture_def);
 		}
 		else if (type == BodyType::STATIC)
 		{
+			b2PolygonShape static_box;
+			static_box.SetAsBox(transform.scale.x, transform.scale.y);
+			rb.body->CreateFixture(&static_box, 0.0f);
+
+			// TODO: Add Box Collider 2D Component
 			if (entity.HasComponent<BoxCollider2D>())
 			{
-				b2PolygonShape static_box;
-				static_box.SetAsBox(transform.scale.x, transform.scale.y);
-				rb.body->CreateFixture(&static_box, 0.0f);
 			}
 		}
 	}
@@ -190,7 +193,7 @@ namespace mrs
 
 			if(script != nullptr)
 			{
-				script->OnCollisionEnter(entity_b);
+				script->OnCollisionEnter2D(entity_b);
 			}
 		}
 
@@ -199,7 +202,7 @@ namespace mrs
 
 			if (script)
 			{
-				script->OnCollisionEnter(entity_a);
+				script->OnCollisionEnter2D(entity_a);
 			}
 		}
 	}

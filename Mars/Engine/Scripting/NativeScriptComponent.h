@@ -9,7 +9,7 @@ namespace mrs
 {
     struct Script
     {
-        // Prevent pointers from invalidating on delete
+        // Prevent pointers from being invalidated on delete
         static constexpr auto in_place_delete = true;
 
         ScriptableEntity *script = nullptr;

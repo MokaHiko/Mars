@@ -17,6 +17,12 @@ add_executable(Rover
 
 	"GameLayer/GameLayer.h"
 	"GameLayer/GameLayer.cpp"
+	"GameLayer/Scripts/Unit.h"
+	"GameLayer/Scripts/Unit.cpp"
+	"GameLayer/Scripts/Spawner.h"
+	"GameLayer/Scripts/Spawner.cpp"
+	"GameLayer/Scripts/GameManager.h"
+	"GameLayer/Scripts/GameManager.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Mars Vendor imgui vulkan-1)

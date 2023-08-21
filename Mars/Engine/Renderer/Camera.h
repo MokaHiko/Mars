@@ -61,7 +61,7 @@ namespace mrs {
 		CameraType GetType() const {return _type;}
 
 		// Returns reference to position
-		inline glm::vec3& GetPosition() { return _position; }
+		glm::vec3& GetPosition() { return _position; }
 
 		// Update camera 
 		void UpdateViewProj();

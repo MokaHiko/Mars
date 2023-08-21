@@ -22,7 +22,6 @@ namespace mrs
             PushRenderPipeline(new ParticleRenderPipeline(10000));
             PushRenderPipeline(new MeshRenderPipeline());
             PushRenderPipeline(new PostProcessingRenderPipeline());
-            PushRenderPipeline(new TerrainRenderPipeline());
         };
         ~DefaultRenderPipelineLayer() {};
     };

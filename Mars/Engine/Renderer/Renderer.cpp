@@ -919,7 +919,8 @@ namespace mrs
 
 		// Begin main render pass
 		VkClearValue clear_value = {};
-		clear_value.color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clear_value.color = { 0.1f, 0.1f, 0.1f, 1.0f };
+		//clear_value.color = { 0.0f, 0.0f, 0.0f, 1.0f };
 		// clear_value.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 		VkClearValue depth_value = {};

@@ -36,7 +36,7 @@ namespace mrs
         {
         }
 
-        virtual void OnCollisionEnter(Entity other) override 
+        virtual void OnCollisionEnter2D(Entity other) override 
         {
         }
 

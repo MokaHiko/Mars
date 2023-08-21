@@ -136,7 +136,7 @@ void mrs::SceneSerializer::SerializeText(const std::string &scene_name, const st
 	out << YAML::EndSeq;
 	out << YAML::EndMap;
 
-	std::string file_path = out_path + "/" + scene_name + ".mrs";
+	std::string file_path = out_path + "/" + scene_name + ".yaml";
 	std::ofstream fout(file_path);
 	if (fout.is_open())
 	{

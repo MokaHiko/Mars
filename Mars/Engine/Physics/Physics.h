@@ -25,6 +25,8 @@ namespace mrs
     struct RigidBody2D
     {
     public:
+        static constexpr auto in_place_delete = true;
+
         // Adds force as impulse
         void AddImpulse(const glm::vec2 value)
         {
@@ -66,6 +68,8 @@ namespace mrs
 
     struct BoxCollider2D
     {
+        static constexpr auto in_place_delete = true;
+
         float width = 1.0f;
         float height = 1.0f;
     };

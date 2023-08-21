@@ -17,7 +17,7 @@ namespace mrs
         virtual void OnStart() {}
         virtual void OnUpdate(float dt) {}
 
-        virtual void OnCollisionEnter(Entity other) {}
+        virtual void OnCollisionEnter2D(Entity other) {}
 
         // Gets reference to attached entity's component 
         template <typename T>

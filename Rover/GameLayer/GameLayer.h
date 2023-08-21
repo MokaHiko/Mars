@@ -4,17 +4,39 @@
 #pragma once
 
 #include <Mars.h>
+#include "Scripts/Unit.h"
+#include "Scripts/Spawner.h"
+#include "Scripts/GameManager.h"
 
 class GameLayer : public mrs::Layer
 {
 public:
     virtual void OnAttach() override 
     {
-        auto height_map = mrs::Texture::LoadFromAsset("Assets/Textures/iceland_heightmap.boop_png", "iceland_height_map");
+        // Register scripts
+        mrs::Script::Register<Unit>();
+        mrs::Script::Register<Spawner>();
+        mrs::Script::Register<GameManager>();
 
-        auto terrain = mrs::Application::GetInstance().GetScene()->Instantiate("IcelandTerrain");
-        auto& terrainRenderer = terrain.AddComponent<mrs::TerrainRenderer>();
-        terrainRenderer.height_map = height_map;
+        mrs::Scene* scene = mrs::Application::GetInstance().GetScene();
+
+        for(uint32_t i = 0; i < 10; i++)
+        {
+            mrs::Entity e = scene->Instantiate("Spawner" + std::to_string(i), glm::vec3(i * 5.0f, 5.0f, 0.0f));
+            e.AddComponent<mrs::Script>().Bind<Spawner>();
+        }
+
+        for(uint32_t i = 0; i < 10 ; i++)
+        {
+            mrs::Entity e = scene->Instantiate("box" + std::to_string(i), glm::vec3(i * 5.0f, 5.0f, 0.0f));
+
+            auto& renderable = e.AddComponent<mrs::RenderableObject>();
+            renderable.SetMesh(mrs::Mesh::Get("cube"));
+
+            e.AddComponent<mrs::BoxCollider2D>();
+            e.AddComponent<mrs::RigidBody2D>();
+            e.AddComponent<mrs::Script>().Bind<Unit>();
+        }
     };
 
     virtual void OnDetatch() override 
