@@ -5,7 +5,8 @@
 
 #include <string>
 #include <unordered_map>
-#include <memory>
+
+#include "Core/Memory.h"
 
 namespace mrs {
 	class Mesh;
@@ -29,11 +30,11 @@ namespace mrs {
 
 	public:
 		// Map between file_path & mesh handle
-		std::unordered_map<std::string, std::shared_ptr<Mesh>> _meshes;
+		std::unordered_map<std::string, Ref<Mesh>> _meshes;
 
-		std::unordered_map<std::string, std::shared_ptr<Texture>> _textures;
+		std::unordered_map<std::string, Ref<Texture>> _textures;
 
-		std::unordered_map<std::string, std::shared_ptr<Material>> _materials;
+		std::unordered_map<std::string, Ref<Material>> _materials;
 	};
 }
 

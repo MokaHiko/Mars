@@ -125,14 +125,24 @@ void mrs::SceneSerializer::SerializeText(const std::string &scene_name, const st
 	out << YAML::BeginMap;
 	out << YAML::Key << "Scene" << YAML::Value << scene_name.c_str();
 	out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
-	_scene->Registry()->each([&](auto e) {
+
+	auto view = _scene->Registry()->view<Transform, Serializer>();
+	for(auto e : view) 
+	{
 		Entity entity = { e, _scene };
+
 		if (!entity)
 		{
-			return;
+			continue;
 		}
+
+		if(!entity.GetComponent<Serializer>().serialize)
+		{
+			continue;
+		}
+
 		SerializeEntity(out, entity);
-		});
+	};
 	out << YAML::EndSeq;
 	out << YAML::EndMap;
 
@@ -169,14 +179,8 @@ bool mrs::SceneSerializer::DeserializeText(const std::string &scene_path)
 
 	for (auto entity : entities)
 	{
-		Entity new_entity = _scene->Instantiate();
-
 		auto tag_node = entity["Tag"];
-		if (tag_node)
-		{
-			auto &tag = new_entity.GetComponent<Tag>();
-			tag.tag = tag_node["Tag"].as<std::string>();
-		}
+		Entity new_entity = _scene->Instantiate(tag_node["Tag"].as<std::string>());
 
 		auto transform_node = entity["Transform"];
 		if (transform_node)
@@ -206,6 +210,12 @@ bool mrs::SceneSerializer::DeserializeText(const std::string &scene_path)
 			bool active = static_cast<uint32_t>(camera_node["Active"].as<bool>());
 
 			auto &camera = new_entity.AddComponent<Camera>((CameraType)type, aspect_w, aspect_h, transform.position);
+			camera.Front() = camera_node["Front"].as<glm::vec3>();
+			camera.Right() = camera_node["Right"].as<glm::vec3>();
+			camera.Up() = camera_node["Up"].as<glm::vec3>();
+			camera.WorldUp() = camera_node["WorldUp"].as<glm::vec3>();
+			camera.Yaw() = camera_node["Yaw"].as<float>();
+			camera.Pitch() = camera_node["Pitch"].as<float>();
 			camera.SetActive(active);
 		}
 
@@ -321,10 +331,10 @@ void mrs::SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity)
 
 		auto &camera = entity.GetComponent<Camera>();
 		out << YAML::Key << "Type" << (int)camera.GetType();
-		out << YAML::Key << "Front" << YAML::Value << camera.GetFront();
-		out << YAML::Key << "Right" << YAML::Value << camera.GetRight();
-		out << YAML::Key << "Up" << YAML::Value << camera.GetUp();
-		out << YAML::Key << "WorldUp" << YAML::Value << camera.GetWorldUp();
+		out << YAML::Key << "Front" << YAML::Value << camera.Front();
+		out << YAML::Key << "Right" << YAML::Value << camera.Right();
+		out << YAML::Key << "Up" << YAML::Value << camera.Up();
+		out << YAML::Key << "WorldUp" << YAML::Value << camera.WorldUp();
 
 		out << YAML::Key << "Yaw" << YAML::Value << camera.GetYaw();
 		out << YAML::Key << "Pitch" << YAML::Value << camera.GetPitch();

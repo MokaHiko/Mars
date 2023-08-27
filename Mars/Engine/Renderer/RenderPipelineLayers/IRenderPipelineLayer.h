@@ -41,7 +41,10 @@ namespace mrs
     class IRenderPipelineLayer : public Layer
     {
     public:
-        IRenderPipelineLayer() {};
+        IRenderPipelineLayer()
+        {
+            _name = "IRenderPipelineLayer";
+        };
         virtual ~IRenderPipelineLayer(){};
 
         virtual void OnAttach() final;
@@ -52,13 +55,21 @@ namespace mrs
         virtual void OnUpdate(float dt) final;
         virtual void OnImGuiRender() final;
 
+        /// <summary>
+        ///  Sets the camera for the render pipeline
+        /// </summary>
+        void SetCamera(Camera* camera)
+        {
+            _renderer->SetCamera(camera);
+        }
+
 		void PushRenderPipeline(IRenderPipeline* pipeline);
 		void PopRenderPipeline(IRenderPipeline* pipeline);
 
         void OnEntityDestroyed(Entity e);
         void OnMaterialsUpdate();
     private:
-        std::shared_ptr<Renderer> _renderer = nullptr;
+        Ref<Renderer> _renderer = nullptr;
 		RenderPipelineStack _render_pipeline_layers;
     };
 }

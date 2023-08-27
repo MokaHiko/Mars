@@ -25,7 +25,7 @@ namespace mrs
         };
 
         // Material
-        std::shared_ptr<Material> material; 
+        Ref<Material> material; 
 
         // Color Gradient
         glm::vec4 color_1 = glm::vec4(1.0f);

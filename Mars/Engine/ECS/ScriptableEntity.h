@@ -34,10 +34,7 @@ namespace mrs
         }
 
         // Insantiates new entity
-        Entity Insantiate(const std::string &name = "")
-        {
-            return _game_object._scene->Instantiate(name);
-        }
+        Entity Instantiate(const std::string &name = "");
 
         // Queues attached entity for destruction
         void QueueDestroy()

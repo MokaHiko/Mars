@@ -20,29 +20,29 @@ namespace mrs
             material = Material::Get("default_material");
         };
 
-        RenderableObject(std::shared_ptr<Mesh> mesh_, std::shared_ptr<Material> material_)
+        RenderableObject(Ref<Mesh> mesh_, Ref<Material> material_)
             : mesh(mesh_), material(material_) {}
 
-        const std::shared_ptr<Mesh>& GetMesh() const
+        const Ref<Mesh>& GetMesh() const
         {
             return mesh;
         }
 
-        void SetMesh(std::shared_ptr<Mesh> new_mesh)
+        void SetMesh(Ref<Mesh> new_mesh)
         {
             mesh = new_mesh;
         }
 
-        const std::shared_ptr<Material> GetMaterial() const 
+        const Ref<Material> GetMaterial() const 
         {
             return material;
         }
         
-        void SetMaterial(std::shared_ptr<Material> new_material);
+        void SetMaterial(Ref<Material> new_material);
 
     private:
-        std::shared_ptr<Mesh> mesh = nullptr;
-        std::shared_ptr<Material> material = nullptr;
+        Ref<Mesh> mesh = nullptr;
+        Ref<Material> material = nullptr;
     };
 
     struct DirectionalLight

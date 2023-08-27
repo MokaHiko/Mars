@@ -13,11 +13,19 @@
 
 namespace mrs
 {
+    // Component given to entities that are serializable. By default typically not present in entities created at runtime
+    struct Serializer
+    {
+        bool serialize = false;
+        bool destroy_on_stop = true;
+    };
+
     struct Tag
     {
         Tag() = default;
         Tag(const std::string &name)
             : tag(name) {}
+
         std::string tag = "";
     };
 

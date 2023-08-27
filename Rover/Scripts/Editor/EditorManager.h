@@ -46,9 +46,9 @@ namespace mrs
 			// Scene
 			Scene *scene = Application::GetInstance().GetScene();
 
-			// Camera
+			// Instantiate Camera
 			auto window = Application::GetInstance().GetWindow();
-			_camera = scene->Instantiate("Editor Camera");
+			_camera = Instantiate("Editor Camera");
 
 			_camera.AddComponent<Camera>(CameraType::Perspective, window->GetWidth(), window->GetHeight());
             _camera.AddComponent<Script>().Bind<CameraController>();

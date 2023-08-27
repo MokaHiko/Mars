@@ -44,7 +44,7 @@ namespace mrs {
 		VkDescriptorSetLayout layout = VK_NULL_HANDLE;
 		VkDescriptorSet material_descriptor_set= VK_NULL_HANDLE;
 
-		static std::shared_ptr<Material> Create(const std::string& alias, const std::string& texture_name = "default_texture")
+		static Ref<Material> Create(const std::string& alias, const std::string& texture_name = "default_texture")
 		{
 			ResourceManager::Get()._materials[alias] = std::make_shared<Material>();
 			ResourceManager::Get()._materials[alias]->_diffuse_texture_path = texture_name;
@@ -53,7 +53,7 @@ namespace mrs {
 			return ResourceManager::Get()._materials[alias];
 		}
 
-		static std::shared_ptr<Material> Get(const std::string& alias)
+		static Ref<Material> Get(const std::string& alias)
 		{
 			auto it = ResourceManager::Get()._materials.find(alias);
 

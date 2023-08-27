@@ -34,9 +34,9 @@ namespace mrs {
 		Mesh() {};
 		~Mesh() {};
 
-		static std::shared_ptr<Mesh> LoadFromAsset(const std::string& path, const std::string& alias);
+		static Ref<Mesh> LoadFromAsset(const std::string& path, const std::string& alias);
 
-		static std::shared_ptr<Mesh> Create(const std::string& alias)
+		static Ref<Mesh> Create(const std::string& alias)
 		{
 			ResourceManager::Get()._meshes[alias] = std::make_shared<Mesh>();
 
@@ -44,7 +44,7 @@ namespace mrs {
 			return ResourceManager::Get()._meshes[alias];
 		}
 
-		static std::shared_ptr<Mesh> Get(const std::string& alias)
+		static Ref<Mesh> Get(const std::string& alias)
 		{
 			auto it = ResourceManager::Get()._meshes.find(alias);
 

@@ -3,12 +3,21 @@
 #include <direct.h>
 #include <windows.h>
 
-#include "Core/Log.h"
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <cassert>
+
+#include "Core/Log.h"
+#include "Core/Memory.h"
+
 namespace mrs
 {
+    void Platform::Assert(bool value, const char* msg)
+	{
+		assert(value && msg);
+	}
+
 	void Platform::ConsoleWrite(const char *message, uint8_t color)
 	{
 		// Set color
@@ -92,7 +101,7 @@ namespace mrs
 			return false;
 		}
 
-		char *buff = new char[virtual_size];
+		char *buff = MRS_NEW char[virtual_size];
 		if (buff)
 		{
 			delete[] buff;

@@ -28,6 +28,10 @@ namespace mrs
                 DrawComponent<RigidBody2D>(entity);  
                 DrawComponent<ParticleSystem>(entity);
                 DrawComponent<DirectionalLight>(entity);
+
+                #ifdef MRS_DEBUG
+                DrawComponent<Serializer>(entity);
+                #endif
                 
                 DrawAddComponent(entity);
             }

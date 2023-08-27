@@ -12,9 +12,20 @@
 namespace mrs
 {
 	template<>
+	void DrawComponent<Serializer>(Entity entity)
+	{
+		DrawComponentUI<Serializer>("Serializer", entity, [](Serializer& serializer) {
+			if (ImGui::Checkbox("Serialize", &serializer.serialize))
+			{
+				
+			}
+			});
+	}
+
+	template<>
 	void DrawComponent<Transform>(Entity entity)
 	{
-		DrawComponentUI<Transform>("Transform", entity, [](Transform &transform) {
+		DrawComponentUI<Transform>("Transform", entity, [](Transform& transform) {
 			ImGui::BeginTable("TransformTable", 2);
 
 			float label_width = ImGui::GetContentRegionAvail().x * 0.25f;
@@ -59,13 +70,13 @@ namespace mrs
 	template<>
 	void DrawComponent<RenderableObject>(Entity entity)
 	{
-		DrawComponentUI<RenderableObject>("Renderable Object", entity, [](RenderableObject &renderable) {
+		DrawComponentUI<RenderableObject>("Renderable Object", entity, [](RenderableObject& renderable) {
 			ImGui::Text("Mesh: %s", renderable.GetMesh()->_mesh_name.c_str());
 			ImVec2 region_size = ImGui::GetContentRegionAvail();
 
 			auto& material = renderable.GetMaterial();
 			ImGui::Text("Material: %s", material->GetMaterialName().c_str());
-			if(ImGui::CollapsingHeader("Albedo"))
+			if (ImGui::CollapsingHeader("Albedo"))
 			{
 				ImGui::ColorPicker4("Color", glm::value_ptr(material->GetAlbedoColor()));
 				ImGui::Text("Texture: %s", material->GetMaterialName());
@@ -78,7 +89,7 @@ namespace mrs
 	template<>
 	void DrawComponent<DirectionalLight>(Entity entity)
 	{
-		DrawComponentUI<DirectionalLight>("Directional Light", entity, [](DirectionalLight &dir_light) {
+		DrawComponentUI<DirectionalLight>("Directional Light", entity, [](DirectionalLight& dir_light) {
 			ImGui::Text("Intensity: %s", dir_light.intensity);
 
 			static bool view_dir_light_camera = false;
@@ -91,7 +102,7 @@ namespace mrs
 	template<>
 	void DrawComponent<Script>(Entity entity)
 	{
-		DrawComponentUI<Script>("Script", entity, [](Script &script) {
+		DrawComponentUI<Script>("Script", entity, [](Script& script) {
 			ImGui::Button(script.binding.c_str());
 			});
 	}
@@ -99,22 +110,22 @@ namespace mrs
 	template<>
 	void DrawComponent<Camera>(Entity entity)
 	{
-		DrawComponentUI<Camera>("Camera", entity, [](Camera &camera) {
+		DrawComponentUI<Camera>("Camera", entity, [](Camera& camera) {
 			CameraType camera_type = camera.GetType();
 			bool is_orthographic = CameraType::Orthographic == camera_type;
 			bool is_perspective = !is_orthographic;
 
 			ImGui::Text("Aspect W: "); ImGui::SameLine();
-			ImGui::DragInt("##AspectW", (int *)(&camera._aspect_w));
+			ImGui::DragInt("##AspectW", (int*)(&camera._aspect_w));
 
 			ImGui::Text("Aspect H: "); ImGui::SameLine();
-			ImGui::DragInt("##AspectH", (int *)(&camera._aspect_h));
+			ImGui::DragInt("##AspectH", (int*)(&camera._aspect_h));
 
 			ImGui::Text("Near: "); ImGui::SameLine();
-			ImGui::DragFloat("##Near", (float *)(&camera._near));
+			ImGui::DragFloat("##Near", (float*)(&camera._near));
 
 			ImGui::Text("Far: "); ImGui::SameLine();
-			ImGui::DragFloat("##Far", (float *)(&camera._far));
+			ImGui::DragFloat("##Far", (float*)(&camera._far));
 
 			if (ImGui::Checkbox("Orthographic", &is_orthographic))
 			{
@@ -135,8 +146,8 @@ namespace mrs
 	template<>
 	void DrawComponent<RigidBody2D>(Entity entity)
 	{
-		static char *body_types[] = { "UNKNOWN", "STATIC", "DYNAMIC" };
-		DrawComponentUI<RigidBody2D>("RigidBody2D", entity, [](RigidBody2D &rb) {
+		static char* body_types[] = { "UNKNOWN", "STATIC", "DYNAMIC" };
+		DrawComponentUI<RigidBody2D>("RigidBody2D", entity, [](RigidBody2D& rb) {
 			ImGui::Checkbox("Use Gravity", &rb.use_gravity);
 			ImGui::Text("Body Type: %s", body_types[(int)rb.type]);
 			});
@@ -145,10 +156,10 @@ namespace mrs
 	template<>
 	void DrawComponent<ParticleSystem>(Entity entity)
 	{
-		DrawComponentUI<ParticleSystem>("Particle System", entity, [](ParticleSystem &particles) {
+		DrawComponentUI<ParticleSystem>("Particle System", entity, [](ParticleSystem& particles) {
 			// Emission properties
-			ImGui::InputInt("Max Particles: ", (int *)(&particles.max_particles));
-			ImGui::DragInt("Live Particles", (int *)(&particles.live_particles));
+			ImGui::InputInt("Max Particles: ", (int*)(&particles.max_particles));
+			ImGui::DragInt("Live Particles", (int*)(&particles.live_particles));
 			ImGui::DragFloat("Emission Rate: ", (&particles.emission_rate), 0.5f, 0.1f, 512.0f);
 
 			ImGui::Checkbox("Repeating", &particles.repeating);
@@ -177,7 +188,7 @@ namespace mrs
 			// Shape
 			if (ImGui::TreeNode("Shape"))
 			{
-				const char *items[] = { "None", "Circle", "Cone" };
+				const char* items[] = { "None", "Circle", "Cone" };
 				int item_current = static_cast<int>(particles.emission_shape);
 				ImGui::Combo("Emission Shape", &item_current, items, IM_ARRAYSIZE(items));
 				ImGui::SameLine();

@@ -21,6 +21,8 @@ namespace mrs
         static void Log(LogLevel level, const char* msg, ...);
 
         static void ConsoleWrite(const char* message, uint8_t color);
+
+        static void Assert(bool value, const char* msg = "");
     public:
         // Checks if system has enough hard disk space
         static bool CheckStorage(size_t required_size);

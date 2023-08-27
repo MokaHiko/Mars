@@ -19,12 +19,12 @@ namespace mrs
 	{
 	public:
 		glm::vec2 grid_size;
-		std::shared_ptr<Texture> height_map;
+		Ref<Texture> height_map;
 
 		TerrainType type = TerrainType::Cpu;
 
 		// TODO: Move to CPUTerrainRenderer class
-		std::shared_ptr<Mesh> _terrain_mesh;
+		Ref<Mesh> _terrain_mesh;
 	private:
 		friend class TerrainRenderPipeline;
 		AllocatedBuffer terrain_buffer;

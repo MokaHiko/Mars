@@ -19,7 +19,7 @@ namespace mrs
     private:
         std::vector<VkDescriptorSet> _post_process_descriptor_sets;
 
-        std::shared_ptr<Mesh> _screen_quad;
+        Ref<Mesh> _screen_quad;
         VkSampler _screen_sampler;
 
         VkDescriptorSetLayout _post_process_descriptor_set_layout;

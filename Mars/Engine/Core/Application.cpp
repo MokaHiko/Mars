@@ -46,7 +46,7 @@ namespace mrs {
 				});
 
 			// TODO: Handle inconsistent in separate delta time in a fixed update
-			static float dt = 1/144.0f;
+			static float dt = 1.0f/144.0f;
 
 			for (Layer *layer : _layer_stack)
 			{

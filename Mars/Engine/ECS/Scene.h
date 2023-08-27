@@ -22,6 +22,8 @@ namespace mrs
         Scene();
         ~Scene();
 
+		void Serialization(bool serializing) {_serializing = serializing;}
+
         entt::registry *Registry()
         {
             return &_registry;
@@ -39,7 +41,7 @@ namespace mrs
         }
 
         // Create and returns entity
-        Entity Instantiate(const std::string &name = "", const glm::vec3 &position = {});
+        Entity Instantiate(const std::string &name = "", const glm::vec3 &position = {}, bool* serialize = nullptr);
 
         // Queues entity for destruction at end of frame
         void QueueDestroy(Entity entity);
@@ -62,6 +64,9 @@ namespace mrs
 
         // Queue of entities to destroy
         std::vector<Entity> _destruction_queue;
+
+        // Serialization mode
+		bool _serializing = false;
     };
 
 }

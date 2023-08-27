@@ -4,6 +4,7 @@
 #pragma once
 
 #include "VulkanStructures.h"
+#include "Core/Memory.h"
 
 namespace mrs {
     class Texture
@@ -12,9 +13,9 @@ namespace mrs {
         Texture();
         ~Texture();
 
-        static std::shared_ptr<Texture> LoadFromAsset(const std::string& path, const std::string& alias = "");
+        static Ref<Texture> LoadFromAsset(const std::string& path, const std::string& alias = "");
 
-        static std::shared_ptr<Texture> Get(const std::string& path);
+        static Ref<Texture> Get(const std::string& path);
 
         AllocatedImage _image = {};
         VkImageView _image_view = {};

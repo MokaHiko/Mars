@@ -27,16 +27,16 @@ namespace mrs
             binding = typeid(T).name();
 
             // Check if script has already been registered
-            auto instantiation_fn = script_instantion_bindings.find(binding);
-            if(instantiation_fn == script_instantion_bindings.end())
+            auto instantiation_fn = script_instantiation_bindings.find(binding);
+            if(instantiation_fn == script_instantiation_bindings.end())
             {
                 Register<T>();
             }
 
             InstantiateScript = [&]()
             {
-                auto& it = script_instantion_bindings.find(binding);
-                assert(it != script_instantion_bindings.end() && "Script binding not registerd!");
+                auto& it = script_instantiation_bindings.find(binding);
+                assert(it != script_instantiation_bindings.end() && "Script binding not registerd!");
 
                 return static_cast<ScriptableEntity *>((it->second)());
             };
@@ -54,12 +54,12 @@ namespace mrs
             binding = binding_name;
 
             // Assert the script has already been registered
-            auto instantiation_fn = script_instantion_bindings.find(binding);
-            assert(instantiation_fn != script_instantion_bindings.end());
+            auto instantiation_fn = script_instantiation_bindings.find(binding);
+            assert(instantiation_fn != script_instantiation_bindings.end());
 
             InstantiateScript = [&]()
             {
-                return static_cast<ScriptableEntity *>((script_instantion_bindings.find(binding)->second)());
+                return static_cast<ScriptableEntity *>((script_instantiation_bindings.find(binding)->second)());
             };
 
             DestroyScript = [&]()
@@ -73,14 +73,19 @@ namespace mrs
         template<typename T>
         static void Register()
         {
-            script_instantion_bindings[typeid(T).name()] = []()
+            if(script_instantiation_bindings.find(typeid(T).name()) != script_instantiation_bindings.end())
+            {
+                return;
+            }
+
+            script_instantiation_bindings[typeid(T).name()] = []()
             {
                 return new T();
             };
         }
 
         // Map between scriptable entity type id and instantiate functions
-        static std::unordered_map <std::string, std::function<ScriptableEntity* ()>> script_instantion_bindings;
+        static std::unordered_map <std::string, std::function<ScriptableEntity* ()>> script_instantiation_bindings;
     };
 }
 #endif

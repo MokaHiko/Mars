@@ -122,7 +122,7 @@ namespace mrs
 			fixture_def.shape = &dynamic_box;
 			fixture_def.density = 1.0f;
 			fixture_def.friction = 0.3f;
-			fixture_def.restitution = 0.2;
+			fixture_def.restitution = 0.2f;
 			rb.body->CreateFixture(&fixture_def);
 		}
 		else if (type == BodyType::STATIC)
@@ -143,7 +143,13 @@ namespace mrs
 		if (e.HasComponent<RigidBody2D>())
 		{
 			auto &rb = e.GetComponent<RigidBody2D>();
-			rb.body->GetWorld()->DestroyBody(rb.body);
+
+			MRS_ASSERT(rb.body != nullptr, std::to_string(e.Id()).c_str());
+			
+			if (rb.body)
+			{
+				rb.body->GetWorld()->DestroyBody(rb.body);
+			}
 		}
 	}
 
@@ -157,7 +163,7 @@ namespace mrs
 
 		// Init world
 		b2Vec2 gravity = { 0.0f, -10.0f };
-		_physics_world = new b2World(gravity);
+		_physics_world = MRS_NEW b2World(gravity);
 
 		auto view = _scene->Registry()->view<Transform, RigidBody2D>();
 		for (auto entity : view)
@@ -170,7 +176,7 @@ namespace mrs
 		_scene = Application::GetInstance().GetScene();
 
 		// Init contact listeners
-		_contact_listener = new ContactListener(_scene);
+		_contact_listener = MRS_NEW ContactListener(_scene);
 		_physics_world->SetContactListener(_contact_listener);
 	}
 

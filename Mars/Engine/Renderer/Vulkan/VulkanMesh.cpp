@@ -51,7 +51,7 @@ mrs::VertexInputDescription& mrs::Vertex::GetDescription()
 	return description;
 }
 
-std::shared_ptr<mrs::Mesh> mrs::Mesh::LoadFromAsset(const std::string& path, const std::string& alias = "")
+Ref<mrs::Mesh> mrs::Mesh::LoadFromAsset(const std::string& path, const std::string& alias = "")
 {
 	// Check if already loaded
 	if (Mesh::Get(path) != nullptr) {

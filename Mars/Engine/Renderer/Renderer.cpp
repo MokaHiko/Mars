@@ -52,7 +52,7 @@ namespace mrs
 		_deletion_queue.Flush();
 	}
 
-	void Renderer::UploadMesh(std::shared_ptr<Mesh> mesh)
+	void Renderer::UploadMesh(Ref<Mesh> mesh)
 	{
 		// Create and upload data to staging bufffer
 		const size_t buffer_size = mesh->_vertices.size() * sizeof(Vertex);
@@ -779,14 +779,24 @@ namespace mrs
 		if (!_camera || !_camera->IsActive())
 		{
 			auto cam_view = scene->Registry()->view<Transform, Camera>();
+
+			bool active_camera_found = false;
 			for (auto entity : cam_view)
 			{
-				Camera *camera = &Entity(entity, scene).GetComponent<Camera>();
+				Entity e(entity, scene);
+				Camera *camera = &e.GetComponent<Camera>();
 
+				MRS_INFO("Switching camera to: %s", e.GetComponent<Tag>().tag.c_str());
 				if (camera->IsActive())
 				{
 					_camera = camera;
+					active_camera_found = true;
 				}
+			}
+
+			if(!active_camera_found)
+			{
+				MRS_ERROR("No active camera in scene!");
 			}
 		}
 
@@ -798,7 +808,6 @@ namespace mrs
 		// ~ Camera
 		if (_camera)
 		{
-			_camera->UpdateViewProj();
 			global_info.view = _camera->GetView();
 			global_info.view_proj = _camera->GetViewProj();
 		}
@@ -920,8 +929,6 @@ namespace mrs
 		// Begin main render pass
 		VkClearValue clear_value = {};
 		clear_value.color = { 0.1f, 0.1f, 0.1f, 1.0f };
-		//clear_value.color = { 0.0f, 0.0f, 0.0f, 1.0f };
-		// clear_value.color = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 		VkClearValue depth_value = {};
 		depth_value.depthStencil = { 1.0f, 0 };

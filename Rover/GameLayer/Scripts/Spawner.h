@@ -27,7 +27,7 @@ public:
 
     void SpawnUnit()
     {
-        auto& e = Insantiate("box");
+        auto& e = Instantiate("box");
 
         static int ctr = 0;
         if(ctr > 8)

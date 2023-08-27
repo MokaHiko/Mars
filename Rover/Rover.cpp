@@ -22,25 +22,29 @@ namespace mrs {
 	class EditorLayer : public Layer
 	{
 	public:
+		enum class EditorState : uint8_t
+		{
+			Uknown,
+			Playing, 
+			Paused,
+			Stopped,
+		};
+
 		virtual void OnAttach() override
 		{
 			LoadEditorResources();
-			LoadScene();
-
 			_name = "EditorLayer";
+
 		}
 
 		virtual void OnEvent(Event &event)
 		{
 			if (Input::IsKeyPressed(SDLK_ESCAPE))
 			{
-				Pause();
+				Stop();
 			}
 
-			if (!_playing)
-			{
-				ImGui_ImplSDL2_ProcessEvent(&event._event);
-			}
+			ImGui_ImplSDL2_ProcessEvent(&event._event);
 		};
 
 		virtual void OnDetatch() override
@@ -49,27 +53,28 @@ namespace mrs {
 
 		virtual void OnEnable()
 		{
+			_native_scripting_layer = (NativeScriptingLayer*)(void*)Application::GetInstance().FindLayer("NativeScriptingLayer");
+			_render_pipeline_layer = (IRenderPipelineLayer*)(void*)Application::GetInstance().FindLayer("IRenderPipelineLayer");
 		};
 
 		virtual void OnUpdate(float dt) override
 		{
-			// Pause on start start
-			static bool start_paused = [&]() {
-				Pause();
+			static bool first_run = [&]()
+			{
+				Stop();
 				return true;
-				}();
-
-				_dt = dt;
+			}();
 		}
 
 		// Focuses editor on entity
 		void FocusEntity(Entity entity)
 		{
-			EditorManager *editor_script = (EditorManager *)(void *)(_editor_manager.GetComponent<Script>().script);
+			CameraController *camera_controller = (CameraController*)(void *)(_editor_camera.GetComponent<Script>().script);
 			_selected_entity = entity;
-			if (editor_script != nullptr)
+
+			if (camera_controller != nullptr)
 			{
-				editor_script->_camera_controller->_focused = entity;
+				camera_controller->_focused = entity;
 			}
 		}
 
@@ -115,10 +120,10 @@ namespace mrs {
 			InspectorPanel::Draw(_selected_entity);
 
 			ImGui::Begin("Scene Bar");
-			std::string state = _playing ? "Pause" : "Play";
+			std::string state = _state == EditorState::Playing ? "Pause" : "Play";
 			if (ImGui::Button(state.c_str()))
 			{
-				if (_playing)
+				if (_state == EditorState::Playing)
 				{
 					Pause();
 				}
@@ -127,32 +132,84 @@ namespace mrs {
 					Play();
 				}
 			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("Stop"))
+			{
+				Stop();
+			}
 			ImGui::End();
 		}
 	private:
 		void Play()
 		{
-			Application::GetInstance().EnableLayer("Physics2DLayer");
-			Application::GetInstance().EnableLayer("NativeScriptingLayer");
+			auto& application = Application::GetInstance();
 
-			// Disable editor controls and camera 
-			// EditorManager *em_script = dynamic_cast<EditorManager *>(_editor_manager.GetComponent<Script>().script);
-			// em_script->_camera.GetComponent<Camera>().SetActive(false);
+			// Disable serialization
+			application.GetScene()->Serialization(false);
 
-			_playing = true;
+			// Destroy editor scene entities
+			_editor_camera.GetComponent<Camera>().SetActive(false);
+			Scene *scene = application.GetScene();
+			auto& view = scene->Registry()->view<Transform, Serializer>();
+			for(auto entity : view)
+			{
+				Entity e(entity, scene);
+				auto& serializer = e.GetComponent<Serializer>();
+
+				if(!serializer.serialize)
+				{
+					scene->Destroy(e);
+				}
+			}
+
+			// Enable play time layers
+			application.EnableLayer("Physics2DLayer");
+			_native_scripting_layer->EnableScripts(_editor_camera);
+
+			_state = EditorState::Playing;
 		}
 
 		void Pause()
 		{
+			_state = EditorState::Paused;
+		}
+
+		void Stop()
+		{
+			if (_state == EditorState::Stopped)
+			{
+				return;
+			}
+
+			auto& application = Application::GetInstance();
+
+			// Destroy runtime created entites
+			Scene *scene = application.GetScene();
+			auto& view = scene->Registry()->view<Transform, Serializer>();
+
+			for(auto entity : view)
+			{
+				Entity e(entity, scene);
+				auto& serializer = e.GetComponent<Serializer>();
+
+				if(!serializer.serialize)
+				{
+					scene->Destroy(e);
+				}
+			}
+
 			// Disable play time layers
-			Application::GetInstance().DisableLayer("Physics2DLayer");
-			Application::GetInstance().DisableLayer("NativeScriptingLayer");
+			application.DisableLayer("Physics2DLayer");
+			_native_scripting_layer->DisableScripts(_editor_camera);
 
-			// Enable editor controls and camera 
-			EditorManager *em_script = dynamic_cast<EditorManager *>(_editor_manager.GetComponent<Script>().script);
-			em_script->_camera.GetComponent<Camera>().SetActive(true);
+			// Load editor scene 
+			LoadEditorScene();
 
-			_playing = false;
+			// Enable serialization
+			application.GetScene()->Serialization(true);
+
+			_state = EditorState::Stopped;
 		}
 
 		void LoadEditorResources()
@@ -192,16 +249,26 @@ namespace mrs {
 			screen_quad->_index_count = 6;
 		}
 
-		void LoadScene()
+		void LoadEditorScene()
 		{
+			MRS_INFO("Initializing Editor");
+
 			// Register Scripts
 			Script::Register<CameraController>();
-			Script::Register<EditorManager>();
 
-			// Create editor manager
-			Scene *scene = Application::GetInstance().GetScene();
-			_editor_manager = scene->Instantiate("Editor Manager");
-			_editor_manager.AddComponent<Script>().Bind<EditorManager>();
+			bool serialize = false;
+
+			// Instantiate Camera
+			auto& app = Application::GetInstance();
+			auto window = app.GetWindow();
+			_editor_camera = app.GetScene()->Instantiate("Editor Camera", {}, &serialize);
+
+			auto& camera_component =_editor_camera.AddComponent<Camera>(CameraType::Perspective, window->GetWidth(), window->GetHeight());
+
+    		_editor_camera.AddComponent<Script>().Bind<CameraController>();
+			_editor_camera.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, 50.0f);
+
+			_render_pipeline_layer->SetCamera(&camera_component);
 		}
 
 	private:
@@ -209,18 +276,13 @@ namespace mrs {
 		bool _constrain_pitch = true;
 		float _movement_speed = 50.0f;
 
-		// Lights
-		Entity _directional_light = {};
-		Entity _test_object = {};
-
-		// Stats
-		float _dt = 0.0f;
-
 		Entity _selected_entity = {};
-		Entity _editor_manager = {};
+		Entity _editor_camera = {};
 
-		bool _playing = false;
-		bool _initialized = false;
+		EditorState _state;
+
+		NativeScriptingLayer* _native_scripting_layer = nullptr;
+		IRenderPipelineLayer* _render_pipeline_layer = nullptr;
 	};
 
 	class Rover : public Application
@@ -229,14 +291,14 @@ namespace mrs {
 		Rover() : Application("Rover", 1600, 900)
 		{
 			// Default layers
-			PushLayer(new InputLayer());
-			PushLayer(new DefaultRenderPipelineLayer());
-			PushLayer(new Physics2DLayer());
-			PushLayer(new NativeScriptingLayer());
+			PushLayer(MRS_NEW InputLayer());
+			PushLayer(MRS_NEW DefaultRenderPipelineLayer());
+			PushLayer(MRS_NEW Physics2DLayer());
+			PushLayer(MRS_NEW NativeScriptingLayer());
 
 			// Client application layers
-			PushLayer(new EditorLayer());
-			PushLayer(new GameLayer());
+			PushLayer(MRS_NEW EditorLayer());
+			PushLayer(MRS_NEW GameLayer());
 		}
 
 		~Rover() {};

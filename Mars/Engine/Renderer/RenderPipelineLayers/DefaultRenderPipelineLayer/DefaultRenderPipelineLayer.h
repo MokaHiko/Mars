@@ -18,6 +18,8 @@ namespace mrs
     public:
         DefaultRenderPipelineLayer()
         {
+            _name = "DefaultRenderPipelineLayer";
+
             PushRenderPipeline(new ImGuiRenderPipeline());
             PushRenderPipeline(new ParticleRenderPipeline(10000));
             PushRenderPipeline(new MeshRenderPipeline());

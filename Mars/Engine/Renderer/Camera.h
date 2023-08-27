@@ -27,6 +27,9 @@ namespace mrs {
 	class Camera
 	{
 	public:
+        // Prevent pointers from being invalidated on delete
+        static constexpr auto in_place_delete = true;
+
 		Camera(CameraType type = CameraType::Perspective, uint32_t aspect_w = 1600, uint32_t aspect_h = 900, const glm::vec3& pos = glm::vec3(0.0f));
 		~Camera();
 
@@ -52,10 +55,13 @@ namespace mrs {
 		// Returns view projection as reference
 		inline const glm::mat4& GetProj() const { return _projection; }
 
-		inline const glm::vec3& GetFront() const { return _front; }
-		inline const glm::vec3& GetRight() const { return _right; }
-		inline const glm::vec3& GetUp() const { return _up; }
-		inline const glm::vec3& GetWorldUp() const { return _worldup; }
+		glm::vec3& Front() { return _front; }
+		glm::vec3& Right() { return _right; }
+		glm::vec3& Up() { return _up; }
+		glm::vec3& WorldUp() { return _worldup; }
+
+		float& Yaw() { return _yaw; }
+		float& Pitch() { return _pitch; }
 
 		// Returns camera type
 		CameraType GetType() const {return _type;}

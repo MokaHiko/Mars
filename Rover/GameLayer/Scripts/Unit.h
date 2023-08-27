@@ -28,7 +28,7 @@ public:
     virtual void OnCollisionEnter2D(mrs::Entity other) override
     {
         _to_destroy = true;
-        _death_timer = rand() % 20;
+        _death_timer = static_cast<float>(rand() % 20);
     }
 
 private:

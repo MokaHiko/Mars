@@ -4,7 +4,7 @@
 
 namespace mrs
 {
-	void RenderableObject::SetMaterial(std::shared_ptr<Material> new_material)
+	void RenderableObject::SetMaterial(Ref<Material> new_material)
 	{
 		static IRenderPipelineLayer* render_pipeline_layer = (IRenderPipelineLayer*)Application::GetInstance().FindLayer("IRenderPipelineLayer");
 

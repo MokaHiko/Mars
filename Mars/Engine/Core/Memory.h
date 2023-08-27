@@ -3,7 +3,7 @@
 
 #pragma once
 
-#ifdef _DEBUG
+#ifdef MRS_DEBUG
 #define MRS_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
 
 template <typename T>

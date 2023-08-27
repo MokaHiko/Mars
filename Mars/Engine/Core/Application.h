@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <memory>
+#include <Core/Memory.h>
 
 #include "Window.h"
 #include "Renderer/Renderer.h"
@@ -27,7 +27,7 @@ namespace mrs {
 	class Application
 	{
 	public:
-		Application(const std::string& app_name = "First App", uint32_t width = 720,  uint32_t height = 480);
+		Application(const std::string& app_name = "First App", uint32_t width = 720, uint32_t height = 480);
 		virtual ~Application();
 
 		void Run();
@@ -46,7 +46,7 @@ namespace mrs {
 
 		// Returns handle to application scene
 		Scene* GetScene() { return _scene.get(); }
-		
+
 		// Returns const reference to app name string
 		const std::string& GetAppName() const { return _app_name; }
 
@@ -57,10 +57,10 @@ namespace mrs {
 		LayerStack& GetLayers() { return _layer_stack; }
 
 		// Returns shared ptr to application window
-		std::shared_ptr<Window> GetWindow() { return _window; }
+		Ref<Window> GetWindow() { return _window; }
 	private:
-		std::shared_ptr<Window> _window = nullptr;
-		std::shared_ptr<Scene> _scene = nullptr;
+		Ref<Window> _window = nullptr;
+		Ref<Scene> _scene = nullptr;
 		std::string _app_name;
 
 		bool _running = false;

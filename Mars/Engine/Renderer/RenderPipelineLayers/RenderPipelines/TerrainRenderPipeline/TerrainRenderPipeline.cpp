@@ -10,7 +10,7 @@ void mrs::TerrainRenderPipeline::Init()
     {
         Entity e = { entity , _scene };
         TerrainRenderer &terrain = e.GetComponent<TerrainRenderer>();
-        std::shared_ptr<Texture> height_map = terrain.height_map;
+        Ref<Texture> height_map = terrain.height_map;
 
         // Generate terrain vertices
         uint32_t resolution = 20; // is the n patches across and down the terrain. n^2 patches in total
@@ -79,7 +79,7 @@ void mrs::TerrainRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_fra
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 0, 1, &_global_descriptor_set, 0, 0);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 1, 1, &_frame_object_set, 0, 0);
 
-    std::shared_ptr<Material> default_material = Material::Get("default_material");
+    Ref<Material> default_material = Material::Get("default_material");
     for (auto entity : view)
     {
         Entity e = { entity, _scene };

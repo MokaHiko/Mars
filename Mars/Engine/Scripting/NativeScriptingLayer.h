@@ -15,8 +15,12 @@ namespace mrs
         virtual void OnEnable() override;
         virtual void OnDisable() override;
 
+
         virtual void OnUpdate(float dt) override;
         virtual void OnEvent(Event &event) override;
+
+        void DisableScripts(Entity except = {});
+        void EnableScripts(Entity except = {});
 
         void OnEntityDestroyed(Entity e);
     private:

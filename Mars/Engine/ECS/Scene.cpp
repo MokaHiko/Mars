@@ -21,7 +21,7 @@ namespace mrs
 
 	Scene::Scene(){}
 
-	Entity Scene::Instantiate(const std::string &name, const glm::vec3 &position)
+	Entity Scene::Instantiate(const std::string& name, const glm::vec3& position, bool* serialize)
 	{
 		Entity e = {};
 		if(!_free_queue.empty())
@@ -36,16 +36,21 @@ namespace mrs
 			e = Entity{_registry.create(), this};
 		}
 
+		// Determine if serializable
+		e.AddComponent<Serializer>().serialize = serialize != nullptr ? *serialize : _serializing;
+
 		e.AddComponent<Tag>(name);
 		e.AddComponent<Transform>().position = position;
 
 		// Emit created signal
 		_entity_created(e);
 
+		MRS_TRACE("[CREATED]: %s!", name.c_str());
 		return e;
 	}
 
-	void Scene::QueueDestroy(Entity entity)
+
+void Scene::QueueDestroy(Entity entity)
 	{
 		_destruction_queue.push_back(entity);
 	}
@@ -68,6 +73,8 @@ namespace mrs
 		// Add to free queue to recycled entity id
 		if(entity)
 		{
+			MRS_TRACE("[DESTROYED]: %s", entity.GetComponent<Tag>().tag.c_str());
+
 			// Fire off destroy signal
 			_entity_destroyed(entity);
 
@@ -76,6 +83,8 @@ namespace mrs
 
 			// Remove all components
 			Registry()->destroy(entity);
+
+			entity._id = {};
 		}
 	}
 }

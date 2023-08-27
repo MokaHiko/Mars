@@ -22,10 +22,10 @@ namespace mrs
         ~VulkanAssetManager();
 
         // Createsj
-        void UploadMaterial(std::shared_ptr<Material> material);
+        void UploadMaterial(Ref<Material> material);
 
         // Creates VkImage and VkImageView from data stored in texture 
-        void UploadTexture(std::shared_ptr<Texture> texture);
+        void UploadTexture(Ref<Texture> texture);
 
         const VkSampler GetLinearImageSampler() const {return _linear_image_sampler;}
         const VkSampler GetNearestImageSampler() const {return _nearest_image_sampler;}

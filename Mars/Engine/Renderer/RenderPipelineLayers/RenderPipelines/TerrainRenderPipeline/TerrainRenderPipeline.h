@@ -35,7 +35,7 @@ namespace mrs
         AllocatedBuffer _terrain_descriptor_set_uniform_buffer;
 
         Texture _terrain_height_map;
-        std::shared_ptr<Mesh> _terrain_quad_mesh;
+        Ref<Mesh> _terrain_quad_mesh;
     };
 }
 

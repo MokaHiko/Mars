@@ -2,6 +2,7 @@
 
 #include <boop.h>
 
+#include "Core/Memory.h"
 #include "Core/ResourceManager.h"
 
 namespace mrs {
@@ -12,7 +13,7 @@ namespace mrs {
 	{
 	}
 
-	std::shared_ptr<Texture> Texture::LoadFromAsset(const std::string& path, const std::string& alias)
+	Ref<Texture> Texture::LoadFromAsset(const std::string& path, const std::string& alias)
 	{
 		std::string name;
 		if (!alias.empty()) {
@@ -48,7 +49,7 @@ namespace mrs {
 		return texture;
 	}
 
-	std::shared_ptr<Texture> Texture::Get(const std::string& path)
+	Ref<Texture> Texture::Get(const std::string& path)
 	{
 		auto it = ResourceManager::Get()._textures.find(path);
 

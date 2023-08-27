@@ -31,6 +31,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC "../Mars" "./")
 set(MRS_BUILD_CONFIGURATION "Debug")
 set(MRS_APP_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${MRS_BUILD_CONFIGURATION}")
 
+if(MRS_BUILD_CONFIGURATION STRLESS_EQUAL "Debug")
+	add_compile_definitions(MRS_DEBUG)
+endif()
+
 # Copy resources
 add_custom_target(copy_assets ALL
 	COMMAND ${CMAKE_COMMAND} -E copy_directory

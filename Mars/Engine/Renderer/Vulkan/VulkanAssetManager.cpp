@@ -1,6 +1,7 @@
 #include "VulkanAssetManager.h"
 #include "VulkanInitializers.h"
 
+#include "Core/Memory.h"
 #include "Renderer/Renderer.h"
 
 namespace mrs
@@ -33,7 +34,7 @@ namespace mrs
 	{
 	}
 
-	void VulkanAssetManager::UploadMaterial(std::shared_ptr<Material> material)
+	void VulkanAssetManager::UploadMaterial(Ref<Material> material)
 	{
 		// Upload material data to global material buffer
 		size_t padded_material_data_size = _renderer->PadToStorageBufferSize(sizeof(MaterialData));
@@ -71,7 +72,7 @@ namespace mrs
 			.Build(&material->material_descriptor_set, &_material_descriptor_set_layout);
 	}
 
-	void VulkanAssetManager::UploadTexture(std::shared_ptr<Texture> texture)
+	void VulkanAssetManager::UploadTexture(Ref<Texture> texture)
 	{
 		void *pixel_ptr = nullptr;
 

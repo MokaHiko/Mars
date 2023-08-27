@@ -31,7 +31,7 @@ namespace mrs
 
 	struct RendererInfo
 	{
-		std::shared_ptr<Window> window;
+		Ref<Window> window;
 		GraphicsSettings graphics_settings = {};
 		uint32_t max_objects = 1000;
 		uint32_t max_materials = 100;
@@ -88,8 +88,8 @@ namespace mrs
 		void PushGraphicsSemaphore(VkPipelineStageFlags wait_stage,  VkSemaphore semaphore) {_graphics_wait_stages.push_back(wait_stage), _graphics_wait_semaphores.push_back(semaphore);}
 
 		// Descriptor allocator and layout cache
-		std::shared_ptr<vkutil::DescriptorAllocator> _descriptor_allocator;
-		std::shared_ptr<vkutil::DescriptorLayoutCache> _descriptor_layout_cache;
+		Ref<vkutil::DescriptorAllocator> _descriptor_allocator;
+		Ref<vkutil::DescriptorLayoutCache> _descriptor_layout_cache;
 	public:
 		// ~ OffScreen Rendering
 
@@ -178,7 +178,7 @@ namespace mrs
 		bool LoadShaderModule(const char *path, VkShaderModule *module);
 
 		// Upload mesh to GPU via immediate command buffers
-		void UploadMesh(std::shared_ptr<Mesh> mesh);
+		void UploadMesh(Ref<Mesh> mesh);
 
 		// Used for immedaite time and blocking execution of commands
 		void ImmediateSubmit(std::function<void(VkCommandBuffer)> &&fn);
@@ -211,7 +211,7 @@ namespace mrs
 		RendererInfo _info = {};
 
 		// Handle to window being rendered to
-		const std::shared_ptr<Window> _window;
+		const Ref<Window> _window;
 
 		// Cameras perspective to render to
 		Camera *_camera = nullptr;

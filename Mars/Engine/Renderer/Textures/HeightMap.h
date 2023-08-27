@@ -3,12 +3,14 @@
 
 #pragma once
 
+#include "Core/Memory.h"
+
 namespace mrs
 {
     class HeightMap
     {
     public:
-        //HeightMap(std::shared_ptr<Texture> texture);
+        //HeightMap(Ref<Texture> texture);
         HeightMap(const std::string& path);
         ~HeightMap();
 

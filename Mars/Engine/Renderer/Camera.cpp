@@ -1,10 +1,13 @@
 #include "Camera.h"
 
 #include <glm/gtc/matrix_transform.hpp>
+#include "Core/Log.h"
 
 mrs::Camera::Camera(CameraType type, uint32_t aspect_w, uint32_t aspect_h, const glm::vec3 &pos)
 	:_type(type), _position(pos), _aspect_w(aspect_w), _aspect_h(aspect_h)
 {
+	MRS_TRACE("Camera created!");
+
 	_view_proj = glm::mat4(1.0f);
 	_view = glm::translate(glm::mat4(1.0f), _position);
 	_projection = glm::perspective(glm::radians(70.0f),
@@ -15,7 +18,9 @@ mrs::Camera::Camera(CameraType type, uint32_t aspect_w, uint32_t aspect_h, const
 	_view_proj = _projection * _view;
 }
 
-mrs::Camera::~Camera() {}
+mrs::Camera::~Camera() 
+{
+}
 
 void mrs::Camera::UpdateViewProj()
 {

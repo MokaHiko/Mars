@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "Core/Memory.h"
 #include <glm/glm.hpp>
 
 #include "ParticleComponents.h"
@@ -141,7 +142,7 @@ namespace mrs
         VkDescriptorSetLayout _graphics_descriptor_set_layout;
 
         // Quad to render particles with
-        std::shared_ptr<Mesh> _quad_mesh;
+        Ref<Mesh> _quad_mesh;
 
         tbx::PRNGenerator<float> _random_generator{0.0f, 1.0f};
         tbx::PRNGenerator<float> _random_generator_negative_to_one{-1.0f, 1.0f};

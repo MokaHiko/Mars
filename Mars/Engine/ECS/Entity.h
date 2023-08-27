@@ -65,6 +65,9 @@ namespace mrs
         const uint32_t Id() const { return static_cast<uint32_t>(_id); }
 
         bool operator==(const Entity &other) const { return _id == other._id; }
+
+        friend std::ostream& operator<<(std::ostream& stream, Entity& e);
+
         operator bool() const { return _id != entt::null; }
         operator entt::entity() const { return _id; }
 
