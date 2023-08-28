@@ -22,11 +22,11 @@ namespace mrs
         virtual void OnPreRenderPass(VkCommandBuffer cmd) override;
         virtual void OnMaterialsUpdate() override;
     public:
-        // Callback to entity created
-        void OnEntityCreated(Entity entity);
+        // Called on renderable created
+        virtual void OnRenderableCreated(Entity e) override;
 
-        // Callback to entity destroyed
-        void OnEntityDestroyed(Entity entity);
+        // Called on renderable destroyed
+        virtual void OnRenderableDestroyed(Entity e) override;
     private:
         void InitDescriptors();
         void InitPipelineLayout();

@@ -5,7 +5,6 @@
 
 #include <entt/entt.hpp>
 
-#include "Core/Log.h"
 #include "Scene.h"
 namespace mrs
 {
@@ -19,49 +18,31 @@ namespace mrs
         template <typename T, typename... Args>
         T &AddComponent(Args &&...args)
         {
-            if (HasComponent<T>())
-            {
-                return GetComponent<T>();
-            }
-
-            return _scene->_registry.emplace<T>(_id, std::forward<Args>(args)...);
+            return _scene->AddComponent<T>(_id, args...);
         }
 
         // Removes component <T> from entity returns true if succeseful 
         template <typename T, typename... Args>
         bool RemoveComponent(Args &&...args)
         {
-            if (HasComponent<T>())
-            {
-                return false;
-            }
-
-            // TODO: Event manager on remove compoenent/entity
-            _scene->_registry.remove<T>(_id);
-            return true;
+            return _scene->RemoveComponent<T>(_id, args...);
         }
 
         // Returns true if entity has component <T>
         template <typename T>
         bool HasComponent()
         {
-            return _scene->_registry.any_of<T>(_id);
+            return _scene->HasComponent<T>(_id);
         }
 
         // Returns component of type <T>
         template <typename T>
         T &GetComponent()
         {
-            if (HasComponent<T>())
-            {
-                return _scene->_registry.get<T>(_id);
-            }
-
-            MRS_ERROR("Entity has no such component!");
-            throw std::runtime_error("Entity has no such component!");
+            return _scene->GetComponent<T>(_id);
         }
 
-        // Returns entity handle as uint32_t
+        // Returns entity handle
         const uint32_t Id() const { return static_cast<uint32_t>(_id); }
 
         bool operator==(const Entity &other) const { return _id == other._id; }
@@ -75,7 +56,6 @@ namespace mrs
         friend class Scene;
         friend class ScriptableEntity;
 
-        // Entity handle
         entt::entity _id = entt::null;
         Scene *_scene;
     };

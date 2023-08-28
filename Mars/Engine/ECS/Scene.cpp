@@ -42,10 +42,8 @@ namespace mrs
 		e.AddComponent<Tag>(name);
 		e.AddComponent<Transform>().position = position;
 
-		// Emit created signal
+		// Fire off created signal
 		_entity_created(e);
-
-		MRS_TRACE("[CREATED]: %s!", name.c_str());
 		return e;
 	}
 
@@ -73,8 +71,6 @@ void Scene::QueueDestroy(Entity entity)
 		// Add to free queue to recycled entity id
 		if(entity)
 		{
-			MRS_TRACE("[DESTROYED]: %s", entity.GetComponent<Tag>().tag.c_str());
-
 			// Fire off destroy signal
 			_entity_destroyed(entity);
 

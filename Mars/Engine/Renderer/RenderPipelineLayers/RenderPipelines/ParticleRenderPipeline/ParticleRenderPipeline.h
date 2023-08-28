@@ -68,7 +68,7 @@ namespace mrs
         void RegisterParticleSystem(ParticleSystem &particle_system);
         void CacheParticleSystemType(ParticleSystem &particle_system);
 
-        void OnEntityDestroyed(Entity e) override;
+        virtual void OnRenderableDestroyed(Entity e) override;
     public:
         // Particle system type
         struct ParticleSystemType

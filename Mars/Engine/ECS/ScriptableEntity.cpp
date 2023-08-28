@@ -20,9 +20,8 @@ namespace mrs
 	{
 		auto e = _game_object._scene->Instantiate(name);
 
-		// Inherit serialization settings
-		auto& serializer = GetComponent<Serializer>();
-		e.GetComponent<Serializer>() = serializer;
+		// Components created at runtime via scripts are not serialized
+		e.GetComponent<Serializer>().serialize = false;
 
 		return e;
 	}

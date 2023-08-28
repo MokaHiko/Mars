@@ -8,6 +8,8 @@
 #include <glm/glm.hpp>
 #include <ToolBox/SignalToolBox.h>
 
+#include "Core/Log.h"
+
 namespace mrs
 {
     class Entity;
@@ -38,6 +40,47 @@ namespace mrs
             }
 
             return {};
+        }
+
+        template <typename T, typename... Args>
+        T &AddComponent(entt::entity id, Args &&...args)
+        {
+            if (HasComponent<T>(id))
+            {
+                return GetComponent<T>(id);
+            }
+
+            return _registry.emplace<T>(id, std::forward<Args>(args)...);
+        }
+
+        template <typename T, typename... Args>
+        bool RemoveComponent(entt::entity id, Args &&...args)
+        {
+            if (HasComponent<T>(id))
+            {
+                return false;
+            }
+
+            _registry.remove<T>(id);
+            return true;
+        }
+
+        template <typename T>
+        bool HasComponent(entt::entity id)
+        {
+            return _registry.any_of<T>(id);
+        }
+
+        template <typename T>
+        T &GetComponent(entt::entity id)
+        {
+            if (HasComponent<T>(id))
+            {
+                return _registry.get<T>(id);
+            }
+
+            MRS_ERROR("Entity has no such component!");
+            throw std::runtime_error("Entity has no such component!");
         }
 
         // Create and returns entity

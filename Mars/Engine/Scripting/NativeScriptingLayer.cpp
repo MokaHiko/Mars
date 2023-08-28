@@ -6,9 +6,10 @@ void mrs::NativeScriptingLayer::OnAttach()
 	_name = "NativeScriptingLayer";
 
 	_scene = Application::GetInstance().GetScene();
-	_scene->_entity_destroyed += [&](Entity e) {
-		OnEntityDestroyed(e);
-	};
+
+	// Connect to Script Component signals
+	Scene* scene = Application::GetInstance().GetScene();
+	scene->Registry()->on_destroy<Script>().connect<&NativeScriptingLayer::OnScriptDestroyed>(this);
 }
 
 void mrs::NativeScriptingLayer::OnEnable() {
@@ -97,7 +98,6 @@ void mrs::NativeScriptingLayer::OnUpdate(float dt)
 
 void mrs::NativeScriptingLayer::OnEvent(Event &event)
 {
-
 }
 
 void mrs::NativeScriptingLayer::DisableScripts(Entity except) 
@@ -131,22 +131,27 @@ void mrs::NativeScriptingLayer::EnableScripts(Entity except)
 		Script &script_component = e.GetComponent<Script>();
 
 		// Call Scripts OnStart
-		if (script_component.script) {
-			script_component.script->OnStart();
-		}
-		else {
+		if(!script_component.script)
+		{
 			script_component.script = script_component.InstantiateScript();
 			script_component.script->_game_object = e;
-			script_component.enabled = true;
-
-			script_component.script->OnCreate();
-			script_component.script->OnStart();
 		}
+
+		script_component.enabled = true;
+
+		script_component.script->OnCreate();
+		script_component.script->OnStart();
 	}
 }
 
-void mrs::NativeScriptingLayer::OnEntityDestroyed(Entity e) 
+void mrs::NativeScriptingLayer::OnScriptCreated(entt::basic_registry<entt::entity> &, entt::entity entity) 
 {
+	Entity e{entity, _scene};
+}
+
+void mrs::NativeScriptingLayer::OnScriptDestroyed(entt::basic_registry<entt::entity> &, entt::entity entity) 
+{
+	Entity e{entity, _scene};
     if (e.HasComponent<Script>())
     {
         e.GetComponent<Script>().DestroyScript();

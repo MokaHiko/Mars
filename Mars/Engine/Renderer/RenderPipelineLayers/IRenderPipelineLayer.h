@@ -65,8 +65,10 @@ namespace mrs
 
 		void PushRenderPipeline(IRenderPipeline* pipeline);
 		void PopRenderPipeline(IRenderPipeline* pipeline);
+        
+        void OnRenderableCreated(entt::basic_registry<entt::entity>&, entt::entity entity);
+        void OnRenderableDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
 
-        void OnEntityDestroyed(Entity e);
         void OnMaterialsUpdate();
     private:
         Ref<Renderer> _renderer = nullptr;

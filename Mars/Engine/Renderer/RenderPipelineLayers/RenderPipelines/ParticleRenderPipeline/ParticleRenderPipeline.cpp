@@ -588,7 +588,7 @@ void mrs::ParticleRenderPipeline::CacheParticleSystemType(ParticleSystem &partic
 	vmaDestroyBuffer(_renderer->GetAllocator(), staging_buffer.buffer, staging_buffer.allocation);
 }
 
-void mrs::ParticleRenderPipeline::OnEntityDestroyed(Entity e)
+void mrs::ParticleRenderPipeline::OnRenderableDestroyed(Entity e)
 {
 	// Cache particle system on destruction
 	if (e.HasComponent<ParticleSystem>())

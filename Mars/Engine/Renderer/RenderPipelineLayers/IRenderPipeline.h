@@ -29,7 +29,6 @@ namespace mrs
         };
 
         virtual ~IRenderPipeline() {};
-
     public:
         virtual void Init() {}
 
@@ -48,8 +47,11 @@ namespace mrs
         // Called after mesh render pass
         virtual void OnPostRenderpass(VkCommandBuffer cmd) {};
 
+        // Called on renderable created
+        virtual void OnRenderableCreated(Entity e) {};
+
         // Called on renderable destroyed
-        virtual void OnEntityDestroyed(Entity e) {};
+        virtual void OnRenderableDestroyed(Entity e) {};
 
         // Called when a material's properties are changed or entity material changed
         virtual void OnMaterialsUpdate() {};

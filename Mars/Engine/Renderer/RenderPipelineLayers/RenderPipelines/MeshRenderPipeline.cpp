@@ -57,13 +57,6 @@ void mrs::MeshRenderPipeline::Init()
 
     InitOffScreenPipeline();
     InitMeshPipeline();
-
-    Application::GetInstance().GetScene()->_entity_created += [this](Entity entity){
-        OnEntityCreated(entity);
-    };
-    Application::GetInstance().GetScene()->_entity_destroyed += [this](Entity entity){
-        OnEntityDestroyed(entity);
-    };
 }
 
 void mrs::MeshRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame)
@@ -100,6 +93,16 @@ void mrs::MeshRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd)
 }
 
 void mrs::MeshRenderPipeline::OnMaterialsUpdate() 
+{
+    _rerecord = true;
+}
+
+void mrs::MeshRenderPipeline::OnRenderableCreated(Entity e) 
+{
+    _rerecord = true;
+}
+
+void mrs::MeshRenderPipeline::OnRenderableDestroyed(Entity e) 
 {
     _rerecord = true;
 }
@@ -528,15 +531,5 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
             vkDestroyImageView(_device->device, _offscreen_depth_image_view, nullptr);
             vmaDestroyImage(_renderer->GetAllocator(), _offscreen_depth_image.image,
                 _offscreen_depth_image.allocation); });
-}
-
-void mrs::MeshRenderPipeline::OnEntityCreated(Entity entity)
-{
-    _rerecord = true;
-}
-
-void mrs::MeshRenderPipeline::OnEntityDestroyed(Entity entity)
-{
-    _rerecord = true;
 }
 

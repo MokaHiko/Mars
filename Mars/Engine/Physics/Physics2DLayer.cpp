@@ -11,9 +11,9 @@ namespace mrs
 		_name = "Physics2DLayer";
 		_scene = Application::GetInstance().GetScene();
 		
-		_scene->_entity_destroyed += [&](Entity e) {
-				OnEntityDestroyed(e);
-			};
+		// Connect to RigidBody2D Component signals
+		Scene* scene = Application::GetInstance().GetScene();
+		scene->Registry()->on_destroy<RigidBody2D>().connect<&Physics2DLayer::OnRigidBody2DDestroyed>(this);
 	}
 
 	void Physics2DLayer::OnDetatch()
@@ -138,8 +138,18 @@ namespace mrs
 		}
 	}
 
-	void Physics2DLayer::OnEntityDestroyed(Entity e)
+	void Physics2DLayer::OnRigidBody2DCreated(entt::basic_registry<entt::entity>&, entt::entity entity)
 	{
+		Entity e{entity, _scene};
+		if (e.HasComponent<RigidBody2D>())
+		{
+			
+		}
+	}
+
+void Physics2DLayer::OnRigidBody2DDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity)
+	{
+		Entity e{entity, _scene};
 		if (e.HasComponent<RigidBody2D>())
 		{
 			auto &rb = e.GetComponent<RigidBody2D>();

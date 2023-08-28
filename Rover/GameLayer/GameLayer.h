@@ -13,18 +13,7 @@ class GameLayer : public mrs::Layer
 public:
     virtual void OnAttach() override 
     {
-        // Register scripts
-        //mrs::Script::Register<Unit>();
-        //mrs::Script::Register<Spawner>();
-        //mrs::Script::Register<GameManager>();
-
-        //mrs::Scene* scene = mrs::Application::GetInstance().GetScene();
-
-        //for(uint32_t i = 0; i < 1; i++)
-        //{
-        //    mrs::Entity e = scene->Instantiate("Spawner" + std::to_string(i), glm::vec3(i * 5.0f, 5.0f, 0.0f));
-        //    e.AddComponent<mrs::Script>().Bind<Spawner>();
-        //}
+        RegisterScripts();
     };
 
     virtual void OnDetatch() override 
@@ -57,7 +46,12 @@ public:
 
     };
 private:
-
+    void RegisterScripts()
+    {
+        mrs::Script::Register<Unit>();
+        mrs::Script::Register<Spawner>();
+        mrs::Script::Register<GameManager>();
+    }
 };
 
 #endif

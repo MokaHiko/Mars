@@ -17,7 +17,7 @@ namespace mrs
 		DrawComponentUI<Serializer>("Serializer", entity, [](Serializer& serializer) {
 			if (ImGui::Checkbox("Serialize", &serializer.serialize))
 			{
-				
+
 			}
 			});
 	}
@@ -102,44 +102,47 @@ namespace mrs
 	template<>
 	void DrawComponent<Script>(Entity entity)
 	{
-		DrawComponentUI<Script>("Script", entity, [](Script& script) {
-			ImGui::Button(script.binding.c_str());
+		DrawComponentUI<Script>("Script", entity, [](Script& script)
+			{
+				ImGui::Text(script.binding.c_str());
+				ImGui::Checkbox("Enabled", &script.enabled);
 			});
 	}
 
 	template<>
 	void DrawComponent<Camera>(Entity entity)
 	{
-		DrawComponentUI<Camera>("Camera", entity, [](Camera& camera) {
-			CameraType camera_type = camera.GetType();
-			bool is_orthographic = CameraType::Orthographic == camera_type;
-			bool is_perspective = !is_orthographic;
-
-			ImGui::Text("Aspect W: "); ImGui::SameLine();
-			ImGui::DragInt("##AspectW", (int*)(&camera._aspect_w));
-
-			ImGui::Text("Aspect H: "); ImGui::SameLine();
-			ImGui::DragInt("##AspectH", (int*)(&camera._aspect_h));
-
-			ImGui::Text("Near: "); ImGui::SameLine();
-			ImGui::DragFloat("##Near", (float*)(&camera._near));
-
-			ImGui::Text("Far: "); ImGui::SameLine();
-			ImGui::DragFloat("##Far", (float*)(&camera._far));
-
-			if (ImGui::Checkbox("Orthographic", &is_orthographic))
+		DrawComponentUI<Camera>("Camera", entity, [](Camera& camera)
 			{
-				camera.SetType(CameraType::Orthographic);
-			}
+				CameraType camera_type = camera.GetType();
+				bool is_orthographic = CameraType::Orthographic == camera_type;
+				bool is_perspective = !is_orthographic;
 
-			ImGui::SameLine();
+				ImGui::Text("Aspect W: "); ImGui::SameLine();
+				ImGui::DragInt("##AspectW", (int*)(&camera._aspect_w));
 
-			if (ImGui::Checkbox("Perspective", &is_perspective))
-			{
-				camera.SetType(CameraType::Perspective);
-			}
+				ImGui::Text("Aspect H: "); ImGui::SameLine();
+				ImGui::DragInt("##AspectH", (int*)(&camera._aspect_h));
 
-			ImGui::Checkbox("active", &camera._active);
+				ImGui::Text("Near: "); ImGui::SameLine();
+				ImGui::DragFloat("##Near", (float*)(&camera._near));
+
+				ImGui::Text("Far: "); ImGui::SameLine();
+				ImGui::DragFloat("##Far", (float*)(&camera._far));
+
+				if (ImGui::Checkbox("Orthographic", &is_orthographic))
+				{
+					camera.SetType(CameraType::Orthographic);
+				}
+
+				ImGui::SameLine();
+
+				if (ImGui::Checkbox("Perspective", &is_perspective))
+				{
+					camera.SetType(CameraType::Perspective);
+				}
+
+				ImGui::Checkbox("active", &camera._active);
 			});
 	}
 
@@ -156,7 +159,8 @@ namespace mrs
 	template<>
 	void DrawComponent<ParticleSystem>(Entity entity)
 	{
-		DrawComponentUI<ParticleSystem>("Particle System", entity, [](ParticleSystem& particles) {
+		DrawComponentUI<ParticleSystem>("Particle System", entity, [](ParticleSystem& particles) 
+		{
 			// Emission properties
 			ImGui::InputInt("Max Particles: ", (int*)(&particles.max_particles));
 			ImGui::DragInt("Live Particles", (int*)(&particles.live_particles));
@@ -195,6 +199,6 @@ namespace mrs
 
 				ImGui::TreePop();
 			}
-			});
+		});
 	}
 };

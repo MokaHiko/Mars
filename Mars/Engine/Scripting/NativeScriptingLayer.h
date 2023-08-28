@@ -15,14 +15,14 @@ namespace mrs
         virtual void OnEnable() override;
         virtual void OnDisable() override;
 
-
         virtual void OnUpdate(float dt) override;
         virtual void OnEvent(Event &event) override;
 
         void DisableScripts(Entity except = {});
         void EnableScripts(Entity except = {});
 
-        void OnEntityDestroyed(Entity e);
+        void OnScriptCreated(entt::basic_registry<entt::entity>&, entt::entity entity);
+        void OnScriptDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
     private:
         Scene *_scene = nullptr;
     };

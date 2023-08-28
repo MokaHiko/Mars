@@ -2,6 +2,7 @@
 
 #include <Mars.h>
 #include <Core/Input.h>
+#include <Core/Log.h>
 
 #include <Physics/Physics2DLayer.h>
 
@@ -89,6 +90,8 @@ namespace mrs {
 			// [Ui] Hierarchy Panel
 			ImGui::Begin("Entity Hierarchy");
 			int ctr = 0;
+
+			// Select entity
 			for (auto entity : view)
 			{
 				ImGui::PushID(ctr++);
@@ -100,6 +103,7 @@ namespace mrs {
 				{
 					if (ImGui::IsMouseClicked(1))
 					{
+						MRS_INFO("Object options!");
 						ImGui::OpenPopup("Object Options");
 					}
 
@@ -108,12 +112,31 @@ namespace mrs {
 						ImGui::Button("Delete Object");
 						ImGui::EndPopup();
 					}
-
 					FocusEntity(e);
 				}
-
 				ImGui::PopID();
 			}
+
+			// Creating entity
+			if(ImGui::IsWindowFocused(ImGuiFocusedFlags_RootWindow))
+			{
+				if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+				{
+					ImGui::OpenPopup("Create Options");
+				}
+			}
+
+			if (ImGui::BeginPopup("Create Options"))
+			{
+				if(ImGui::Button("New Entity"))
+				{
+					scene->Instantiate("New Entity");
+					ImGui::CloseCurrentPopup();
+				}
+
+				ImGui::EndPopup();
+			}
+
 			ImGui::End();
 
 			// [UI] Inspector Panel

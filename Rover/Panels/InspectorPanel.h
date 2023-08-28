@@ -8,6 +8,8 @@
 #include <ECS/Components/Components.h>
 #include "Components/ComponentPanels.h"
 
+#include <imgui_stdlib.h>
+
 namespace mrs
 {
     class InspectorPanel
@@ -18,8 +20,11 @@ namespace mrs
             ImGui::Begin("Inspector");
             if (entity.Id() != entt::null)
             {
-                std::string header = "Name: " + entity.GetComponent<Tag>().tag + " | Entity ID: " + std::to_string(entity.Id());
-                ImGui::SeparatorText(header.c_str());
+                Tag& tag = entity.GetComponent<Tag>();
+
+                ImGui::InputText("##label", &tag.tag);
+
+                ImGui::Separator();
 
                 DrawComponent<Transform>(entity);
                 DrawComponent<RenderableObject>(entity);
@@ -52,12 +57,20 @@ namespace mrs
             {
                 static ImGuiTextFilter filter;
                 filter.Draw();
-                const char *lines[] = { "Transform", "Renderable", "Camera", "RigidBody2D", "ParticleSystem" };
-                for (int i = 0; i < IM_ARRAYSIZE(lines); i++)
-                {
-                    if (filter.PassFilter(lines[i]))
+                static std::vector<const char*> components = [&]() {
+                    std::vector<const char*> comp = { "Transform", "Renderable", "Camera", "RigidBody2D", "ParticleSystem"};
+                    for(auto it = Script::script_instantiation_bindings.begin(); it != Script::script_instantiation_bindings.end(); it++)
                     {
-                        if (ImGui::Selectable(lines[i]))
+                        comp.push_back(it->first.c_str());
+                    }
+                    return comp;
+                }();
+
+                for (int i = 0; i < components.size(); i++)
+                {
+                    if (filter.PassFilter(components[i]))
+                    {
+                        if (ImGui::Selectable(components[i]))
                         {
                             switch (i)
                             {
@@ -76,6 +89,12 @@ namespace mrs
                             case 4:
                                 entity.AddComponent<ParticleSystem>();
                                 break;
+                            default:
+                                {
+                                    auto& script = entity.AddComponent<Script>();
+                                    script.Bind(components[i]);
+                                    script.enabled = false;
+                                } break;
                             }
                             searching = false;
                         }

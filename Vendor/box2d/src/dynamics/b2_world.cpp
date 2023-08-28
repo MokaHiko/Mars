@@ -138,7 +138,7 @@ b2Body* b2World::CreateBody(const b2BodyDef* def)
 
 void b2World::DestroyBody(b2Body* b)
 {
-	b2Assert(m_bodyCount > 0);
+b2Assert(m_bodyCount > 0);
 	b2Assert(IsLocked() == false);
 	if (IsLocked())
 	{

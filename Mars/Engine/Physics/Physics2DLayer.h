@@ -43,7 +43,8 @@ namespace mrs
         void AddBody(Entity entity);
         void CreateFixture(Entity entity, BodyType type);
 
-        void OnEntityDestroyed(Entity e);
+        void OnRigidBody2DCreated(entt::basic_registry<entt::entity>&, entt::entity entity);
+        void OnRigidBody2DDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
     private:
         void InitWorld();
         void ShutdownWorld();

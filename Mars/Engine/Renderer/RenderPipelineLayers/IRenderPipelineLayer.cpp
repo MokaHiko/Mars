@@ -1,6 +1,7 @@
 #include "IRenderPipelineLayer.h"
 #include "Core/Application.h"
 
+
 namespace mrs
 {
 	RenderPipelineStack::RenderPipelineStack()
@@ -44,10 +45,10 @@ namespace mrs
 		_renderer->Init();
 		_name = "IRenderPipelineLayer";
 
-		// Subscribe to application signals
-		Application::GetInstance().GetScene()->_entity_destroyed += [&](Entity e){
-			OnEntityDestroyed(e);
-		};
+		// Subscribe to RenderableObject component signals
+		Scene* scene = Application::GetInstance().GetScene();
+		scene->Registry()->on_construct<RenderableObject>().connect<&IRenderPipelineLayer::OnRenderableCreated>(this);
+		scene->Registry()->on_destroy<RenderableObject>().connect<&IRenderPipelineLayer::OnRenderableDestroyed>(this);
 	}
 
 	void IRenderPipelineLayer::OnDetatch()
@@ -146,16 +147,30 @@ namespace mrs
 		_render_pipeline_layers.PopRenderPipeline(pipeline);
 	}
 
-	void IRenderPipelineLayer::OnImGuiRender()
+	void IRenderPipelineLayer::OnRenderableCreated(entt::basic_registry<entt::entity>&, entt::entity entity)
 	{
-	}
+		static Scene* scene = Application::GetInstance().GetScene();
+		Entity e{ entity, scene };
 
-	void IRenderPipelineLayer::OnEntityDestroyed(Entity e)
-	{
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
-			(*it)->OnEntityDestroyed(e);
+			(*it)->OnRenderableCreated(e);
 		}
+	}
+
+	void IRenderPipelineLayer::OnRenderableDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity)
+	{
+		static Scene* scene = Application::GetInstance().GetScene();
+		Entity e{ entity, scene };
+
+		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
+		{
+			(*it)->OnRenderableDestroyed(e);
+		}
+	}
+
+	void IRenderPipelineLayer::OnImGuiRender()
+	{
 	}
 	void IRenderPipelineLayer::OnMaterialsUpdate()
 	{
