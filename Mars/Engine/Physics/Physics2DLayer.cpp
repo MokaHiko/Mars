@@ -141,9 +141,11 @@ namespace mrs
 	void Physics2DLayer::OnRigidBody2DCreated(entt::basic_registry<entt::entity>&, entt::entity entity)
 	{
 		Entity e{entity, _scene};
-		if (e.HasComponent<RigidBody2D>())
+		
+        // Real time addition if layer is active
+		if(_enabled)
 		{
-			
+            AddBody(e);
 		}
 	}
 

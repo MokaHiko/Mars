@@ -106,24 +106,8 @@ void mrs::PostProcessingRenderPipeline::InitDescriptors()
 	}
 }
 
-void mrs::PostProcessingRenderPipeline::OnPostRenderpass(VkCommandBuffer cmd)
+void mrs::PostProcessingRenderPipeline::OnMainPassBegin(VkCommandBuffer cmd)
 {
-	VkRect2D area = {};
-	area.extent = { _window->GetWidth(), _window->GetHeight() };
-	area.offset = { 0, 0 };
-
-	// Begin main render pass
-	VkClearValue clear_value = {};
-	clear_value.color = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-	VkClearValue depth_value = {};
-	depth_value.depthStencil = { 1.0f, 0 };
-
-	VkClearValue clear_values[2] = { clear_value, depth_value };
-
-	VkRenderPassBeginInfo render_pass_begin_info = vkinit::RenderPassBeginInfo(_renderer->GetCurrentFrameBuffer(), _renderer->GetSwapchainRenderPass(), area, clear_values, 2);
-	vkCmdBeginRenderPass(cmd, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
-
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline);
 
 	// Draw scene as quad
@@ -134,6 +118,4 @@ void mrs::PostProcessingRenderPipeline::OnPostRenderpass(VkCommandBuffer cmd)
 	vkCmdBindIndexBuffer(cmd, _screen_quad->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
 	vkCmdDrawIndexed(cmd, _screen_quad->_index_count, 1, 0, 0, 0);
-
-	vkCmdEndRenderPass(cmd);
 }

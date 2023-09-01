@@ -11,26 +11,9 @@ public:
     virtual void OnCreate() override {}
     virtual void OnStart() override {}
 
-    virtual void OnUpdate(float dt) override
-    {
-        if(!_to_destroy)
-        {
-            return;
-        }
+    virtual void OnUpdate(float dt) override;
 
-        _timer += dt;
-        if(_timer > _death_timer)
-        {
-            QueueDestroy();
-        }
-    }
-
-    virtual void OnCollisionEnter2D(mrs::Entity other) override
-    {
-        _to_destroy = true;
-        _death_timer = static_cast<float>(rand() % 20);
-    }
-
+    virtual void OnCollisionEnter2D(mrs::Entity other) override;
 private:
     bool _to_destroy = false;
     float _death_timer = 0.0f;

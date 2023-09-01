@@ -36,24 +36,9 @@ namespace mrs {
 
 		static Ref<Mesh> LoadFromAsset(const std::string& path, const std::string& alias);
 
-		static Ref<Mesh> Create(const std::string& alias)
-		{
-			ResourceManager::Get()._meshes[alias] = std::make_shared<Mesh>();
+		static Ref<Mesh> Create(const std::string& alias);
 
-			ResourceManager::Get()._meshes[alias]->_mesh_name = alias;
-			return ResourceManager::Get()._meshes[alias];
-		}
-
-		static Ref<Mesh> Get(const std::string& alias)
-		{
-			auto it = ResourceManager::Get()._meshes.find(alias);
-
-			if (it != ResourceManager::Get()._meshes.end()) {
-				return it->second;
-			}
-
-			return nullptr;
-		}
+		static Ref<Mesh> Get(const std::string& alias);
 
 		std::string _mesh_name;
 

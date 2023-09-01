@@ -45,6 +45,10 @@ namespace mrs
         {
             _name = "IRenderPipelineLayer";
         };
+
+        // Returns a reference of the renderer used by the render pipeline
+        Ref<Renderer> GetRenderer() const {return _renderer;}
+
         virtual ~IRenderPipelineLayer(){};
 
         virtual void OnAttach() final;
@@ -61,6 +65,11 @@ namespace mrs
         void SetCamera(Camera* camera)
         {
             _renderer->SetCamera(camera);
+        }
+
+        void GetFrameBuffer()
+        {
+            _renderer->GetCurrentFrame();
         }
 
 		void PushRenderPipeline(IRenderPipeline* pipeline);

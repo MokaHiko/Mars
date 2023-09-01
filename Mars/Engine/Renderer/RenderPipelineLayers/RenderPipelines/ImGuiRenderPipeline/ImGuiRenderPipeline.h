@@ -15,9 +15,13 @@ namespace mrs
 
         virtual void Init() override;
 
-        virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame) override;
-        virtual void End(VkCommandBuffer cmd) override;
+        // Called after mesh render pass
+        virtual void OnMainPassBegin(VkCommandBuffer cmd) override;
 
+        // Called at the end of swapchain frame buffer render pass
+        virtual void OnMainPassEnd(VkCommandBuffer cmd) override;
+
+        virtual void OnPostMainPass(VkCommandBuffer cmd) override;
     private:
         void SetupImGuiStyle( bool bStyleDark_, float alpha_);
         SDL_Window *_window_handle = nullptr;

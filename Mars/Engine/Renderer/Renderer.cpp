@@ -287,15 +287,20 @@ namespace mrs
 				vkb::destroy_debug_utils_messenger(_instance, _debug_messenger, nullptr);
 
 				vkDestroySurfaceKHR(_instance, _surface, nullptr);
-				vkDestroyInstance(_instance, nullptr); });
+				vkDestroyInstance(_instance, nullptr); 
+			});
 	}
 
 	void Renderer::InitSwapchain()
 	{
 		vkb::SwapchainBuilder builder{ _device.physical_device, _device.device, _surface };
+
+		VkSurfaceFormatKHR surface_format = {};
+		surface_format.format = VK_FORMAT_B8G8R8A8_UNORM;
 		vkb::Swapchain vkb_swapchain = builder.use_default_format_selection()
 			.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
 			.set_desired_extent(_window->GetWidth(), _window->GetHeight())
+			.set_desired_format(surface_format)
 			.build()
 			.value();
 
@@ -306,28 +311,8 @@ namespace mrs
 		// Swap chain image views are created
 		_swapchain_image_views = vkb_swapchain.get_image_views().value();
 
-		// Create swapchain depth attachment
-		VkExtent3D depth_extent = {};
-		depth_extent.width = _window->GetWidth();
-		depth_extent.height = _window->GetHeight();
-		depth_extent.depth = 1;
-
-		_depth_image_format = VK_FORMAT_D32_SFLOAT;
-		VkImageCreateInfo depth_image_info = vkinit::ImageCreateInfo(_depth_image_format, depth_extent, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-
-		VmaAllocationCreateInfo depth_alloc_info = {};
-		depth_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-		depth_alloc_info.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		vmaCreateImage(_allocator, &depth_image_info, &depth_alloc_info, &_depth_image.image, &_depth_image.allocation, nullptr);
-
-		VkImageViewCreateInfo depth_image_view_info = vkinit::ImageViewCreateInfo(_depth_image.image, _depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
-		VK_CHECK(vkCreateImageView(_device.device, &depth_image_view_info, nullptr, &_depth_image_view));
-
 		_deletion_queue.Push([=]()
 			{
-				vmaDestroyImage(_allocator, _depth_image.image, _depth_image.allocation);
-				vkDestroyImageView(_device.device, _depth_image_view, nullptr);
 				for (auto image_view : _swapchain_image_views) {
 					vkDestroyImageView(_device.device, image_view, nullptr);
 				} });
@@ -382,29 +367,11 @@ namespace mrs
 		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-		VkAttachmentDescription depth_attachment = {};
-		depth_attachment.format = _depth_image_format;
-		depth_attachment.flags = 0;
-		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-
-		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-
-		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
-		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		std::vector<VkAttachmentDescription> attachments = { color_attachment, depth_attachment };
+		std::vector<VkAttachmentDescription> attachments = { color_attachment};
 
 		VkAttachmentReference color_attachment_reference = {};
 		color_attachment_reference.attachment = 0;
 		color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference depth_attachment_reference = {};
-		depth_attachment_reference.attachment = 1;
-		depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		// Create subpasses
 		VkSubpassDescription main_subpass = {};
@@ -412,8 +379,6 @@ namespace mrs
 
 		main_subpass.colorAttachmentCount = 1;
 		main_subpass.pColorAttachments = &color_attachment_reference;
-
-		main_subpass.pDepthStencilAttachment = &depth_attachment_reference;
 
 		// Create dependencies
 		VkSubpassDependency color_dependency = {};
@@ -435,12 +400,7 @@ namespace mrs
 		depth_dependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 		depth_dependency.srcAccessMask = 0;
 
-		// ~ before this subpass - outputs to depth attachment - using depth_attachment write memory access
-		depth_dependency.dstSubpass = 0;
-		depth_dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-		depth_dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-		std::vector<VkSubpassDependency> dependencies = { color_dependency, depth_dependency };
+		std::vector<VkSubpassDependency> dependencies = { color_dependency};
 
 		VkRenderPassCreateInfo render_pass_info = {};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -532,7 +492,7 @@ namespace mrs
 		color_attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		VkAttachmentDescription depth_attachment = {};
-		depth_attachment.format = _depth_image_format;
+		depth_attachment.format = _offscreen_depth_image_format;
 		depth_attachment.flags = 0;
 		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -649,7 +609,7 @@ namespace mrs
 			frame_buffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			frame_buffer_info.pNext = nullptr;
 
-			std::vector<VkImageView> attachments = { _swapchain_image_views[i], _depth_image_view };
+			std::vector<VkImageView> attachments = { _swapchain_image_views[i]};
 			frame_buffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
 			frame_buffer_info.pAttachments = attachments.data();
 
@@ -920,7 +880,7 @@ namespace mrs
 		VK_CHECK(vkBeginCommandBuffer(cmd, &cmd_begin_info));
 	}
 
-	void Renderer::MainPassStart(VkCommandBuffer cmd, VkFramebuffer frame_buffer, VkRenderPass render_pass)
+	void Renderer::MeshPassStart(VkCommandBuffer cmd, VkFramebuffer frame_buffer, VkRenderPass render_pass)
 	{
 		VkRect2D area = {};
 		area.extent = { _window->GetWidth(), _window->GetHeight() };
@@ -939,6 +899,30 @@ namespace mrs
 		vkCmdBeginRenderPass(cmd, &RenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
+	void Renderer::MeshPassEnd(VkCommandBuffer cmd)
+	{
+		vkCmdEndRenderPass(cmd);
+	}
+
+	void Renderer::MainPassStart(VkCommandBuffer cmd)
+	{
+		VkRect2D area = {};
+		area.extent = { _window->GetWidth(), _window->GetHeight() };
+		area.offset = { 0, 0 };
+
+		// Begin main render pass
+		VkClearValue clear_value = {};
+		clear_value.color = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+		VkClearValue depth_value = {};
+		depth_value.depthStencil = { 1.0f, 0 };
+
+		VkClearValue clear_values[2] = { clear_value, depth_value };
+
+		VkRenderPassBeginInfo render_pass_begin_info = vkinit::RenderPassBeginInfo(GetCurrentFrameBuffer(), GetSwapchainRenderPass(), area, clear_values, 2);
+		vkCmdBeginRenderPass(cmd, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
 	void Renderer::MainPassEnd(VkCommandBuffer cmd)
 	{
 		vkCmdEndRenderPass(cmd);
@@ -948,7 +932,7 @@ namespace mrs
 	{
 		auto &frame = GetCurrentFrameData();
 		VkCommandBuffer cmd = frame.command_buffer;
-
+		
 		VK_CHECK(vkEndCommandBuffer(cmd));
 
 		// Submit commands
@@ -981,7 +965,7 @@ namespace mrs
 
 		VK_CHECK(vkQueuePresentKHR(_queues.graphics, &present_info));
 
-		// Clear graphics semaphroes
+		// Clear graphics semaphores
 		_graphics_wait_semaphores.clear();
 		_graphics_wait_stages.clear();
 

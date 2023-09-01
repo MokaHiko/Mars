@@ -13,6 +13,8 @@ namespace mrs {
 	class Texture;
 	class Material;
 
+	class Model;
+
 	class ResourceManager
 	{
 	public:
@@ -29,12 +31,13 @@ namespace mrs {
 		~ResourceManager();
 
 	public:
-		// Map between file_path & mesh handle
 		std::unordered_map<std::string, Ref<Mesh>> _meshes;
 
 		std::unordered_map<std::string, Ref<Texture>> _textures;
 
 		std::unordered_map<std::string, Ref<Material>> _materials;
+
+		std::unordered_map<std::string, Ref<Model>> _models;
 	};
 }
 

@@ -54,6 +54,8 @@ add_library(${PROJECT_NAME}
 
 			Engine/Renderer/Renderer.h
 			Engine/Renderer/Renderer.cpp
+			Engine/Renderer/Model.h
+			Engine/Renderer/Model.cpp
 			Engine/Renderer/Camera.h
 			Engine/Renderer/Camera.cpp
 			Engine/Renderer/Textures/HeightMap.h
@@ -116,6 +118,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 			Vendor
 			vma
 			imgui
+			imGuizmo
 			vulkan-1)
 
 

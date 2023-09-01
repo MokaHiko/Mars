@@ -67,9 +67,15 @@ namespace mrs
 		void Begin(Scene *scene);
 
 		// Starts mesh render pass
-		void MainPassStart(VkCommandBuffer cmd, VkFramebuffer frame_buffer, VkRenderPass render_pass);
+		void MeshPassStart(VkCommandBuffer cmd, VkFramebuffer frame_buffer, VkRenderPass render_pass);
 
-		// Ends the main render pass
+		// Ends a mesh pass
+		void MeshPassEnd(VkCommandBuffer cmd);
+
+		// Begins the swapchain render pass
+		void MainPassStart(VkCommandBuffer cmd);
+
+		// Ends the swapchain render pass
 		void MainPassEnd(VkCommandBuffer cmd);
 
 		// Ends the command buffer recording and submits to queue
@@ -92,7 +98,6 @@ namespace mrs
 		Ref<vkutil::DescriptorLayoutCache> _descriptor_layout_cache;
 	public:
 		// ~ OffScreen Rendering
-
 		void InitOffScreenAttachments();
 
 		// Creates an offscreen render_pass;
@@ -122,6 +127,14 @@ namespace mrs
 
 		// Gets format of swapchain
 		const VkFormat GetSwapchainImageFormat() const {return _swapchain_image_format;}
+
+		const std::vector<VkImageView> GetOffScreenImageViews() const { return _offscreen_images_views; }
+
+		// Gets format of swapchain
+		const std::vector<VkImage> GetSwapchainImages() const {return _swapchain_images;}
+
+		// Gets swapchain views
+		const std::vector<VkImageView> GetSwapchainImageViews() const {return _swapchain_image_views;}
 
 		// Returns the render pass used by the swapchain images
 		const VkRenderPass GetSwapchainRenderPass() const {return _render_pass;}
@@ -239,15 +252,8 @@ namespace mrs
 		std::vector<VkImage> _swapchain_images = {};
 		std::vector<VkImageView> _swapchain_image_views = {};
 
-		AllocatedImage _depth_image = {};
-		VkFormat _depth_image_format = {};
-		VkImageView _depth_image_view = {};
-
 		VkRenderPass _render_pass = {};
 		std::vector<VkFramebuffer> _framebuffers;
-
-		VkPipeline _default_pipeline;
-		VkPipelineLayout _default_pipeline_layout;
 
 		VulkanDevice _device = {};
 		VulkanQueues _queues = {};

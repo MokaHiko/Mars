@@ -12,7 +12,7 @@ namespace mrs
     public:
         virtual void Init() override;
 
-        virtual void OnPostRenderpass(VkCommandBuffer cmd) override;
+        virtual void OnMainPassBegin(VkCommandBuffer cmd) override;
     private:
         void InitPostProcessPipeline();
         void InitDescriptors();

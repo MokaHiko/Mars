@@ -14,7 +14,9 @@ mrs::Camera::Camera(CameraType type, uint32_t aspect_w, uint32_t aspect_h, const
 		static_cast<float>(aspect_w) / static_cast<float>(aspect_h),
 		_near,
 		_far);
-	_projection[1][1] *= -1; // Reconfigure y values as positive for vulkan
+
+	// Reconfigure y values as positive for vulkan
+	_projection[1][1] *= -1; 
 	_view_proj = _projection * _view;
 }
 

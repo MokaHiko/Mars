@@ -53,18 +53,20 @@ mrs::VertexInputDescription& mrs::Vertex::GetDescription()
 
 Ref<mrs::Mesh> mrs::Mesh::LoadFromAsset(const std::string& path, const std::string& alias = "")
 {
-	// Check if already loaded
-	if (Mesh::Get(path) != nullptr) {
+	if (Mesh::Get(path) != nullptr) 
+	{
 		return Mesh::Get(path);
 	}
 
-	auto mesh = std::make_shared<Mesh>();
+	auto mesh = CreateRef<Mesh>();
 	mesh->_mesh_name = alias;
 
-	if (!alias.empty()) {
+	if (!alias.empty()) 
+	{
 		ResourceManager::Get()._meshes[alias] = mesh;
 	}
-	else {
+	else 
+	{
 		ResourceManager::Get()._meshes[path] = mesh;
 	}
 
@@ -84,4 +86,24 @@ Ref<mrs::Mesh> mrs::Mesh::LoadFromAsset(const std::string& path, const std::stri
 	boop::unpack_mesh(&mesh_info, asset.raw_data.data(), asset.raw_data.size(), (char*)mesh->_vertices.data(), (char*)mesh->_indices.data());
 
 	return mesh;
+}
+
+Ref<mrs::Mesh> mrs::Mesh::Create(const std::string& alias)
+{
+	ResourceManager::Get()._meshes[alias] = std::make_shared<Mesh>();
+
+	ResourceManager::Get()._meshes[alias]->_mesh_name = alias;
+	return ResourceManager::Get()._meshes[alias];
+}
+
+Ref<mrs::Mesh> mrs::Mesh::Get(const std::string& alias)
+{
+	auto it = ResourceManager::Get()._meshes.find(alias);
+
+	if (it != ResourceManager::Get()._meshes.end()) 
+	{
+		return it->second;
+	}
+
+	return nullptr;
 }

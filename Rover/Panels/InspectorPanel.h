@@ -8,7 +8,7 @@
 #include <ECS/Components/Components.h>
 #include "Components/ComponentPanels.h"
 
-#include <imgui_stdlib.h>
+//#include <imgui/backends/imgui_stdlib.h>
 
 namespace mrs
 {
@@ -22,7 +22,7 @@ namespace mrs
             {
                 Tag& tag = entity.GetComponent<Tag>();
 
-                ImGui::InputText("##label", &tag.tag);
+                //ImGui::InputText("##label", &tag.tag);
 
                 ImGui::Separator();
 

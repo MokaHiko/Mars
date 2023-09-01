@@ -14,6 +14,8 @@ add_executable(Rover
 	"Panels/InspectorPanel.cpp"
 	"Panels/Menus/MainMenu.h"
 	"Panels/Menus/MainMenu.cpp"
+	"Panels/Menus/Viewport.h"
+	"Panels/Menus/Viewport.cpp"
 
 	"GameLayer/GameLayer.h"
 	"GameLayer/GameLayer.cpp"

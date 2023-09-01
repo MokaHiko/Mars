@@ -10,6 +10,7 @@
 #include "UIHelpers.h"
 
 #include "Panels/Menus/MainMenu.h"
+#include "Panels/Menus/Viewport.h"
 #include "Panels/InspectorPanel.h"
 
 #include "Core/InputLayer.h"
@@ -35,7 +36,6 @@ namespace mrs {
 		{
 			LoadEditorResources();
 			_name = "EditorLayer";
-
 		}
 
 		virtual void OnEvent(Event &event)
@@ -56,6 +56,8 @@ namespace mrs {
 		{
 			_native_scripting_layer = (NativeScriptingLayer*)(void*)Application::GetInstance().FindLayer("NativeScriptingLayer");
 			_render_pipeline_layer = (IRenderPipelineLayer*)(void*)Application::GetInstance().FindLayer("IRenderPipelineLayer");
+
+			Viewport::Init(_render_pipeline_layer);
 		};
 
 		virtual void OnUpdate(float dt) override
@@ -81,11 +83,11 @@ namespace mrs {
 
 		virtual void OnImGuiRender() override
 		{
-			// Scene
 			Scene *scene = Application::GetInstance().GetScene();
 			auto view = scene->Registry()->view<Tag, Transform>();
 
 			MainMenu::Draw(scene);
+			Viewport::Draw();
 
 			// [Ui] Hierarchy Panel
 			ImGui::Begin("Entity Hierarchy");

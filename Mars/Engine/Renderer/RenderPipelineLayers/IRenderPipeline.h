@@ -44,8 +44,13 @@ namespace mrs
         // Called after command buffer recording and before main render pass (where you should place your own renderpasses)
         virtual void OnPreRenderPass(VkCommandBuffer cmd) {};
 
-        // Called after mesh render pass
-        virtual void OnPostRenderpass(VkCommandBuffer cmd) {};
+        // Called at the start of swapchain frame buffer render pass
+        virtual void OnMainPassBegin(VkCommandBuffer cmd) {};
+
+        // Called at the end of swapchain frame buffer render pass
+        virtual void OnMainPassEnd(VkCommandBuffer cmd) {};
+
+        virtual void OnPostMainPass(VkCommandBuffer cmd) {};
 
         // Called on renderable created
         virtual void OnRenderableCreated(Entity e) {};

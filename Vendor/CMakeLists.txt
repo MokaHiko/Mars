@@ -28,14 +28,22 @@ target_link_libraries(${PROJECT_NAME}
 add_library(vma INTERFACE)
 target_include_directories(vma INTERFACE VulkanMemoryAllocator/include)
 
-# Imgui Library
+# Imgui Library 
 find_package(Vulkan REQUIRED)
 add_library(imgui STATIC)
-target_include_directories(imgui PUBLIC imgui)
+target_include_directories(imgui PUBLIC imgui imgui/backends)
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL2::SDL2)
-file(GLOB IMGUI_SOURCES "imgui/*.cpp")
-file(GLOB IMGUI_HEADERS "imgui/*.h")
+file(GLOB IMGUI_SOURCES "imgui/*.cpp" "imgui/backends/imgui_impl_vulkan.cpp" "imgui/backends/imgui_impl_sdl2.cpp")
+file(GLOB IMGUI_HEADERS "imgui/*.h" "imgui/backends/imgui_impl_vulkan.h" "imgui/backends/imgui_impl_sdl2.h")
 target_sources(imgui PRIVATE 
 ${IMGUI_SOURCES}
 ${IMGUI_HEADERS}
     )
+
+# imGuizmo Library
+add_library(imGuizmo STATIC)
+target_include_directories(imGuizmo PUBLIC imGuizmo)
+file(GLOB IMGUIZMO_SOURCES "imGuizmo/*.cpp")
+file(GLOB IMGUIZMO_HEADERS "imGuizmo/*.h")
+target_sources(imGuizmo PRIVATE ${IMGUIZMO_SOURCES} ${IMGUI_HEADERS})
+target_link_libraries(imGuizmo PRIVATE imgui)

@@ -47,13 +47,13 @@ namespace mrs {
 		const bool IsActive() const {return _active;}
 
 		// Returns view projection matrix as reference
-		inline const glm::mat4& GetViewProj() const { return _view_proj; }
+		const glm::mat4& GetViewProj() const { return _view_proj; }
 
 		// Returns view matrix as reference
-		inline const glm::mat4& GetView() const { return _view; }
+		const glm::mat4& GetView() const { return _view; }
 
 		// Returns view projection as reference
-		inline const glm::mat4& GetProj() const { return _projection; }
+		const glm::mat4& GetProj() const { return _projection; }
 
 		glm::vec3& Front() { return _front; }
 		glm::vec3& Right() { return _right; }

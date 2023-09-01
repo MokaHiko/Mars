@@ -21,39 +21,11 @@ namespace mrs
         EditorManager() {};
         ~EditorManager() {};
 
-        virtual void OnCreate() override
-        {
-            MRS_TRACE("Initializing editor manager!");
-            InitEditorResources();
-        }
+        virtual void OnCreate() override;
 
-        virtual void OnStart() override
-        {
-            _camera_controller = dynamic_cast<CameraController*>(_camera.GetComponent<Script>().script);
-        }
-
-        virtual void OnUpdate(float dt) override 
-        {
-        }
-
-        virtual void OnCollisionEnter2D(Entity other) override 
-        {
-        }
-
+        virtual void OnStart() override;
     private:
-        void InitEditorResources()
-        {
-			// Scene
-			Scene *scene = Application::GetInstance().GetScene();
-
-			// Instantiate Camera
-			auto window = Application::GetInstance().GetWindow();
-			_camera = Instantiate("Editor Camera");
-
-			_camera.AddComponent<Camera>(CameraType::Perspective, window->GetWidth(), window->GetHeight());
-            _camera.AddComponent<Script>().Bind<CameraController>();
-			_camera.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, 50.0f);
-        };
+        void InitEditorResources();
     };
 }
 

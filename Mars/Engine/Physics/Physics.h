@@ -73,9 +73,6 @@ namespace mrs
         float width = 1.0f;
         float height = 1.0f;
     };
-
-    template <>
-    RigidBody2D& Entity::AddComponent<RigidBody2D>();
 };
 
 #endif

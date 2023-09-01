@@ -74,12 +74,13 @@ namespace mrs
 			ImGui::Text("Mesh: %s", renderable.GetMesh()->_mesh_name.c_str());
 			ImVec2 region_size = ImGui::GetContentRegionAvail();
 
-			auto& material = renderable.GetMaterial();
+			Ref<Material> material = renderable.GetMaterial();
 			ImGui::Text("Material: %s", material->GetMaterialName().c_str());
 			if (ImGui::CollapsingHeader("Albedo"))
 			{
 				ImGui::ColorPicker4("Color", glm::value_ptr(material->GetAlbedoColor()));
 				ImGui::Text("Texture: %s", material->GetMaterialName());
+				//ImGui::Image()
 			}
 
 			ImGui::Checkbox("Receive Shadows", &material->GetShadowFlag());

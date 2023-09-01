@@ -18,15 +18,15 @@ namespace mrs
     class Scene
     {
     public:
-        Scene &operator=(const Scene &other) = delete;
-        Scene(const Scene &other) = delete;
+        Scene& operator=(const Scene& other) = delete;
+        Scene(const Scene& other) = delete;
 
         Scene();
         ~Scene();
 
-		void Serialization(bool serializing) {_serializing = serializing;}
+        void Serialization(bool serializing) { _serializing = serializing; }
 
-        entt::registry *Registry()
+        entt::registry* Registry()
         {
             return &_registry;
         }
@@ -34,16 +34,16 @@ namespace mrs
         template<typename T>
         Entity FindEntityWithComponent()
         {
-            for(auto e : _registry->view<T>())
+            for (auto e : _registry->view<T>())
             {
-                return {e, this};
+                return { e, this };
             }
 
             return {};
         }
 
         template <typename T, typename... Args>
-        T &AddComponent(entt::entity id, Args &&...args)
+        T& AddComponent(entt::entity id, Args &&...args)
         {
             if (HasComponent<T>(id))
             {
@@ -72,7 +72,7 @@ namespace mrs
         }
 
         template <typename T>
-        T &GetComponent(entt::entity id)
+        T& GetComponent(entt::entity id)
         {
             if (HasComponent<T>(id))
             {
@@ -84,7 +84,7 @@ namespace mrs
         }
 
         // Create and returns entity
-        Entity Instantiate(const std::string &name = "", const glm::vec3 &position = {}, bool* serialize = nullptr);
+        Entity Instantiate(const std::string& name = "", const glm::vec3& position = {}, bool* serialize = nullptr);
 
         // Queues entity for destruction at end of frame
         void QueueDestroy(Entity entity);
@@ -109,7 +109,7 @@ namespace mrs
         std::vector<Entity> _destruction_queue;
 
         // Serialization mode
-		bool _serializing = false;
+        bool _serializing = false;
     };
 
 }

@@ -108,16 +108,10 @@ namespace mrs
 		}
 
 		// Begins a mesh pass
-		_renderer->MainPassStart(cmd, _renderer->_offscreen_framebuffers[current_frame_index], _renderer->_offscreen_render_pass);
+		_renderer->MeshPassStart(cmd, _renderer->_offscreen_framebuffers[current_frame_index], _renderer->_offscreen_render_pass);
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
 			(*it)->Begin(cmd, current_frame_index);
-		}
-
-		// ImGui
-		for(Layer* layer : Application::GetInstance().GetLayers()) 
-		{
-			layer->OnImGuiRender();
 		}
 
 		// Ends a mesh pass
@@ -125,12 +119,30 @@ namespace mrs
 		{
 			(*it)->End(cmd);
 		}
-		_renderer->MainPassEnd(cmd);
+		_renderer->MeshPassEnd(cmd);
 
-		// Post pass
+		// Begin frame buffer render pass
+		_renderer->MainPassStart(cmd);
+
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
-			(*it)->OnPostRenderpass(cmd);
+			(*it)->OnMainPassBegin(cmd);
+		}
+
+		for(Layer* layer : Application::GetInstance().GetLayers()) 
+		{
+			layer->OnImGuiRender();
+		}
+
+		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
+		{
+			(*it)->OnMainPassEnd(cmd);
+		}
+		_renderer->MainPassEnd(cmd);
+
+		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
+		{
+			(*it)->OnPostMainPass(cmd);
 		}
 
 		// Submit commands

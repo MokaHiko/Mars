@@ -22,3 +22,6 @@
 [submodule "Vendor/yaml"]
 	path = Vendor/yaml
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "Vendor/imGuizmo"]
+	path = Vendor/imGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
