@@ -19,7 +19,6 @@ namespace mrs {
 		static Ref<Model> Create(const std::string& alias);
 		static Ref<Model> Get(const std::string& alias);
 
-    private:
         std::vector<Ref<Mesh>> _meshes;
     };
 }

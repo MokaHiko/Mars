@@ -16,7 +16,7 @@ namespace mrs
         {
             if (ImGui::BeginMainMenuBar())
             {
-                if (ImGui::BeginMenu("File"))
+                if (ImGui::BeginMenu("Scene"))
                 {
                     if (ImGui::MenuItem("Save Scene"))
                     {
@@ -33,6 +33,7 @@ namespace mrs
 
                     ImGui::EndMenu();
                 }
+
                 if (ImGui::BeginMenu("Edit"))
                 {
                     if (ImGui::MenuItem("Undo", "CTRL+Z")) {}
@@ -42,6 +43,11 @@ namespace mrs
                     if (ImGui::MenuItem("Copy", "CTRL+C")) {}
                     if (ImGui::MenuItem("Paste", "CTRL+V")) {}
                     ImGui::EndMenu();
+                }
+
+                if (ImGui::Button("Play"))
+                {
+
                 }
                 ImGui::EndMainMenuBar();
             }

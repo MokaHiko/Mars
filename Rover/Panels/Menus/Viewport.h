@@ -18,7 +18,6 @@ namespace mrs
         static Ref<Renderer> _renderer;
         static VkSampler _viewport_sampler;
 
-
         static std::vector<VkDescriptorSet> _viewport_descriptor_sets;
     };
 }

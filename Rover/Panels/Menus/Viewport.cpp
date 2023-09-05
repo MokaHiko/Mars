@@ -23,7 +23,12 @@ void mrs::Viewport::Init(IRenderPipelineLayer* render_pipeline_layer)
 		_viewport_descriptor_sets.push_back(ImGui_ImplVulkan_AddTexture(_viewport_sampler, offscreen_image_views[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	}
 
-	_renderer->GetDeletionQueue().Push([=](){
+	_renderer->GetDeletionQueue().Push([&](){
+		for(VkDescriptorSet viewport_descriptor : _viewport_descriptor_sets)
+		{
+			ImGui_ImplVulkan_RemoveTexture(viewport_descriptor);
+		}
+
     	vkDestroySampler(_renderer->GetDevice().device, _viewport_sampler, nullptr);
 	});
 }

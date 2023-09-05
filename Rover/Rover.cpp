@@ -3,6 +3,7 @@
 #include <Mars.h>
 #include <Core/Input.h>
 #include <Core/Log.h>
+#include <Renderer/Model.h>
 
 #include <Physics/Physics2DLayer.h>
 
@@ -239,6 +240,9 @@ namespace mrs {
 
 		void LoadEditorResources()
 		{
+			// TODO: Load all assets in asset folder
+		 	Model::LoadFromAsset("Assets/Models/Room.bp", "room");
+
 			Mesh::LoadFromAsset("Assets/Models/sphere.boop_obj", "sphere");
 			Texture::LoadFromAsset("Assets/Models/white.boop_png", "default_texture");
 			Material::Create("default_material");
@@ -253,14 +257,13 @@ namespace mrs {
 			Texture::LoadFromAsset("Assets/Textures/smoke_01.boop_png", "smoke_01");
 			Material::Create("smoke_01_material", "smoke_01");
 
+			// Basic mesh shapes
 			Mesh::LoadFromAsset("Assets/Models/cube.boop_obj", "cube");
 			Mesh::LoadFromAsset("Assets/Models/cone.boop_obj", "cone");
 			Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj", "monkey");
 			Mesh::LoadFromAsset("Assets/Models/quad.boop_obj", "quad");
 
 			// Manually built meshes
-			Texture::LoadFromAsset("Assets/Textures/ChicagoTraffic.boop_jpg", "chicago_traffic");
-
 			auto screen_quad = Mesh::Create("screen_quad");
 
 			screen_quad->_vertices.push_back({ { -1.0f, -1.0f, 0.0f }, {}, {}, {} });
@@ -292,6 +295,12 @@ namespace mrs {
 
     		_editor_camera.AddComponent<Script>().Bind<CameraController>();
 			_editor_camera.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, 50.0f);
+
+			for (auto mesh : Model::Get("room")->_meshes)
+			{
+				Entity e = app.GetScene()->Instantiate(mesh->_mesh_name);
+				e.AddComponent<RenderableObject>(mesh, Material::Get("default_material"));
+			}
 
 			_render_pipeline_layer->SetCamera(&camera_component);
 		}

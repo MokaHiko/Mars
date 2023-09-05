@@ -96,9 +96,9 @@ void mrs::ImGuiRenderPipeline::OnMainPassBegin(VkCommandBuffer cmd)
 	ImGui_ImplSDL2_NewFrame((SDL_Window*)_window->GetNativeWindow());
 	ImGui::NewFrame();
     
-  ImGuizmo::BeginFrame();
+	ImGuizmo::BeginFrame();
 
-  ImGui::DockSpaceOverViewport();
+	ImGui::DockSpaceOverViewport();
 }
 
 void mrs::ImGuiRenderPipeline::OnMainPassEnd(VkCommandBuffer cmd) 

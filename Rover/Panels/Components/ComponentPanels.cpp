@@ -72,6 +72,8 @@ namespace mrs
 	{
 		DrawComponentUI<RenderableObject>("Renderable Object", entity, [](RenderableObject& renderable) {
 			ImGui::Text("Mesh: %s", renderable.GetMesh()->_mesh_name.c_str());
+			ImGui::Text("Vertices: %d", renderable.GetMesh()->_vertex_count);
+			ImGui::Text("Indices: %d", renderable.GetMesh()->_index_count);
 			ImVec2 region_size = ImGui::GetContentRegionAvail();
 
 			Ref<Material> material = renderable.GetMaterial();
@@ -80,7 +82,8 @@ namespace mrs
 			{
 				ImGui::ColorPicker4("Color", glm::value_ptr(material->GetAlbedoColor()));
 				ImGui::Text("Texture: %s", material->GetMaterialName());
-				//ImGui::Image()
+
+				// TODO: Add Material editor
 			}
 
 			ImGui::Checkbox("Receive Shadows", &material->GetShadowFlag());
