@@ -47,16 +47,20 @@ void mrs::MeshRenderPipeline::InitPipelineLayout()
         nullptr, &_default_pipeline_layout));
 }
 
-void mrs::MeshRenderPipeline::Init()
-{
-    CreateOffScreenFramebuffer();
-    InitIndirectCommands();
+mrs::MeshRenderPipeline::MeshRenderPipeline() 
+    :IRenderPipeline("MeshRenderPipeline"){}
 
-    InitDescriptors();
-    InitPipelineLayout();
+mrs::MeshRenderPipeline::~MeshRenderPipeline() {}
 
-    InitOffScreenPipeline();
-    InitMeshPipeline();
+void mrs::MeshRenderPipeline::Init() {
+  CreateOffScreenFramebuffer();
+  InitIndirectCommands();
+
+  InitDescriptors();
+  InitPipelineLayout();
+
+  InitOffScreenPipeline();
+  InitMeshPipeline();
 }
 
 void mrs::MeshRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame)

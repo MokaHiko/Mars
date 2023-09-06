@@ -2,71 +2,88 @@
 #include <ECS/Components/Components.h>
 #include <Renderer/Vulkan/VulkanInitializers.h>
 
-void mrs::TerrainRenderPipeline::Init()
-{
-    // Load height maps
-    auto view = _scene->Registry()->view<Transform, TerrainRenderer>();
-    for (entt::entity entity : view)
-    {
-        Entity e = { entity , _scene };
-        TerrainRenderer &terrain = e.GetComponent<TerrainRenderer>();
-        Ref<Texture> height_map = terrain.height_map;
+mrs::TerrainRenderPipeline::TerrainRenderPipeline() 
+    :IRenderPipeline("Terrain Render Pipeline"){}
 
-        // Generate terrain vertices
-        uint32_t resolution = 20; // is the n patches across and down the terrain. n^2 patches in total
-        terrain._terrain_mesh = Mesh::Create("terrain_mesh");
-        terrain.height_map = terrain.height_map;
-        float width = static_cast<float>(height_map->_width);
-        float height = static_cast<float>(height_map->_height);
+mrs::TerrainRenderPipeline::~TerrainRenderPipeline() {}
 
-        for(uint32_t i = 0; i < resolution ; i++)
-        {
-            for(uint32_t j = 0; j < resolution; j++)
-            {
-                Vertex vertex = {};
-                vertex.position = glm::vec3{-width/2.0f + (width * i / static_cast<float>(resolution)),
-                                            0.0f, 
-                                            -height/2.0f + (height * j / static_cast<float>(resolution))};
-                vertex.uv = glm::vec2{i / static_cast<float>(resolution), j / static_cast<float>(resolution)};
-                terrain._terrain_mesh->_vertices.push_back(vertex);
+void mrs::TerrainRenderPipeline::Init() {
+  // Load height maps
+  auto view = _scene->Registry()->view<Transform, TerrainRenderer>();
+  for (entt::entity entity : view) {
+    Entity e = {entity, _scene};
+    TerrainRenderer &terrain = e.GetComponent<TerrainRenderer>();
+    Ref<Texture> height_map = terrain.height_map;
 
-                vertex.position = glm::vec3{-width/2.0f + (width * (i + 1) / static_cast<float>(resolution)),
-                                            0.0f, 
-                                            -height/2.0f + (height * j / static_cast<float>(resolution))};
-                vertex.uv = glm::vec2{(i +1) / static_cast<float>(resolution), j / static_cast<float>(resolution)};
-                terrain._terrain_mesh->_vertices.push_back(vertex);
+    // Generate terrain vertices
+    uint32_t resolution = 20; // is the n patches across and down the terrain.
+                              // n^2 patches in total
+    terrain._terrain_mesh = Mesh::Create("terrain_mesh");
+    terrain.height_map = terrain.height_map;
+    float width = static_cast<float>(height_map->_width);
+    float height = static_cast<float>(height_map->_height);
 
-                vertex.position = glm::vec3{-width/2.0f + (width * i / static_cast<float>(resolution)),
-                                            0.0f, 
-                                            -height/2.0f + (height * (j + 1) / static_cast<float>(resolution))};
-                vertex.uv = glm::vec2{i / static_cast<float>(resolution), (j + 1) / static_cast<float>(resolution)};
-                terrain._terrain_mesh->_vertices.push_back(vertex);
+    for (uint32_t i = 0; i < resolution; i++) {
+      for (uint32_t j = 0; j < resolution; j++) {
+        Vertex vertex = {};
+        vertex.position = glm::vec3{
+            -width / 2.0f + (width * i / static_cast<float>(resolution)), 0.0f,
+            -height / 2.0f + (height * j / static_cast<float>(resolution))};
+        vertex.uv = glm::vec2{i / static_cast<float>(resolution),
+                              j / static_cast<float>(resolution)};
+        terrain._terrain_mesh->_vertices.push_back(vertex);
 
-                vertex.position = glm::vec3{-width/2.0f + (width * (i + 1) / static_cast<float>(resolution)),
-                                            0.0f, 
-                                            -height/2.0f + (height * (j + 1) / static_cast<float>(resolution))};
-                vertex.uv = glm::vec2{(i +1) / static_cast<float>(resolution), (j + 1) / static_cast<float>(resolution)};
-                terrain._terrain_mesh->_vertices.push_back(vertex);
-            }
-        }
+        vertex.position = glm::vec3{
+            -width / 2.0f + (width * (i + 1) / static_cast<float>(resolution)),
+            0.0f,
+            -height / 2.0f + (height * j / static_cast<float>(resolution))};
+        vertex.uv = glm::vec2{(i + 1) / static_cast<float>(resolution),
+                              j / static_cast<float>(resolution)};
+        terrain._terrain_mesh->_vertices.push_back(vertex);
 
-        terrain._terrain_mesh->_vertex_count = static_cast<uint32_t>(terrain._terrain_mesh->_vertices.size());
-        _renderer->UploadMesh(terrain._terrain_mesh);
+        vertex.position = glm::vec3{
+            -width / 2.0f + (width * i / static_cast<float>(resolution)), 0.0f,
+            -height / 2.0f +
+                (height * (j + 1) / static_cast<float>(resolution))};
+        vertex.uv = glm::vec2{i / static_cast<float>(resolution),
+                              (j + 1) / static_cast<float>(resolution)};
+        terrain._terrain_mesh->_vertices.push_back(vertex);
 
-        // Create terrain descriptors
-        VkDescriptorImageInfo height_map_descriptor_info = {};
-        height_map_descriptor_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        height_map_descriptor_info.imageView = height_map->_image_view;
-        height_map_descriptor_info.sampler = _asset_manager->GetLinearImageSampler();
-
-        vkutil::DescriptorBuilder _descriptor_builder;
-        _descriptor_builder.Begin(_renderer->_descriptor_layout_cache.get(), _renderer->_descriptor_allocator.get())
-            .BindImage(0, &height_map_descriptor_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
-            .Build(&_terrain_descriptor_set, &_terrain_descriptor_set_layout);
+        vertex.position = glm::vec3{
+            -width / 2.0f + (width * (i + 1) / static_cast<float>(resolution)),
+            0.0f,
+            -height / 2.0f +
+                (height * (j + 1) / static_cast<float>(resolution))};
+        vertex.uv = glm::vec2{(i + 1) / static_cast<float>(resolution),
+                              (j + 1) / static_cast<float>(resolution)};
+        terrain._terrain_mesh->_vertices.push_back(vertex);
+      }
     }
 
-    CreateTerrainPipelineLayout();
-    CreateTerrainPipeline();
+    terrain._terrain_mesh->_vertex_count =
+        static_cast<uint32_t>(terrain._terrain_mesh->_vertices.size());
+    _renderer->UploadMesh(terrain._terrain_mesh);
+
+    // Create terrain descriptors
+    VkDescriptorImageInfo height_map_descriptor_info = {};
+    height_map_descriptor_info.imageLayout =
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    height_map_descriptor_info.imageView = height_map->_image_view;
+    height_map_descriptor_info.sampler =
+        _asset_manager->GetLinearImageSampler();
+
+    vkutil::DescriptorBuilder _descriptor_builder;
+    _descriptor_builder
+        .Begin(_renderer->_descriptor_layout_cache.get(),
+               _renderer->_descriptor_allocator.get())
+        .BindImage(0, &height_map_descriptor_info,
+                   VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                   VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+        .Build(&_terrain_descriptor_set, &_terrain_descriptor_set_layout);
+  }
+
+  CreateTerrainPipelineLayout();
+  CreateTerrainPipeline();
 }
 
 void mrs::TerrainRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame)

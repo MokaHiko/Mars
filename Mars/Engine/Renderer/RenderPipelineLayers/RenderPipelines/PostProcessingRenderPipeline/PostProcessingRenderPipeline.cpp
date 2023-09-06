@@ -6,16 +6,22 @@
 #include "Renderer/Vulkan/VulkanTexture.h"
 #include "Renderer/Vulkan/VulkanMesh.h"
 
-void mrs::PostProcessingRenderPipeline::Init()
-{
-	_screen_quad = Mesh::Get("quad");
+mrs::PostProcessingRenderPipeline::PostProcessingRenderPipeline() 
+	: IRenderPipeline("PostProcessing Render Pipeline") {}
 
-	// Create screen sampler
-	VkSamplerCreateInfo sampler_info = vkinit::SamplerCreateInfo(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
-	VK_CHECK(vkCreateSampler(_device->device, &sampler_info, nullptr, &_screen_sampler));
+mrs::PostProcessingRenderPipeline::~PostProcessingRenderPipeline() {}
 
-	InitDescriptors();
-	InitPostProcessPipeline();
+void mrs::PostProcessingRenderPipeline::Init() {
+  _screen_quad = Mesh::Get("quad");
+
+  // Create screen sampler
+  VkSamplerCreateInfo sampler_info = vkinit::SamplerCreateInfo(
+      VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+  VK_CHECK(vkCreateSampler(_device->device, &sampler_info, nullptr,
+                           &_screen_sampler));
+
+  InitDescriptors();
+  InitPostProcessPipeline();
 }
 
 void mrs::PostProcessingRenderPipeline::InitPostProcessPipeline()

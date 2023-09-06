@@ -15,7 +15,7 @@
 #include "Renderer/Vulkan/VulkanInitializers.h"
 
 mrs::ParticleRenderPipeline::ParticleRenderPipeline(uint32_t max_particles)
-	: _max_particles(max_particles) {}
+	: IRenderPipeline("Particle Render Pipeline"), _max_particles(max_particles) {}
 
 mrs::ParticleRenderPipeline::~ParticleRenderPipeline() {}
 

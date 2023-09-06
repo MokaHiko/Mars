@@ -17,6 +17,8 @@ add_library(${PROJECT_NAME}
 			Engine/Core/Log.cpp
 			Engine/Core/Window.h
 			Engine/Core/Window.cpp
+			Engine/Core/Time.h
+			Engine/Core/Time.cpp
 			Engine/Core/Input.h
 			Engine/Core/Input.cpp
 			Engine/Core/InputLayer.h

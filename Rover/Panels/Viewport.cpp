@@ -4,11 +4,8 @@
 #include <imgui.h>
 #include <imgui_impl_vulkan.h>
 
-Ref<mrs::Renderer> mrs::Viewport::_renderer = nullptr;
-VkSampler mrs::Viewport::_viewport_sampler = VK_NULL_HANDLE;
-std::vector<VkDescriptorSet> mrs::Viewport::_viewport_descriptor_sets;
-
-void mrs::Viewport::Init(IRenderPipelineLayer* render_pipeline_layer)
+mrs::Viewport::Viewport(EditorLayer *editor_layer, const std::string &name, IRenderPipelineLayer *render_pipeline_layer)
+	:IPanel(editor_layer, name)
 {
 	_renderer =  render_pipeline_layer->GetRenderer();
 
@@ -33,11 +30,14 @@ void mrs::Viewport::Init(IRenderPipelineLayer* render_pipeline_layer)
 	});
 }
 
+mrs::Viewport::~Viewport() {}
+
 void mrs::Viewport::Draw() 
 {
-	uint32_t frame = _renderer->GetCurrentFrame();
-	ImGui::Begin("Viewport");
-	
-	ImGui::Image(_viewport_descriptor_sets[frame], ImGui::GetContentRegionAvail());
-	ImGui::End();
+  uint32_t frame = _renderer->GetCurrentFrame();
+  ImGui::Begin("Viewport");
+
+  ImGui::Image(_viewport_descriptor_sets[frame],
+               ImGui::GetContentRegionAvail());
+  ImGui::End();
 }

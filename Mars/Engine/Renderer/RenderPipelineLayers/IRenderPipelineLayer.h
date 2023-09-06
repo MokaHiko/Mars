@@ -25,6 +25,8 @@ namespace mrs
         void PushRenderPipeline(IRenderPipeline* render_pipeline_layer);
         void PopRenderPipeline(IRenderPipeline* render_pipeline_layer);
 
+        const std::vector<IRenderPipeline*>& PipelineStack() const {return _pipeline_stack;}
+
         std::vector<IRenderPipeline*>::iterator begin() { return _pipeline_stack.begin(); } 
         std::vector<IRenderPipeline*>::iterator end() { return _pipeline_stack.end(); }
 
@@ -48,6 +50,8 @@ namespace mrs
 
         // Returns a reference of the renderer used by the render pipeline
         Ref<Renderer> GetRenderer() const {return _renderer;}
+
+        const RenderPipelineStack& PipelineLayers() const {return _render_pipeline_layers;}
 
         virtual ~IRenderPipelineLayer(){};
 

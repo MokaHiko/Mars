@@ -17,6 +17,9 @@ namespace mrs
     class TerrainRenderPipeline : public IRenderPipeline
     {
     public:
+        TerrainRenderPipeline();
+        ~TerrainRenderPipeline();
+
         virtual void Init();
 
         virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame) ;

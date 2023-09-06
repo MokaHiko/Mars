@@ -64,8 +64,6 @@ namespace mrs {
 		std::string _app_name;
 
 		bool _running = false;
-		float _dt = 0.0f;
-
 		LayerStack _layer_stack;
 
 		static Application* _instance;

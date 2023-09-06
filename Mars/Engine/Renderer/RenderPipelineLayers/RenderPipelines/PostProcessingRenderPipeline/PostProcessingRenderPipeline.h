@@ -10,6 +10,9 @@ namespace mrs
     class PostProcessingRenderPipeline : public IRenderPipeline
     {
     public:
+        PostProcessingRenderPipeline();
+        virtual ~PostProcessingRenderPipeline();
+
         virtual void Init() override;
 
         virtual void OnMainPassBegin(VkCommandBuffer cmd) override;

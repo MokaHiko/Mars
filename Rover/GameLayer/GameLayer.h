@@ -11,47 +11,19 @@
 class GameLayer : public mrs::Layer
 {
 public:
-    virtual void OnAttach() override 
-    {
-        RegisterScripts();
-    };
+    virtual void OnAttach() override;
 
-    virtual void OnDetatch() override 
-    {
-        
-    };
+    virtual void OnDetatch() override;
+    virtual void OnEnable() override;
+    virtual void OnDisable() override;
 
-    virtual void OnEnable() override
-    {
+    virtual void OnUpdate(float dt) override;
 
-    };
+    virtual void OnImGuiRender() override;
+    virtual void OnEvent(mrs::Event& event) override;
 
-    virtual void OnDisable() override
-    {
-
-    };
-
-    virtual void OnUpdate(float dt) override 
-    {
-
-    };
-
-    virtual void OnImGuiRender() override 
-    {
-
-    };
-
-    virtual void OnEvent(mrs::Event& event) override 
-    {
-
-    };
 private:
-    void RegisterScripts()
-    {
-        mrs::Script::Register<Unit>();
-        mrs::Script::Register<Spawner>();
-        mrs::Script::Register<GameManager>();
-    }
+    void RegisterScripts();
 };
 
 #endif

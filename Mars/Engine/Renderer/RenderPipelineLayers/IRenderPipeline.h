@@ -18,17 +18,12 @@ namespace mrs
     class IRenderPipeline
     {
     public:
-        IRenderPipeline() = default;
-
-        IRenderPipeline(Renderer *renderer, VkRenderPass _render_pass = nullptr, VkFormat _render_pass_format = VK_FORMAT_UNDEFINED)
-        {
-            _renderer = renderer;
-
-            _render_pass = _render_pass;
-            _render_pass_format = _render_pass_format;
-        };
+        IRenderPipeline(const std::string& name);
+        IRenderPipeline(const std::string& name, Renderer *renderer, VkRenderPass _render_pass = nullptr, VkFormat _render_pass_format = VK_FORMAT_UNDEFINED);
 
         virtual ~IRenderPipeline() {};
+
+        const std::string& Name() const {return _name;}
     public:
         virtual void Init() {}
 
@@ -62,6 +57,7 @@ namespace mrs
         virtual void OnMaterialsUpdate() {};
     protected:
         friend class IRenderPipelineLayer;
+        std::string _name;
 
         // Scene handle
         Scene *_scene = nullptr;

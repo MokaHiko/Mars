@@ -2,7 +2,9 @@
 
 #include "Core/Log.h"
 #include "Core/Input.h"
+#include "Core/Time.h"
 #include "Toolbox/TimeToolBox.h"
+
 
 namespace mrs {
 	Application *Application::_instance = nullptr;
@@ -42,8 +44,8 @@ namespace mrs {
 		{
 			// Calculate delta time
 			tbx::Timer app_timer([&](const tbx::Timer &timer) {
-				_dt = static_cast<float>(timer.delta_);
-				});
+				Time::SetDeltaTime(static_cast<float>(timer.delta_));
+			});
 
 			// TODO: Handle inconsistent in separate delta time in a fixed update
 			static float dt = 1.0f/144.0f;

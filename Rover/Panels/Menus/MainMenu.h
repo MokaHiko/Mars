@@ -3,57 +3,19 @@
 
 #pragma once
 
-#include <Core/Application.h>
-#include <ECS/SceneSerializer.h>
-#include "UIHelpers.h"
+#include "../IPanel.h"
 
-namespace mrs
-{
-    class MainMenu
+namespace mrs {
+    class Scene;
+    class MainMenu : public IPanel
     {
     public:
-        static void Draw(Scene* scene)
-        {
-            if (ImGui::BeginMainMenuBar())
-            {
-                if (ImGui::BeginMenu("Scene"))
-                {
-                    if (ImGui::MenuItem("Save Scene"))
-                    {
-                        SceneSerializer serializer(scene);
-                        serializer.SerializeText(Application::GetInstance().GetAppName(), "Assets/Scenes");
-                    }
+        MainMenu(EditorLayer* editor_layer, const std::string& name, Scene* scene);
+        virtual ~MainMenu();
 
-                    if (ImGui::MenuItem("Load Scene"))
-                    {
-                        SceneSerializer serializer(scene);
-                        std::string scene_path = "Assets/Scenes/" + Application::GetInstance().GetAppName() + ".yaml";
-                        serializer.DeserializeText(scene_path);
-                    }
-
-                    ImGui::EndMenu();
-                }
-
-                if (ImGui::BeginMenu("Edit"))
-                {
-                    if (ImGui::MenuItem("Undo", "CTRL+Z")) {}
-                    if (ImGui::MenuItem("Redo", "CTRL+Y", false, false)) {}  // Disabled item
-                    ImGui::Separator();
-                    if (ImGui::MenuItem("Cut", "CTRL+X")) {}
-                    if (ImGui::MenuItem("Copy", "CTRL+C")) {}
-                    if (ImGui::MenuItem("Paste", "CTRL+V")) {}
-                    ImGui::EndMenu();
-                }
-
-                if (ImGui::Button("Play"))
-                {
-
-                }
-                ImGui::EndMainMenuBar();
-            }
-        }
+        virtual void Draw() override;
     private:
-
+        Scene* _scene = nullptr;
     };
 }
 

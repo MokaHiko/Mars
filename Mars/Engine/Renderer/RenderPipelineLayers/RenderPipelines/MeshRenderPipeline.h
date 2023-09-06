@@ -11,8 +11,8 @@ namespace mrs
     class MeshRenderPipeline : public IRenderPipeline
     {
     public:
-        MeshRenderPipeline() {};
-        ~MeshRenderPipeline() {};
+        MeshRenderPipeline();
+        ~MeshRenderPipeline();
 
         virtual void Init() override;
 
