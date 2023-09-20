@@ -14,6 +14,8 @@
 #include "ToolboX/TimeToolBox.h"
 #include "Renderer/Vulkan/VulkanInitializers.h"
 
+#include "Renderer/RenderPipelineLayers/IRenderPipelineLayer.h"
+
 mrs::ParticleRenderPipeline::ParticleRenderPipeline(uint32_t max_particles)
 	: IRenderPipeline("Particle Render Pipeline"), _max_particles(max_particles) {}
 
@@ -21,7 +23,6 @@ mrs::ParticleRenderPipeline::~ParticleRenderPipeline() {}
 
 void mrs::ParticleRenderPipeline::Init()
 {
-	_quad_mesh = Mesh::Get("quad");
 	uint32_t max_particle_systems = _max_particles / 256;
 	_buffer_next_free_offset = 0;
 
@@ -45,10 +46,11 @@ void mrs::ParticleRenderPipeline::Init()
 void mrs::ParticleRenderPipeline::UploadResources()
 {
 	// Register each entity particle system
-	auto view = _scene->Registry()->view<Transform, ParticleSystem>();
+	auto scene = Application::Instance().GetScene();
+	auto view = scene->Registry()->view<Transform, ParticleSystem>();
 	for (auto entity : view)
 	{
-		Entity e(entity, _scene);
+		Entity e(entity, scene);
 		auto &particle_system = e.GetComponent<ParticleSystem>();
 
 		if (!particle_system.registered)
@@ -130,8 +132,7 @@ void mrs::ParticleRenderPipeline::InitComputePipeline() {
 	info.layout = _compute_pipeline_layout;
 
 	VkShaderModule compute_shader;
-	_renderer->LoadShaderModule("assets/shaders/particle_compute_shader.comp.spv",
-		&compute_shader);
+	VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/particle_compute_shader.comp.spv", &compute_shader);
 
 	info.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	info.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -166,16 +167,14 @@ void mrs::ParticleRenderPipeline::InitComputeSyncStructures()
 	}
 }
 
-void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_frame, float dt)
+void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_frame, float dt, RenderableBatch* batch)
 {
-	auto view = _scene->Registry()->view<Transform, ParticleSystem>().use<ParticleSystem>();
 	int ctr = 0;
 
 	// Update parameters
 	char *data;
 	vmaMapMemory(_renderer->GetAllocator(), _particle_parameter_buffers[current_frame].allocation, (void **)&data);
-	for (auto entity : view) {
-		Entity e(entity, _scene);
+	for (auto  e: batch->entities) {
 		auto &particle_system = e.GetComponent<ParticleSystem>();
 
 		if (!particle_system.registered)
@@ -241,7 +240,7 @@ void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_f
 	vmaUnmapMemory(_renderer->GetAllocator(), _particle_parameter_buffers[current_frame].allocation);
 }
 
-void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cmd, uint32_t current_frame)
+void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
 {
 	VkCommandBufferBeginInfo beginInfo = vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	VK_CHECK(vkBeginCommandBuffer(cmd, &beginInfo));
@@ -250,11 +249,9 @@ void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cm
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline);
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline_layout, 0, 1, &_compute_descriptor_sets[current_frame], 0, 0);
 
-	auto view = _scene->Registry()->view<Transform, ParticleSystem>().use<ParticleSystem>();
 	int ctr = 0;
 
-	for (auto entity : view) {
-		Entity e(entity, _scene);
+	for (auto e : batch->entities) {
 		auto &particle_system = e.GetComponent<ParticleSystem>();
 
 		if (particle_system.running)
@@ -262,7 +259,7 @@ void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cm
 			// Bind push constant
 			ParticleSystemPushConstant pc;
 			pc.count = ctr++;
-			pc.material_index = particle_system.material->GetMaterialIndex();
+			pc.material_index = particle_system.material->MaterialIndex();
 
 			vkCmdPushConstants(cmd, _compute_pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
 
@@ -350,11 +347,9 @@ void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
 
 	// Shader
 	VkShaderModule vertex_shader;
-	_renderer->LoadShaderModule(
-		"assets/shaders/particle_graphics_shader.vert.spv", &vertex_shader);
+	VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/particle_graphics_shader.vert.spv", &vertex_shader);
 	VkShaderModule fragment_shader;
-	_renderer->LoadShaderModule(
-		"assets/shaders/particle_graphics_shader.frag.spv", &fragment_shader);
+	VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/particle_graphics_shader.frag.spv", &fragment_shader);
 
 	builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader));
 	builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader));
@@ -386,7 +381,7 @@ void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
 
 	// Pipeline layouts
 	VkPipelineLayoutCreateInfo layout_info = vkinit::PipelineLayoutCreateInfo();
-	std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, _asset_manager->GetMaterialDescriptorSetLayout(), _graphics_descriptor_set_layout };
+	std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, VulkanAssetManager::Instance().MaterialDescriptorSetLayout(), _graphics_descriptor_set_layout};
 
 	layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
 	layout_info.pSetLayouts = set_layouts.data();
@@ -418,16 +413,16 @@ void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
 		});
 }
 
-void mrs::ParticleRenderPipeline::Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt)
+void mrs::ParticleRenderPipeline::Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt, RenderableBatch* compute_batch)
 {
 	VkDevice device = _renderer->GetDevice().device;
 
 	vkWaitForFences(device, 1, &_compute_in_flight_fences[current_frame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-	UpdateComputeDescriptorSets(current_frame, dt);
+	UpdateComputeDescriptorSets(current_frame, dt, compute_batch);
 	vkResetFences(device, 1, &_compute_in_flight_fences[current_frame]);
 
 	vkResetCommandBuffer(cmd, 0);
-	RecordComputeCommandBuffers(cmd, current_frame);
+	RecordComputeCommandBuffers(cmd, current_frame, compute_batch);
 
 	VkSubmitInfo submit_info = {};
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -442,8 +437,11 @@ void mrs::ParticleRenderPipeline::Compute(VkCommandBuffer cmd, uint32_t current_
 	VK_CHECK(vkQueueSubmit(_renderer->GetQueues().compute, 1, &submit_info, _compute_in_flight_fences[current_frame]));
 }
 
-void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame)
+
+void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
 {
+	static Ref<Mesh> quad_mesh = Mesh::Get("quad");
+
 	VkDescriptorSet _frame_object_set = _renderer->GetCurrentGlobalObjectDescriptorSet();
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline);
@@ -455,16 +453,14 @@ void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_fr
 
 	// Bind quad meshs
 	VkDeviceSize offset = 0;
-	vkCmdBindVertexBuffers(cmd, 0, 1, &_quad_mesh->_buffer.buffer, &offset);
-	vkCmdBindIndexBuffer(cmd, _quad_mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindVertexBuffers(cmd, 0, 1, &quad_mesh->_buffer.buffer, &offset);
+	vkCmdBindIndexBuffer(cmd, quad_mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-	auto view = _scene->Registry()->view<Transform, ParticleSystem>().use<ParticleSystem>();
 	int ctr = 0;
 
 	// Bind global materials buffer
-	for (auto entity : view)
+	for (auto e : batch->entities)
 	{
-		Entity e(entity, _scene);
 		auto &particle_system = e.GetComponent<ParticleSystem>();
 
 		if (!particle_system.running)
@@ -477,20 +473,20 @@ void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_fr
 		// Bind particle system properties and material index
 		ParticleSystemPushConstant pc;
 		pc.count = ctr++;
-		pc.material_index = particle_system.material->GetMaterialIndex();
+		pc.material_index = particle_system.material->MaterialIndex();
 		vkCmdPushConstants(cmd, _graphics_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
 
 		// Bind material textures
-		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 2, 1, &material->material_descriptor_set, 0, 0);
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 2, 1, &material->DescriptorSet(), 0, 0);
 
 		// Draw using instancing
-		vkCmdDrawIndexed(cmd, _quad_mesh->_index_count, particle_system.live_particles, 0, 0, e.Id());
+		vkCmdDrawIndexed(cmd, quad_mesh->_index_count, particle_system.live_particles, 0, 0, e.Id());
 	}
 }
 
 void mrs::ParticleRenderPipeline::End(VkCommandBuffer cmd) {}
 
-void mrs::ParticleRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd) {}
+void mrs::ParticleRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd, RenderableBatch* batch) {}
 
 void mrs::ParticleRenderPipeline::RegisterParticleSystem(ParticleSystem &particle_system)
 {

@@ -21,8 +21,6 @@ namespace mrs
         void InitDescriptors();
     private:
         std::vector<VkDescriptorSet> _post_process_descriptor_sets;
-
-        Ref<Mesh> _screen_quad;
         VkSampler _screen_sampler;
 
         VkDescriptorSetLayout _post_process_descriptor_set_layout;

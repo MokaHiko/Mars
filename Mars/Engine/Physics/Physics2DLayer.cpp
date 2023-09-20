@@ -9,10 +9,10 @@ namespace mrs
 	void Physics2DLayer::OnAttach()
 	{
 		_name = "Physics2DLayer";
-		_scene = Application::GetInstance().GetScene();
+		_scene = Application::Instance().GetScene();
 		
 		// Connect to RigidBody2D Component signals
-		Scene* scene = Application::GetInstance().GetScene();
+		Scene* scene = Application::Instance().GetScene();
 		scene->Registry()->on_destroy<RigidBody2D>().connect<&Physics2DLayer::OnRigidBody2DDestroyed>(this);
 	}
 
@@ -185,7 +185,7 @@ void Physics2DLayer::OnRigidBody2DDestroyed(entt::basic_registry<entt::entity>&,
 		}
 
 		// Get scene handle
-		_scene = Application::GetInstance().GetScene();
+		_scene = Application::Instance().GetScene();
 
 		// Init contact listeners
 		_contact_listener = MRS_NEW ContactListener(_scene);

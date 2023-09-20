@@ -27,12 +27,25 @@ Entities:
       Position: [0, -10, 0]
       Rotation: [-90, 0, 0]
       Scale: [100, 1, 1]
-    RenderableObject:
+    MeshRenderer:
       Mesh: quad
       Material: default_material
     RigidBody2D:
       Type: 1
       UseGravity: false
+  - Entity: 175762383
+    Tag: 
+      Tag: Container
+    Transform:
+      Position: [0, -10, 0]
+      Rotation: [-90, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRenderer:
+      Mesh: container
+      Material: container
+    RigidBody2D:
+      Type: 2
+      UseGravity: true
   - Entity: 1445797466
     Tag:
       Tag: Directional Light

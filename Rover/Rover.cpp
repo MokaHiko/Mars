@@ -44,7 +44,6 @@ void mrs::EditorLayer::FocusEntity(Entity entity)
 
 void mrs::EditorLayer::OnAttach()
 {
-	LoadEditorResources();
 	_name = "EditorLayer";
 }
 
@@ -62,16 +61,18 @@ void mrs::EditorLayer::OnDetatch() {}
 
 void mrs::EditorLayer::OnEnable()
 {
-	Scene* scene = Application::GetInstance().GetScene();
+	Scene* scene = Application::Instance().GetScene();
 
-	_native_scripting_layer = (NativeScriptingLayer*)(void*)Application::GetInstance().FindLayer("NativeScriptingLayer");
-	_render_pipeline_layer = (IRenderPipelineLayer*)(void*)Application::GetInstance().FindLayer("IRenderPipelineLayer");
+	_native_scripting_layer = (NativeScriptingLayer*)(void*)Application::Instance().FindLayer("NativeScriptingLayer");
+	_render_pipeline_layer = (IRenderPipelineLayer*)(void*)Application::Instance().FindLayer("IRenderPipelineLayer");
 
 	// Push Panels
 	_panels.push_back(CreateRef<MainMenu>(this, "MainMenu", scene));
 	_panels.push_back(CreateRef<HierarchyPanel>(this, "Hierarchy", scene));
 	_panels.push_back(CreateRef<Viewport>(this, "ViewPort", _render_pipeline_layer));
 	_panels.push_back(CreateRef<PerformancePanel>(this, "Performance Panel", _render_pipeline_layer));
+
+	LoadEditorResources();
 }
 
 void mrs::EditorLayer::OnUpdate(float dt)
@@ -99,7 +100,7 @@ void mrs::EditorLayer::Stop()
 		return;
 	}
 
-	auto& application = Application::GetInstance();
+	auto& application = Application::Instance();
 
 	// Destroy runtime created entites
 	Scene* scene = application.GetScene();
@@ -131,22 +132,26 @@ void mrs::EditorLayer::Stop()
 
 void mrs::EditorLayer::LoadEditorResources()
 {
-	// TODO: Load all assets in asset folder
-	Model::LoadFromAsset("Assets/Models/Room.bp", "room");
+	// Create templates
+	std::vector<ShaderEffect*> default_lit_effects;
+	default_lit_effects.push_back(_render_pipeline_layer->FindPipeline("MeshRenderPipeline")->Effect().get());
+	VulkanAssetManager::Instance().CreateEffectTemplate(default_lit_effects, "default_lit");
 
+	// TODO: Load all assets in asset folder
+	//Model::LoadFromAsset("Assets/Models/Room.bp", "room");
 	Mesh::LoadFromAsset("Assets/Models/sphere.boop_obj", "sphere");
 	Texture::LoadFromAsset("Assets/Models/white.boop_png", "default_texture");
-	Material::Create("default_material");
+	Material::Create("default_lit", "default_material");
 
 	Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
 	Texture::LoadFromAsset("Assets/Models/textures_container/Container_DiffuseMap.boop_jpg", "container");
-	Material::Create("container_material", "container");
+	Material::Create("default_lit", "container", "container");
 
 	Texture::LoadFromAsset("Assets/Textures/green.boop_png", "green");
-	Material::Create("green_material", "green");
+	Material::Create("default_lit", "green_material", "green");
 
 	Texture::LoadFromAsset("Assets/Textures/smoke_01.boop_png", "smoke_01");
-	Material::Create("smoke_01_material", "smoke_01");
+	Material::Create("default_lit", "smoke_01_material", "smoke_01");
 
 	// Basic mesh shapes
 	Mesh::LoadFromAsset("Assets/Models/cube.boop_obj", "cube");
@@ -166,6 +171,9 @@ void mrs::EditorLayer::LoadEditorResources()
 
 	screen_quad->_indices = { 0,2,1,1,2,3 };
 	screen_quad->_index_count = 6;
+
+	// Upload resources to runtime
+	_render_pipeline_layer->UploadResources();
 }
 
 void mrs::EditorLayer::LoadEditorScene()
@@ -178,7 +186,7 @@ void mrs::EditorLayer::LoadEditorScene()
 	bool serialize = false;
 
 	// Instantiate Camera
-	auto& app = Application::GetInstance();
+	auto& app = Application::Instance();
 	auto window = app.GetWindow();
 	_editor_camera = app.GetScene()->Instantiate("Editor Camera", {}, &serialize);
 
@@ -188,11 +196,11 @@ void mrs::EditorLayer::LoadEditorScene()
 	_editor_camera.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, 50.0f);
 
 	// TODO: Move to Scene Hiechy implementation
-	for (auto mesh : Model::Get("room")->_meshes)
-	{
-		Entity e = app.GetScene()->Instantiate(mesh->_mesh_name);
-		e.AddComponent<RenderableObject>(mesh, Material::Get("default_material"));
-	}
+	// for (auto mesh : Model::Get("room")->_meshes)
+	// {
+	// 	Entity e = app.GetScene()->Instantiate(mesh->_mesh_name);
+	// 	e.AddComponent<MeshRenderer>(mesh, Material::Get("default_material"));
+	// }
 
 	_render_pipeline_layer->SetCamera(&camera_component);
 }
@@ -204,7 +212,7 @@ void mrs::EditorLayer::Play()
 		return;
 	}
 
-	auto& application = Application::GetInstance();
+	auto& application = Application::Instance();
 
 	// Disable serialization
 	application.GetScene()->Serialization(false);

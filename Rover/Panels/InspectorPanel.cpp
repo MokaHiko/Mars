@@ -12,7 +12,7 @@ void mrs::InspectorPanel::Draw(Entity entity)
 		ImGui::Separator();
 
 		DrawComponent<Transform>(entity);
-		DrawComponent<RenderableObject>(entity);
+		DrawComponent<MeshRenderer>(entity);
 		DrawComponent<Camera>(entity);
 		DrawComponent<Script>(entity);
 		DrawComponent<RigidBody2D>(entity);
@@ -62,7 +62,7 @@ void mrs::InspectorPanel::DrawAddComponent(Entity entity)
 							entity.AddComponent<Transform>();
 							break;
 						case 1:
-							entity.AddComponent<RenderableObject>();
+							entity.AddComponent<MeshRenderer>();
 							break;
 						case 2:
 							entity.AddComponent<Camera>();

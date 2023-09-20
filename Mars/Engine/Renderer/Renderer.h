@@ -9,11 +9,10 @@
 #include "Core/Window.h"
 #include "Vulkan/VulkanUtils.h"
 #include "Vulkan/VulkanStructures.h"
+#include "Vulkan/VulkanAssetManager.h"
 
 #include "Camera.h"
 #include "ECS/Scene.h"
-
-#include "Vulkan/VulkanAssetManager.h"
 
 namespace mrs
 {
@@ -123,7 +122,7 @@ namespace mrs
 		// ~ OffScreen Rendering
 	public:
 		// Gets handle to the vulkan instance
-		const VkInstance GetInstance() const { return _instance; }
+		const VkInstance Instance() const { return _instance; }
 
 		// Gets format of swapchain
 		const VkFormat GetSwapchainImageFormat() const {return _swapchain_image_format;}
@@ -160,9 +159,6 @@ namespace mrs
 		// Gets index of current frame data
 		const VulkanFrameContext &GetCurrentFrameData() const { return _frame_data[_frame_count % frame_overlaps]; }
 
-		// Returns the vulkan asset manager
-		VulkanAssetManager* GetAssetManager() {return _asset_manager.get();}
-
 		// Gets handle to vulkan device struct
 		VulkanDevice &GetDevice() { return _device; }
 
@@ -186,9 +182,6 @@ namespace mrs
 
 		// Pads size to be compatible with minimum storage buffer alignment of physical device
 		size_t PadToStorageBufferSize(size_t original_size);
-
-		// Returns whether or not shader module was created succesefully
-		bool LoadShaderModule(const char *path, VkShaderModule *module);
 
 		// Upload mesh to GPU via immediate command buffers
 		void UploadMesh(Ref<Mesh> mesh);
@@ -240,8 +233,6 @@ namespace mrs
 		VkDescriptorSetLayout _object_descriptor_set_layout;
 
 		VulkanFrameContext _frame_data[frame_overlaps];
-
-		std::unique_ptr<VulkanAssetManager> _asset_manager;
 	private:
 		VkInstance _instance = {};
 		VkSurfaceKHR _surface = {};

@@ -37,8 +37,6 @@ namespace mrs
 
 		InitSyncStructures();
 		InitGlobalDescriptors();
-
-		_asset_manager = std::make_unique<VulkanAssetManager>(this);
 	}
 
 	void Renderer::Shutdown()
@@ -126,39 +124,13 @@ namespace mrs
 		// Upload Textures then materials in order
 		for (auto &it : ResourceManager::Get()._textures)
 		{
-			_asset_manager->UploadTexture(it.second);
+			VulkanAssetManager::Instance().UploadTexture(it.second);
 		}
 
 		for (auto &it : ResourceManager::Get()._materials)
 		{
-			_asset_manager->UploadMaterial(it.second);
+			VulkanAssetManager::Instance().UploadMaterial(it.second);
 		}
-	}
-
-	bool Renderer::LoadShaderModule(const char *path, VkShaderModule *module)
-	{
-		std::vector<char> shader_code;
-		tbx::read_file(path, shader_code);
-
-		if (shader_code.data() == nullptr)
-		{
-			return false;
-		}
-
-		VkShaderModuleCreateInfo shader_info = {};
-		shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		shader_info.pNext = nullptr;
-
-		shader_info.codeSize = shader_code.size();
-		shader_info.pCode = reinterpret_cast<const uint32_t *>(shader_code.data());
-		shader_info.flags = 0;
-
-		if (vkCreateShaderModule(_device.device, &shader_info, nullptr, module) != VK_SUCCESS)
-		{
-			return false;
-		}
-
-		return true;
 	}
 
 	void Renderer::ImmediateSubmit(std::function<void(VkCommandBuffer)> &&fn)

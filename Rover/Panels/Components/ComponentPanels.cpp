@@ -68,25 +68,25 @@ namespace mrs
 	}
 
 	template<>
-	void DrawComponent<RenderableObject>(Entity entity)
+	void DrawComponent<MeshRenderer>(Entity entity)
 	{
-		DrawComponentUI<RenderableObject>("Renderable Object", entity, [](RenderableObject& renderable) {
+		DrawComponentUI<MeshRenderer>("Mesh Renderer", entity, [](MeshRenderer& renderable) {
 			ImGui::Text("Mesh: %s", renderable.GetMesh()->_mesh_name.c_str());
 			ImGui::Text("Vertices: %d", renderable.GetMesh()->_vertex_count);
 			ImGui::Text("Indices: %d", renderable.GetMesh()->_index_count);
 			ImVec2 region_size = ImGui::GetContentRegionAvail();
 
 			Ref<Material> material = renderable.GetMaterial();
-			ImGui::Text("Material: %s", material->GetMaterialName().c_str());
-			if (ImGui::CollapsingHeader("Albedo"))
-			{
-				ImGui::ColorPicker4("Color", glm::value_ptr(material->GetAlbedoColor()));
-				ImGui::Text("Texture: %s", material->GetMaterialName());
+			// ImGui::Text("Material: %s", material->Name().c_str());
+			// if (ImGui::CollapsingHeader("Albedo"))
+			// {
+			// 	ImGui::ColorPicker4("Color", glm::value_ptr(material->GetAlbedoColor()));
+			// 	ImGui::Text("Texture: %s", material->Name());
 
-				// TODO: Add Material editor
-			}
+			// 	// TODO: Add Material editor
+			// }
 
-			ImGui::Checkbox("Receive Shadows", &material->GetShadowFlag());
+			// ImGui::Checkbox("Receive Shadows", &material->GetShadowFlag());
 			});
 	}
 

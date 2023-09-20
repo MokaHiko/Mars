@@ -4,9 +4,9 @@
 
 namespace mrs
 {
-	void RenderableObject::SetMaterial(Ref<Material> new_material)
+	void MeshRenderer::SetMaterial(Ref<Material> new_material)
 	{
-		static IRenderPipelineLayer* render_pipeline_layer = (IRenderPipelineLayer*)Application::GetInstance().FindLayer("IRenderPipelineLayer");
+		static IRenderPipelineLayer* render_pipeline_layer = (IRenderPipelineLayer*)Application::Instance().FindLayer("IRenderPipelineLayer");
 
 		if(render_pipeline_layer)
 		{

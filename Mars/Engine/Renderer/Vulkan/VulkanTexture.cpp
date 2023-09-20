@@ -28,6 +28,7 @@ namespace mrs {
 		}
 
 		auto texture = std::make_shared<Texture>();
+		texture->_name = name;
 		ResourceManager::Get()._textures[name] = texture;
 
 		// Load texture asset file

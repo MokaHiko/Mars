@@ -2,6 +2,8 @@
 #include <ECS/Components/Components.h>
 #include <Renderer/Vulkan/VulkanInitializers.h>
 
+#include "Renderer/RenderPipelineLayers/IRenderPipelineLayer.h"
+
 mrs::TerrainRenderPipeline::TerrainRenderPipeline() 
     :IRenderPipeline("Terrain Render Pipeline"){}
 
@@ -9,9 +11,11 @@ mrs::TerrainRenderPipeline::~TerrainRenderPipeline() {}
 
 void mrs::TerrainRenderPipeline::Init() {
   // Load height maps
-  auto view = _scene->Registry()->view<Transform, TerrainRenderer>();
-  for (entt::entity entity : view) {
-    Entity e = {entity, _scene};
+  auto scene = Application::Instance().GetScene();
+  auto view = scene->Registry()->view<Transform, TerrainRenderer>();
+
+  for (auto entity : view) {
+    Entity e = {entity, scene};
     TerrainRenderer &terrain = e.GetComponent<TerrainRenderer>();
     Ref<Texture> height_map = terrain.height_map;
 
@@ -69,8 +73,7 @@ void mrs::TerrainRenderPipeline::Init() {
     height_map_descriptor_info.imageLayout =
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     height_map_descriptor_info.imageView = height_map->_image_view;
-    height_map_descriptor_info.sampler =
-        _asset_manager->GetLinearImageSampler();
+    height_map_descriptor_info.sampler = VulkanAssetManager::Instance().LinearImageSampler();
 
     vkutil::DescriptorBuilder _descriptor_builder;
     _descriptor_builder
@@ -86,26 +89,24 @@ void mrs::TerrainRenderPipeline::Init() {
   CreateTerrainPipeline();
 }
 
-void mrs::TerrainRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame)
+
+void mrs::TerrainRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
 {
     VkDescriptorSet _frame_object_set = _renderer->GetCurrentGlobalObjectDescriptorSet();
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline);
-
-    auto view = _scene->Registry()->view<Transform, TerrainRenderer>();
 
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 0, 1, &_global_descriptor_set, 0, 0);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 1, 1, &_frame_object_set, 0, 0);
 
     Ref<Material> default_material = Material::Get("default_material");
-    for (auto entity : view)
+    for (auto e  : batch->entities)
     {
-        Entity e = { entity, _scene };
         auto &terrain_renderer = e.GetComponent<TerrainRenderer>();
 
         // Bind material buffer and material textures
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 2, 1, &default_material->material_descriptor_set, 0, 0);
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 2, 1, &default_material->DescriptorSet(), 0, 0);
         TerrainGraphicsPushConstant terrain_push_constant = {};
-        terrain_push_constant.material_index = default_material->GetMaterialIndex();
+        terrain_push_constant.material_index = default_material->MaterialIndex();
         vkCmdPushConstants(cmd, _terrain_render_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TerrainGraphicsPushConstant), &terrain_push_constant);
 
         // Bind terrain properties
@@ -117,13 +118,14 @@ void mrs::TerrainRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_fra
     }
 }
 
+
 void mrs::TerrainRenderPipeline::End(VkCommandBuffer cmd)
 {
 }
 
 void mrs::TerrainRenderPipeline::CreateTerrainPipelineLayout()
 {
-    std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, _asset_manager->GetMaterialDescriptorSetLayout(), _terrain_descriptor_set_layout };
+    std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, VulkanAssetManager::Instance().MaterialDescriptorSetLayout(), _terrain_descriptor_set_layout};
 
     VkPushConstantRange push_constant;
     push_constant.offset = 0;
@@ -158,10 +160,10 @@ void mrs::TerrainRenderPipeline::CreateTerrainPipeline()
     // Shaders modules
     bool loaded = false;
     VkShaderModule vertex_shader_module, fragment_shader_module, tesc_shader_module, tese_shader_module = {};
-    loaded = _renderer->LoadShaderModule("Assets/Shaders/terrain_shader.vert.spv", &vertex_shader_module);
-    loaded = _renderer->LoadShaderModule("Assets/Shaders/terrain_shader.frag.spv", &fragment_shader_module);
-    loaded = _renderer->LoadShaderModule("Assets/Shaders/terrain_shader.tesc.spv", &tesc_shader_module);
-    loaded = _renderer->LoadShaderModule("Assets/Shaders/terrain_shader.tese.spv", &tese_shader_module);
+    loaded = VulkanAssetManager::Instance().LoadShaderModule("Assets/Shaders/terrain_shader.vert.spv", &vertex_shader_module);
+    loaded = VulkanAssetManager::Instance().LoadShaderModule("Assets/Shaders/terrain_shader.frag.spv", &fragment_shader_module);
+    loaded = VulkanAssetManager::Instance().LoadShaderModule("Assets/Shaders/terrain_shader.tesc.spv", &tesc_shader_module);
+    loaded = VulkanAssetManager::Instance().LoadShaderModule("Assets/Shaders/terrain_shader.tese.spv", &tese_shader_module);
 
     pipeline_builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader_module));
     pipeline_builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader_module));

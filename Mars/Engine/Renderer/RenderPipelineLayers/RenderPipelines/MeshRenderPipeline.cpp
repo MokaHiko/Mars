@@ -6,19 +6,20 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-void mrs::MeshRenderPipeline::InitDescriptors() {
-  VkDescriptorImageInfo shadow_map_image_info = {};
-  shadow_map_image_info.sampler = _shadow_map_sampler;
-  shadow_map_image_info.imageView = _offscreen_depth_image_view;
-  shadow_map_image_info.imageLayout =
-      VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+#include "Renderer/RenderPipelineLayers/IRenderPipelineLayer.h"
 
-  vkutil::DescriptorBuilder::Begin(_renderer->_descriptor_layout_cache.get(),
-                                   _renderer->_descriptor_allocator.get())
-      .BindImage(0, &shadow_map_image_info,
-                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                 VK_SHADER_STAGE_FRAGMENT_BIT)
-      .Build(&_shadow_map_descriptor, &_shadow_map_descriptor_layout);
+void mrs::MeshRenderPipeline::InitDescriptors() {
+    VkDescriptorImageInfo shadow_map_image_info = {};
+    shadow_map_image_info.sampler = _shadow_map_sampler;
+    shadow_map_image_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    shadow_map_image_info.imageView = _offscreen_depth_image_view;
+
+    vkutil::DescriptorBuilder::Begin(_renderer->_descriptor_layout_cache.get(),
+        _renderer->_descriptor_allocator.get())
+        .BindImage(0, &shadow_map_image_info,
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            VK_SHADER_STAGE_FRAGMENT_BIT)
+        .Build(&_shadow_map_descriptor, &_shadow_map_descriptor_layout);
 }
 
 void mrs::MeshRenderPipeline::InitPipelineLayout()
@@ -27,13 +28,17 @@ void mrs::MeshRenderPipeline::InitPipelineLayout()
     VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::PipelineLayoutCreateInfo();
 
     // Mesh Descriptors
-    std::vector<VkDescriptorSetLayout> descriptor_layouts = {
-        _global_descriptor_set_layout, _object_descriptor_set_layout,
-        _asset_manager->GetMaterialDescriptorSetLayout(), _shadow_map_descriptor_layout };
+    std::vector<VkDescriptorSetLayout> descriptor_layouts =
+    {
+        _global_descriptor_set_layout,
+        _object_descriptor_set_layout,
+        VulkanAssetManager::Instance().MaterialDescriptorSetLayout(),
+        _shadow_map_descriptor_layout
+    };
 
     pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
     pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
-    
+
     // Material index push constant
     VkPushConstantRange material_push_range = {};
     material_push_range.offset = 0;
@@ -44,43 +49,43 @@ void mrs::MeshRenderPipeline::InitPipelineLayout()
     pipeline_layout_info.pPushConstantRanges = &material_push_range;
 
     VK_CHECK(vkCreatePipelineLayout(_device->device, &pipeline_layout_info,
-        nullptr, &_default_pipeline_layout));
+        nullptr, &_pipeline_layout));
 }
 
-mrs::MeshRenderPipeline::MeshRenderPipeline() 
-    :IRenderPipeline("MeshRenderPipeline"){}
+mrs::MeshRenderPipeline::MeshRenderPipeline()
+    :IRenderPipeline("MeshRenderPipeline") {}
 
 mrs::MeshRenderPipeline::~MeshRenderPipeline() {}
 
 void mrs::MeshRenderPipeline::Init() {
-  CreateOffScreenFramebuffer();
-  InitIndirectCommands();
+    CreateOffScreenFramebuffer();
+    InitIndirectCommands();
 
-  InitDescriptors();
-  InitPipelineLayout();
+    InitDescriptors();
+    InitPipelineLayout();
 
-  InitOffScreenPipeline();
-  InitMeshPipeline();
+    InitOffScreenPipeline();
+    InitMeshPipeline();
 }
 
-void mrs::MeshRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame)
+void mrs::MeshRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
 {
     if (_rerecord)
     {
-        BuildBatches(cmd, _scene);
-        RecordIndirectcommands(cmd, _scene);
+        BuildBatches(cmd, batch);
+        RecordIndirectcommands(cmd, batch);
 
         _rerecord = false;
     }
 
-    DrawObjects(cmd, _scene);
+    DrawObjects(cmd, batch);
 }
 
 void mrs::MeshRenderPipeline::End(VkCommandBuffer cmd)
 {
 }
 
-void mrs::MeshRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd)
+void mrs::MeshRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd, RenderableBatch* batch)
 {
     // Draw to offscreen frame buffer for shadow map
     VkRect2D area = {};
@@ -92,26 +97,27 @@ void mrs::MeshRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd)
 
     VkRenderPassBeginInfo offscreen_render_pass_begin_info = vkinit::RenderPassBeginInfo(_offscreen_framebuffer, _offscreen_render_pass, area, &depth_value, 1);
     vkCmdBeginRenderPass(cmd, &offscreen_render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
-    DrawShadowMap(cmd, _scene);
+    DrawShadowMap(cmd, batch);
     vkCmdEndRenderPass(cmd);
 }
 
-void mrs::MeshRenderPipeline::OnMaterialsUpdate() 
+
+void mrs::MeshRenderPipeline::OnMaterialsUpdate()
 {
     _rerecord = true;
 }
 
-void mrs::MeshRenderPipeline::OnRenderableCreated(Entity e) 
+void mrs::MeshRenderPipeline::OnRenderableCreated(Entity e)
 {
     _rerecord = true;
 }
 
-void mrs::MeshRenderPipeline::OnRenderableDestroyed(Entity e) 
+void mrs::MeshRenderPipeline::OnRenderableDestroyed(Entity e)
 {
     _rerecord = true;
 }
 
-void mrs::MeshRenderPipeline::DrawObjects(VkCommandBuffer cmd, Scene *scene)
+void mrs::MeshRenderPipeline::DrawObjects(VkCommandBuffer cmd, RenderableBatch* batch)
 {
     _frame_object_set = _renderer->GetCurrentGlobalObjectDescriptorSet();
     uint32_t n_frame = _renderer->GetCurrentFrame();
@@ -119,25 +125,25 @@ void mrs::MeshRenderPipeline::DrawObjects(VkCommandBuffer cmd, Scene *scene)
     VulkanFrameContext frame_context = _renderer->GetCurrentFrameData();
 
     // Bind global and object descriptors
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 0, 1, &_global_descriptor_set, 0, nullptr);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 1, 1, &_frame_object_set, 0, nullptr);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_descriptor_set, 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_frame_object_set, 0, nullptr);
 
-    for (auto &batch : _batches)
+    for (auto& batch : _batches)
     {
         // Bind batch material
         {
-            // Bind material push constnat index
-            uint32_t material_index = batch.material->GetMaterialIndex();
-            vkCmdPushConstants(cmd, _default_pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &material_index);
+            // Bind material push constant index
+            uint32_t material_index = batch.material->MaterialIndex();
+            vkCmdPushConstants(cmd, _pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &material_index);
 
             // Bind material buffer and material texures
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 2, 1, &batch.material->material_descriptor_set, 0, nullptr);
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 2, 1, &batch.material->DescriptorSet(), 0, nullptr);
         }
 
         // Bind shadow map
         {
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 3, 1, &_shadow_map_descriptor, 0, nullptr);
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 3, 1, &_shadow_map_descriptor, 0, nullptr);
         }
 
         // Bind batch mesh vertex and index buffers
@@ -176,15 +182,15 @@ void mrs::MeshRenderPipeline::InitMeshPipeline()
     // Shaders modules
     bool loaded = false;
     VkShaderModule vertex_shader_module, fragment_shader_module = {};
-    loaded = _renderer->LoadShaderModule("Assets/Shaders/default_shader.vert.spv", &vertex_shader_module);
-    loaded = _renderer->LoadShaderModule("Assets/Shaders/default_shader.frag.spv", &fragment_shader_module);
+    loaded = VulkanAssetManager::Instance().LoadShaderModule("Assets/Shaders/default_shader.vert.spv", &vertex_shader_module);
+    loaded = VulkanAssetManager::Instance().LoadShaderModule("Assets/Shaders/default_shader.frag.spv", &fragment_shader_module);
 
     pipeline_builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader_module));
     pipeline_builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader_module));
 
     // Vertex input (Primitives and Vertex Input Descriptions
     pipeline_builder._input_assembly = vkinit::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    VertexInputDescription &vb_desc = Vertex::GetDescription();
+    VertexInputDescription& vb_desc = Vertex::GetDescription();
 
     pipeline_builder._vertex_input_info = vkinit::PipelineVertexInputStateCreateInfo();
 
@@ -200,11 +206,11 @@ void mrs::MeshRenderPipeline::InitMeshPipeline()
     pipeline_builder._color_blend_attachment = vkinit::PipelineColorBlendAttachmentState();
     pipeline_builder._depth_stencil = vkinit::PipelineDepthStencilStateCreateInfo(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
-    pipeline_builder._pipeline_layout = _default_pipeline_layout;
+    pipeline_builder._pipeline_layout = _pipeline_layout;
 
-    _default_pipeline = pipeline_builder.Build(_device->device, _renderer->_offscreen_render_pass);
+    _pipeline = pipeline_builder.Build(_device->device, _renderer->_offscreen_render_pass);
 
-    if (_default_pipeline == VK_NULL_HANDLE)
+    if (_pipeline == VK_NULL_HANDLE)
     {
         printf("Failed to create pipeline!");
     }
@@ -214,8 +220,9 @@ void mrs::MeshRenderPipeline::InitMeshPipeline()
     vkDestroyShaderModule(_device->device, vertex_shader_module, nullptr);
     _renderer->GetDeletionQueue().Push([=]()
         {
-            vkDestroyPipelineLayout(_device->device, _default_pipeline_layout, nullptr);
-            vkDestroyPipeline(_device->device, _default_pipeline, nullptr); });
+            vkDestroyPipelineLayout(_device->device, _pipeline_layout, nullptr);
+            vkDestroyPipeline(_device->device, _pipeline, nullptr);
+        });
 }
 
 void mrs::MeshRenderPipeline::InitIndirectCommands()
@@ -241,21 +248,18 @@ void mrs::MeshRenderPipeline::InitIndirectCommands()
     }
 }
 
-std::vector<mrs::MeshRenderPipeline::IndirectBatch> mrs::MeshRenderPipeline::GetRenderablesAsBatches(Scene *scene)
+std::vector<mrs::MeshRenderPipeline::IndirectBatch> mrs::MeshRenderPipeline::GetRenderablesAsBatches(RenderableBatch* batch)
 {
     std::vector<IndirectBatch> batches;
 
-    auto renderables = scene->Registry()->view<RenderableObject>();
-
-    Material *last_material = nullptr;
-    Mesh *last_mesh = nullptr;
+    Material* last_material = nullptr;
+    Mesh* last_mesh = nullptr;
 
     int batch_first = 0;
 
-    for (auto entity : renderables)
+    for (auto e : batch->entities)
     {
-        Entity e(entity, scene);
-        auto &renderable = e.GetComponent<RenderableObject>();
+        auto& renderable = e.GetComponent<MeshRenderer>();
 
         // Check if new batch
         bool new_batch = renderable.GetMaterial().get() != last_material || renderable.GetMesh().get() != last_mesh;
@@ -307,12 +311,12 @@ void mrs::MeshRenderPipeline::InitOffScreenPipeline()
     // Shaders modules
     bool loaded = false;
     VkShaderModule vertex_shader_module;
-    loaded = _renderer->LoadShaderModule("Assets/Shaders/offscreen_shader.vert.spv", &vertex_shader_module);
+    loaded = VulkanAssetManager::Instance().LoadShaderModule("Assets/Shaders/offscreen_shader.vert.spv", &vertex_shader_module);
     pipeline_builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader_module));
 
     // Vertex input (Primitives and Vertex Input Descriptions
     pipeline_builder._input_assembly = vkinit::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    VertexInputDescription &vb_desc = Vertex::GetDescription();
+    VertexInputDescription& vb_desc = Vertex::GetDescription();
 
     pipeline_builder._vertex_input_info = vkinit::PipelineVertexInputStateCreateInfo();
 
@@ -333,11 +337,11 @@ void mrs::MeshRenderPipeline::InitOffScreenPipeline()
     // Create pipeline layout
     VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::PipelineLayoutCreateInfo();
 
-    std::vector<VkDescriptorSetLayout> descriptor_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, _asset_manager->GetMaterialDescriptorSetLayout()};
+    std::vector<VkDescriptorSetLayout> descriptor_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, VulkanAssetManager::Instance().MaterialDescriptorSetLayout() };
     pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
     pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
 
-    pipeline_builder._pipeline_layout = _default_pipeline_layout;
+    pipeline_builder._pipeline_layout = _pipeline_layout;
 
     _offscreen_render_pipeline = pipeline_builder.Build(_device->device, _offscreen_render_pass, true);
 
@@ -352,26 +356,23 @@ void mrs::MeshRenderPipeline::InitOffScreenPipeline()
         { vkDestroyPipeline(_device->device, _offscreen_render_pipeline, nullptr); });
 }
 
-void mrs::MeshRenderPipeline::BuildBatches(VkCommandBuffer cmd, Scene *scene)
+void mrs::MeshRenderPipeline::BuildBatches(VkCommandBuffer cmd, RenderableBatch* batch)
 {
-    _batches = GetRenderablesAsBatches(scene);
+    _batches = GetRenderablesAsBatches(batch);
 }
 
-void mrs::MeshRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, Scene *scene)
+void mrs::MeshRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, RenderableBatch* batch)
 {
-   auto view = scene->Registry()->view<Transform, RenderableObject>();
-
     for (int i = 0; i < frame_overlaps; i++)
     {
-        char *draw_commands;
-        vmaMapMemory(_renderer->GetAllocator(), _indirect_buffers[i].allocation, (void **)&draw_commands);
+        char* draw_commands;
+        vmaMapMemory(_renderer->GetAllocator(), _indirect_buffers[i].allocation, (void**)&draw_commands);
 
         // Encode draw commands for each renderable ahead of time
         int ctr = 0;
-        for (auto entity : view)
+        for (auto e : batch->entities)
         {
-            Entity e = Entity(entity, scene);
-            auto renderable = e.GetComponent<RenderableObject>();
+            auto renderable = e.GetComponent<MeshRenderer>();
 
             VkDrawIndexedIndirectCommand draw_command = {};
             draw_command.vertexOffset = 0;
@@ -388,17 +389,17 @@ void mrs::MeshRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, Scene 
     }
 }
 
-void mrs::MeshRenderPipeline::DrawShadowMap(VkCommandBuffer cmd, Scene *scene)
+void mrs::MeshRenderPipeline::DrawShadowMap(VkCommandBuffer cmd, RenderableBatch* batch)
 {
     _frame_object_set = _renderer->GetCurrentGlobalObjectDescriptorSet();
     uint32_t n_frame = _renderer->GetCurrentFrame();
 
     // Bind global and object descriptors
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _offscreen_render_pipeline);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 0, 1, &_global_descriptor_set, 0, nullptr);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _default_pipeline_layout, 1, 1, &_frame_object_set, 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_descriptor_set, 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_frame_object_set, 0, nullptr);
 
-    for (auto &batch : _batches)
+    for (auto& batch : _batches)
     {
         // Bind batch vertex and index buffer
         VkDeviceSize offset = 0;
@@ -528,12 +529,12 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
         &_shadow_map_sampler));
 
     _renderer->GetDeletionQueue().Push([=]()
-        {
+    {
             vkDestroySampler(_device->device, _shadow_map_sampler, nullptr);
             vkDestroyFramebuffer(_device->device, _offscreen_framebuffer, nullptr);
             vkDestroyRenderPass(_device->device, _offscreen_render_pass, nullptr);
             vkDestroyImageView(_device->device, _offscreen_depth_image_view, nullptr);
-            vmaDestroyImage(_renderer->GetAllocator(), _offscreen_depth_image.image,
-                _offscreen_depth_image.allocation); });
+            vmaDestroyImage(_renderer->GetAllocator(), _offscreen_depth_image.image, _offscreen_depth_image.allocation); 
+    });
 }
 

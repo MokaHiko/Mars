@@ -21,7 +21,7 @@ struct MaterialData {
 	bool receive_shadows;
 };
 
-layout(set = 0, binding = 0) uniform GlobalBuffer{
+layout(set = 0, binding = 0) uniform GlobalBuffer {
 	mat4 view;
 	mat4 view_proj;
 	mat4 view_proj_light;

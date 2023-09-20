@@ -5,7 +5,7 @@
 
 void mrs::InputLayer::OnAttach()
 {
-	Window *w = Application::GetInstance().GetWindow().get();
+	Window *w = Application::Instance().GetWindow().get();
 
 	Input::window_size_x = w->GetWidth();
 	Input::window_size_y = w->GetHeight();

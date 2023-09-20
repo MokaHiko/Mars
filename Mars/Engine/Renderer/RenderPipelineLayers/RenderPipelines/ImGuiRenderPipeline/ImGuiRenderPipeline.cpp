@@ -17,8 +17,7 @@ mrs::ImGuiRenderPipeline::ImGuiRenderPipeline()
 mrs::ImGuiRenderPipeline::~ImGuiRenderPipeline() {}
 
 void mrs::ImGuiRenderPipeline::Init() {
-  _window_handle =
-      (SDL_Window *)Application::GetInstance().GetWindow()->GetNativeWindow();
+  _window_handle = (SDL_Window *)Application::Instance().GetWindow()->GetNativeWindow();
 
   // 1: create descriptor pool for IMGUI
   //  the size of the pool is very oversize, but it's copied from imgui demo
@@ -66,11 +65,11 @@ void mrs::ImGuiRenderPipeline::Init() {
 	io.BackendFlags |= ImGuiBackendFlags_HasMouseHoveredViewport;
 
 	// this initializes imgui for SDL
-	ImGui_ImplSDL2_InitForVulkan((SDL_Window *)Application::GetInstance().GetWindow()->GetNativeWindow());
+	ImGui_ImplSDL2_InitForVulkan((SDL_Window *)Application::Instance().GetWindow()->GetNativeWindow());
 
 	// this initializes imgui for Vulkan
 	ImGui_ImplVulkan_InitInfo init_info = {};
-	init_info.Instance = _renderer->GetInstance();
+	init_info.Instance = _renderer->Instance();
 	init_info.PhysicalDevice = _renderer->GetDevice().physical_device;
 	init_info.Device = _renderer->GetDevice().device;
 	init_info.Queue = _renderer->GetQueues().graphics;

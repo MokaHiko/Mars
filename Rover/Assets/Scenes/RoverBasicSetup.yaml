@@ -54,7 +54,7 @@ Entities:
       Position: [0, -10, 0]
       Rotation: [-90, 0, 0]
       Scale: [100, 1, 1]
-    RenderableObject:
+    MeshRenderer:
       Mesh: quad
       Material: default_material
     RigidBody2D:

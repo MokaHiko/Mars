@@ -12,15 +12,15 @@
 namespace mrs
 {
     // Base renderer class component that makes an object appear on the screen. Inherited by all rendererable types.
-    struct RenderableObject
+    struct MeshRenderer
     {
-        RenderableObject()
+        MeshRenderer()
         {
             mesh = Mesh::Get("cube");
             material = Material::Get("default_material");
         };
 
-        RenderableObject(Ref<Mesh> mesh_, Ref<Material> material_)
+        MeshRenderer(Ref<Mesh> mesh_, Ref<Material> material_)
             : mesh(mesh_), material(material_) {}
 
         const Ref<Mesh>& GetMesh() const

@@ -13,8 +13,11 @@
 
 namespace mrs
 {
-    //A render pipeline performs a series of operations that take the contents of a Scene, and displays them on a screen
-    //A single render pipeline may have one or more pipelines.
+    struct ShaderEffect;
+    struct RenderableBatch;
+
+    //A render pipeline performs a series of operations that take the contents of a Scene, and displays them on a screen. It implements an instance of a ShaderEffect.
+    //A single render pipeline may have one or more actual pipelines.
     class IRenderPipeline
     {
     public:
@@ -24,20 +27,22 @@ namespace mrs
         virtual ~IRenderPipeline() {};
 
         const std::string& Name() const {return _name;}
+
+        Ref<ShaderEffect> Effect();
     public:
         virtual void Init() {}
 
         // Called in in compute pass
-        virtual void Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt) {};
+        virtual void Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt, RenderableBatch* compute_batch) {};
 
         // Called at start of render pass 
-        virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame) {};
+        virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch) {};
 
         // Called at end of renderpass before command buffer submit and renderpass end
         virtual void End(VkCommandBuffer cmd) {};
 
         // Called after command buffer recording and before main render pass (where you should place your own renderpasses)
-        virtual void OnPreRenderPass(VkCommandBuffer cmd) {};
+        virtual void OnPreRenderPass(VkCommandBuffer cmd, RenderableBatch* batch) {};
 
         // Called at the start of swapchain frame buffer render pass
         virtual void OnMainPassBegin(VkCommandBuffer cmd) {};
@@ -60,7 +65,6 @@ namespace mrs
         std::string _name;
 
         // Scene handle
-        Scene *_scene = nullptr;
         Window *_window = nullptr;
 
         // Base resources
@@ -75,9 +79,14 @@ namespace mrs
         VkDescriptorSetLayout _global_descriptor_set_layout = VK_NULL_HANDLE;
         VkDescriptorSetLayout _object_descriptor_set_layout = VK_NULL_HANDLE;
         VkDescriptorSet _global_descriptor_set = VK_NULL_HANDLE;
+    protected:
+        VkPipeline _pipeline = VK_NULL_HANDLE;
+        VkPipelineLayout _pipeline_layout = VK_NULL_HANDLE;
 
-        // Vulkan asset manager
-        VulkanAssetManager* _asset_manager = nullptr;
+        VkDescriptorSet _descriptor_set;
+        VkDescriptorSetLayout _descriptor_set_layout;
+
+        Ref<ShaderEffect> _shader_effect = nullptr;
     };
 }
 

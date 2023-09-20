@@ -23,6 +23,8 @@ namespace mrs {
         uint32_t _width, _height = 0;
         VkFormat _format = {};
 
+        std::string _name;
+
         std::vector<char> pixel_data;
     };
 }

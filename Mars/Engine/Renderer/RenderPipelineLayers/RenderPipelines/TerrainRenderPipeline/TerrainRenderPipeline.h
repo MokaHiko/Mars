@@ -20,11 +20,10 @@ namespace mrs
         TerrainRenderPipeline();
         ~TerrainRenderPipeline();
 
-        virtual void Init();
+        virtual void Init() override;
 
-        virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame) ;
-
-        virtual void End(VkCommandBuffer cmd) ;
+        virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch) override;
+        virtual void End(VkCommandBuffer cmd) override;
     private:
         void CreateTerrainPipelineLayout();
         void CreateTerrainPipeline();

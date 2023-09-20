@@ -16,14 +16,14 @@ void mrs::MainMenu::Draw() {
     if (ImGui::BeginMenu("Scene")) {
       if (ImGui::MenuItem("Save Scene")) {
         SceneSerializer serializer(_scene);
-        serializer.SerializeText(Application::GetInstance().GetAppName(),
+        serializer.SerializeText(Application::Instance().GetAppName(),
                                  "Assets/Scenes");
       }
 
       if (ImGui::MenuItem("Load Scene")) {
         SceneSerializer serializer(_scene);
         std::string scene_path = "Assets/Scenes/" +
-                                 Application::GetInstance().GetAppName() +
+                                 Application::Instance().GetAppName() +
                                  ".yaml";
         serializer.DeserializeText(scene_path);
       }

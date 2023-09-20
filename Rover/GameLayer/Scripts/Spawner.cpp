@@ -22,6 +22,6 @@ void Spawner::SpawnUnit() {
 	ctr++;
 
 	e.AddComponent<mrs::RigidBody2D>();
-	e.AddComponent<mrs::RenderableObject>();
+	e.AddComponent<mrs::MeshRenderer>();
 	e.AddComponent<mrs::Script>().Bind<Unit>();
 }

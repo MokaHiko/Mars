@@ -12,8 +12,6 @@ mrs::PostProcessingRenderPipeline::PostProcessingRenderPipeline()
 mrs::PostProcessingRenderPipeline::~PostProcessingRenderPipeline() {}
 
 void mrs::PostProcessingRenderPipeline::Init() {
-  _screen_quad = Mesh::Get("quad");
-
   // Create screen sampler
   VkSamplerCreateInfo sampler_info = vkinit::SamplerCreateInfo(
       VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
@@ -41,9 +39,9 @@ void mrs::PostProcessingRenderPipeline::InitPostProcessPipeline()
 
 	// Shader
 	VkShaderModule vertex_shader;
-	_renderer->LoadShaderModule("assets/shaders/post_process_shader.vert.spv", &vertex_shader);
+	VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/post_process_shader.vert.spv", &vertex_shader);
 	VkShaderModule fragment_shader;
-	_renderer->LoadShaderModule("assets/shaders/post_process_shader.frag.spv", &fragment_shader);
+	VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/post_process_shader.frag.spv", &fragment_shader);
 
 	builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader));
 	builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader));
@@ -97,7 +95,6 @@ void mrs::PostProcessingRenderPipeline::InitDescriptors()
 {
 	auto test_image = Texture::Get("chicago_traffic");
 
-
 	_post_process_descriptor_sets.resize(frame_overlaps);
 	for (uint32_t i = 0; i < _post_process_descriptor_sets.size(); i++)
 	{
@@ -114,14 +111,15 @@ void mrs::PostProcessingRenderPipeline::InitDescriptors()
 
 void mrs::PostProcessingRenderPipeline::OnMainPassBegin(VkCommandBuffer cmd)
 {
+	static Ref<Mesh> screen_quad = Mesh::Get("quad");
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline);
 
 	// Draw scene as quad
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline_layout, 0, 1, &_post_process_descriptor_sets[_renderer->GetCurrentFrame()], 0, nullptr);
 
 	VkDeviceSize offset = 0;
-	vkCmdBindVertexBuffers(cmd, 0, 1, &_screen_quad->_buffer.buffer,  &offset);
-	vkCmdBindIndexBuffer(cmd, _screen_quad->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindVertexBuffers(cmd, 0, 1, &screen_quad->_buffer.buffer,  &offset);
+	vkCmdBindIndexBuffer(cmd, screen_quad->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-	vkCmdDrawIndexed(cmd, _screen_quad->_index_count, 1, 0, 0, 0);
+	vkCmdDrawIndexed(cmd, screen_quad->_index_count, 1, 0, 0, 0);
 }

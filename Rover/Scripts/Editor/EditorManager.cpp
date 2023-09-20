@@ -13,10 +13,10 @@ void mrs::EditorManager::OnStart() {
 
 void mrs::EditorManager::InitEditorResources() {
 	// Scene
-	Scene* scene = Application::GetInstance().GetScene();
+	Scene* scene = Application::Instance().GetScene();
 
 	// Instantiate Camera
-	auto window = Application::GetInstance().GetWindow();
+	auto window = Application::Instance().GetWindow();
 	_camera = Instantiate("Editor Camera");
 
 	_camera.AddComponent<Camera>(CameraType::Perspective, window->GetWidth(),

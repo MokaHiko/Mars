@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "Core/Memory.h"
+
 #include "VulkanUtils.h"
 #include "VulkanStructures.h"
 
@@ -14,37 +16,61 @@ namespace mrs
 {
     class Renderer;
 
-    // Manages Allocating Textures & Meshes to GPU
+    // Manages runtime allocatiion of vulkan assets (textures, meshes)
     class VulkanAssetManager
     {
     public:
-        VulkanAssetManager(Renderer* renderer);
+        static VulkanAssetManager& Instance()
+        {
+            if(!_instance)
+            {
+                _instance = CreateRef<VulkanAssetManager>();
+                return *_instance.get();
+            }
+
+            return *_instance.get();
+        }
+
+        void Init(Renderer* renderer);
+        void Shutdown();
+
+        VulkanAssetManager();
         ~VulkanAssetManager();
 
-        // Createsj
+        Ref<EffectTemplate> FindEffectTemplate(const std::string& name);
+        Ref<EffectTemplate> CreateEffectTemplate(const std::vector<ShaderEffect*>& effects, const std::string name);
+
+        // Creates
         void UploadMaterial(Ref<Material> material);
 
         // Creates VkImage and VkImageView from data stored in texture 
         void UploadTexture(Ref<Texture> texture);
 
-        const VkSampler GetLinearImageSampler() const {return _linear_image_sampler;}
-        const VkSampler GetNearestImageSampler() const {return _nearest_image_sampler;}
+		// Returns whether or not shader module was created succesefully
+		bool LoadShaderModule(const char *path, VkShaderModule *module);
+
+        const VkSampler LinearImageSampler() const {return _linear_image_sampler;}
+        const VkSampler NearestImageSampler() const {return _nearest_image_sampler;}
 
         // Returns the storage that contains vulkan materials
-        const AllocatedBuffer& GetMaterialsBuffer() const {return _materials_descriptor_buffer;}
-		const VkDescriptorSetLayout GetMaterialDescriptorSetLayout() const {return _material_descriptor_set_layout;}
-
+        const AllocatedBuffer& MaterialsBuffer() const {return _materials_descriptor_buffer;}
+		const VkDescriptorSetLayout MaterialDescriptorSetLayout() const {return _material_descriptor_set_layout;}
     private:
         // Materials descriptor set
-		VkDescriptorSetLayout _material_descriptor_set_layout;
-		AllocatedBuffer _materials_descriptor_buffer;
+		VkDescriptorSetLayout _material_descriptor_set_layout = VK_NULL_HANDLE;
+        AllocatedBuffer _materials_descriptor_buffer = {};
         uint32_t material_insert_index = 0;
 
-		VkSampler _linear_image_sampler;
-		VkSampler _nearest_image_sampler;
+		VkSampler _linear_image_sampler = VK_NULL_HANDLE;
+		VkSampler _nearest_image_sampler = VK_NULL_HANDLE;
 
         // Reference to renderer
-        Renderer* _renderer;
+        Renderer* _renderer = nullptr;
+
+        // Material effect templates
+        std::unordered_map<std::string, Ref<EffectTemplate>> _effect_templates;
+
+        static Ref<VulkanAssetManager> _instance;
     };
 
 }

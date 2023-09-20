@@ -59,11 +59,11 @@ namespace mrs
 
         virtual void Init() override;
 
-        virtual void Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt) override;
-        virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame) override;
+        virtual void Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt, RenderableBatch* compute_batch);
+        virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch) override;
         virtual void End(VkCommandBuffer cmd) override;
 
-        virtual void OnPreRenderPass(VkCommandBuffer cmd) override;
+        virtual void OnPreRenderPass(VkCommandBuffer cmd, RenderableBatch* batch) override;
 
         void RegisterParticleSystem(ParticleSystem &particle_system);
         void CacheParticleSystemType(ParticleSystem &particle_system);
@@ -109,8 +109,8 @@ namespace mrs
         void InitComputePipeline();
         void InitComputeSyncStructures();
 
-        void UpdateComputeDescriptorSets(uint32_t current_frame, float dt);
-        void RecordComputeCommandBuffers(VkCommandBuffer cmd, uint32_t current_frame);
+        void UpdateComputeDescriptorSets(uint32_t current_frame, float dt, RenderableBatch* batch);
+        void RecordComputeCommandBuffers(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch);
 
         // Fills an array with properties of a particle system
         void FillParticleArray(const ParticleSystem& particle_system, std::vector<Particle>& particles);
@@ -141,12 +141,8 @@ namespace mrs
         std::vector<VkDescriptorSet> _graphics_descriptor_sets;
         VkDescriptorSetLayout _graphics_descriptor_set_layout;
 
-        // Quad to render particles with
-        Ref<Mesh> _quad_mesh;
-
         tbx::PRNGenerator<float> _random_generator{0.0f, 1.0f};
         tbx::PRNGenerator<float> _random_generator_negative_to_one{-1.0f, 1.0f};
-
     };
 }
 

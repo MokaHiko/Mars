@@ -16,10 +16,10 @@ namespace mrs
 
         virtual void Init() override;
 
-        virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame) override;
+        virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch) override;
         virtual void End(VkCommandBuffer cmd) override;
 
-        virtual void OnPreRenderPass(VkCommandBuffer cmd) override;
+        virtual void OnPreRenderPass(VkCommandBuffer cmd, RenderableBatch* batch) override;
         virtual void OnMaterialsUpdate() override;
     public:
         // Called on renderable created
@@ -37,16 +37,13 @@ namespace mrs
         void InitMeshPipeline();
         void InitOffScreenPipeline();
 
-        void BuildBatches(VkCommandBuffer cmd, Scene* scene);
-        void RecordIndirectcommands(VkCommandBuffer cmd, Scene* scene);
+        void BuildBatches(VkCommandBuffer cmd, RenderableBatch* scene);
+        void RecordIndirectcommands(VkCommandBuffer cmd, RenderableBatch* scene);
 
-        void DrawShadowMap(VkCommandBuffer cmd, Scene *scene);
-        void DrawObjects(VkCommandBuffer cmd, Scene *scene);
+        void DrawShadowMap(VkCommandBuffer cmd, RenderableBatch *scene);
+        void DrawObjects(VkCommandBuffer cmd, RenderableBatch *scene);
     private:
         // Mesh
-        VkPipeline _default_pipeline;
-        VkPipelineLayout _default_pipeline_layout;
-
         VkDescriptorSet _frame_object_set = VK_NULL_HANDLE;
     private:
         // Shadows
@@ -71,7 +68,7 @@ namespace mrs
         };
 
         // Returns vector if indirect batches from renderables from scene
-        std::vector<IndirectBatch> GetRenderablesAsBatches(Scene *scene);
+        std::vector<IndirectBatch> GetRenderablesAsBatches(RenderableBatch* batch);
 
         // Flag set when draw commands need to be updated i.e Entity creation and destruction
         bool _rerecord = true;

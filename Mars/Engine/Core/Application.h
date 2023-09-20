@@ -51,7 +51,7 @@ namespace mrs {
 		const std::string& GetAppName() const { return _app_name; }
 
 		// Get static instance of application
-		static Application& GetInstance() { return *_instance; }
+		static Application& Instance() { return *_instance; }
 
 		// Returns layer stack
 		LayerStack& GetLayers() { return _layer_stack; }

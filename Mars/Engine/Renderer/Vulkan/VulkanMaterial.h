@@ -8,6 +8,27 @@
 #include <glm/glm.hpp>
 
 namespace mrs {
+	class IRenderPipeline;
+
+	enum class MaterialTextureType : uint8_t
+	{
+		DiffuseTexture = 0,
+		SpecularTexture = 1,
+		Roughness = 2,
+	};
+
+	struct ShaderEffect
+	{
+		IRenderPipeline* render_pipeline;
+		VkDescriptorSetLayout descriptor_set_layout;
+		VkDescriptorSet descriptor_set;
+	};
+
+	struct EffectTemplate
+	{
+		std::vector<ShaderEffect*> shader_effects;
+	};
+
 	// Data passed as descriptor set
 	struct MaterialData
 	{
@@ -25,53 +46,34 @@ namespace mrs {
 	class Material
 	{
 	public:
-		std::string& GetMaterialName() {return _material_name;}
-		std::string GetMaterialName() const {return _material_name;}
+		std::string& Name() {return _name;}
+		const std::string Name() const {return _name;}
+		
+		Ref<Texture> MainTexture();
+		Ref<Texture> GetTexture(MaterialTextureType type);
 
-		std::string& GetDiffuseTextureName() {return _diffuse_texture_path;}
-		std::string GetDiffuseTextureName() const {return _diffuse_texture_path;}
+		const uint32_t MaterialIndex() const { return _material_index;}
 
-		const glm::vec4& GetAlbedoColor() const {return _data.diffuse_color;}
-		glm::vec4& GetAlbedoColor() {return _data.diffuse_color;}
+		static Ref<Material> Create(const std::string& base_template_name, const std::string& alias, const std::string& texture_name = "default_texture");
+		static Ref<Material> Create(Ref<EffectTemplate> base_template, const std::string& alias, const std::string& texture_name = "default_texture");
+		static Ref<Material> Get(const std::string& alias);
 
-		const bool& GetShadowFlag() const {return _data.receive_shadows;}
-		bool& GetShadowFlag() {return _data.receive_shadows;}
-
-		// Returns index of material in global gpu materials buffer
-		const uint32_t GetMaterialIndex() const { return _material_index;}
+		Ref<EffectTemplate> BaseTemplate() { return _base_template; }
 	public:
-		VkPipeline pipeline = VK_NULL_HANDLE;
-		VkDescriptorSetLayout layout = VK_NULL_HANDLE;
-		VkDescriptorSet material_descriptor_set= VK_NULL_HANDLE;
-
-		static Ref<Material> Create(const std::string& alias, const std::string& texture_name = "default_texture")
-		{
-			ResourceManager::Get()._materials[alias] = std::make_shared<Material>();
-			ResourceManager::Get()._materials[alias]->_diffuse_texture_path = texture_name;
-
-			ResourceManager::Get()._materials[alias]->_material_name = alias;
-			return ResourceManager::Get()._materials[alias];
-		}
-
-		static Ref<Material> Get(const std::string& alias)
-		{
-			auto it = ResourceManager::Get()._materials.find(alias);
-
-			if (it != ResourceManager::Get()._materials.end()) {
-				return it->second;
-			}
-
-			return nullptr;
-		}
+		const VkDescriptorSet DescriptorSet() const { return _material_descriptor_set; }
+		VkDescriptorSet& DescriptorSet() { return _material_descriptor_set; }
 	private:
+
 		friend class VulkanAssetManager;
 		friend class ResourceManager;
 
-		std::string _material_name;
-		std::string _diffuse_texture_path;
+		Ref<EffectTemplate> _base_template;
+		VkDescriptorSet _material_descriptor_set = VK_NULL_HANDLE;
+
+		std::string _name;
+		std::array<Ref<Texture>, 4> _textures = {}; 
 
 		MaterialData _data = {};
-		VkPipeline _render_pipeline = VK_NULL_HANDLE;
 
 		// Index of material in materials buffer
 		uint32_t _material_index;

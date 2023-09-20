@@ -5,10 +5,10 @@ void mrs::NativeScriptingLayer::OnAttach()
 {
 	_name = "NativeScriptingLayer";
 
-	_scene = Application::GetInstance().GetScene();
+	_scene = Application::Instance().GetScene();
 
 	// Connect to Script Component signals
-	Scene* scene = Application::GetInstance().GetScene();
+	Scene* scene = Application::Instance().GetScene();
 	scene->Registry()->on_destroy<Script>().connect<&NativeScriptingLayer::OnScriptDestroyed>(this);
 }
 

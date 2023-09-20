@@ -191,10 +191,10 @@ bool mrs::SceneSerializer::DeserializeText(const std::string &scene_path)
 			transform.scale = transform_node["Scale"].as<glm::vec3>();
 		}
 
-		auto renderable_node = entity["RenderableObject"];
+		auto renderable_node = entity["MeshRenderer"];
 		if (renderable_node)
 		{
-			auto &renderable_object = new_entity.AddComponent<RenderableObject>();
+			auto &renderable_object = new_entity.AddComponent<MeshRenderer>();
 			renderable_object.SetMesh(Mesh::Get(renderable_node["Mesh"].as<std::string>()));
 			renderable_object.SetMaterial(Material::Get(renderable_node["Material"].as<std::string>()));
 		}
@@ -301,14 +301,14 @@ void mrs::SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::EndMap;
 	}
 
-	if (entity.HasComponent<RenderableObject>())
+	if (entity.HasComponent<MeshRenderer>())
 	{
-		out << YAML::Key << "RenderableObject";
+		out << YAML::Key << "MeshRenderer";
 		out << YAML::BeginMap;
 
-		auto &renderable = entity.GetComponent<RenderableObject>();
+		auto &renderable = entity.GetComponent<MeshRenderer>();
 		out << YAML::Key << "Mesh" << YAML::Value << renderable.GetMesh()->_mesh_name;
-		out << YAML::Key << "Material" << YAML::Value << renderable.GetMaterial()->GetMaterialName();
+		out << YAML::Key << "Material" << YAML::Value << renderable.GetMaterial()->Name();
 
 		out << YAML::EndMap;
 	}
@@ -394,7 +394,7 @@ void mrs::SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::Key << "Running" << YAML::Value << particles.running;
 		out << YAML::Key << "Color1" << YAML::Value << particles.color_1;
 		out << YAML::Key << "Color2" << YAML::Value << particles.color_2;
-		out << YAML::Key << "Material" << YAML::Value << particles.material->GetMaterialName();
+		out << YAML::Key << "Material" << YAML::Value << particles.material->Name();
 
 		out << YAML::EndMap;
 	}

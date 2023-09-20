@@ -1,6 +1,7 @@
 #include "IRenderPipelineLayer.h"
 #include "Core/Application.h"
 
+#include "Renderer/Vulkan/VulkanAssetManager.h"
 
 namespace mrs
 {
@@ -9,19 +10,19 @@ namespace mrs
 
 	RenderPipelineStack::~RenderPipelineStack()
 	{
-		for (IRenderPipeline *pipeline : _pipeline_stack)
+		for (IRenderPipeline* pipeline : _pipeline_stack)
 		{
 			delete pipeline;
 		}
 	}
 
-	void RenderPipelineStack::PushRenderPipeline(IRenderPipeline *render_pipeline_layer)
+	void RenderPipelineStack::PushRenderPipeline(IRenderPipeline* render_pipeline_layer)
 	{
 		_pipeline_stack.emplace(_pipeline_stack.begin() + _insert_index, render_pipeline_layer);
 		_insert_index++;
 	}
 
-	void RenderPipelineStack::PopRenderPipeline(IRenderPipeline *render_pipeline_layer)
+	void RenderPipelineStack::PopRenderPipeline(IRenderPipeline* render_pipeline_layer)
 	{
 		auto it = std::find(_pipeline_stack.begin(), _pipeline_stack.end(), render_pipeline_layer);
 
@@ -32,11 +33,26 @@ namespace mrs
 		}
 	}
 
-	void IRenderPipelineLayer::OnAttach()
+	IRenderPipeline* IRenderPipelineLayer::FindPipeline(const std::string& name)
+	{
+		auto it = std::find_if(_render_pipeline_layers.begin(), _render_pipeline_layers.end(), [&](const IRenderPipeline* pipeline) 
+		{
+			return pipeline->Name() == name;
+		});
+
+		if (it != _render_pipeline_layers.end())
+		{
+			return *it;
+		}
+
+		return nullptr;
+	}
+
+void IRenderPipelineLayer::OnAttach()
 	{
 		// Initialize rendererer systems
 		RendererInfo renderer_info = {};
-		renderer_info.window = Application::GetInstance().GetWindow();
+		renderer_info.window = Application::Instance().GetWindow();
 		renderer_info.graphics_settings = {};
 		renderer_info.max_objects = 10000;
 		renderer_info.max_materials = 100;
@@ -45,30 +61,16 @@ namespace mrs
 		_renderer->Init();
 		_name = "IRenderPipelineLayer";
 
-		// Subscribe to RenderableObject component signals
-		Scene* scene = Application::GetInstance().GetScene();
-		scene->Registry()->on_construct<RenderableObject>().connect<&IRenderPipelineLayer::OnRenderableCreated>(this);
-		scene->Registry()->on_destroy<RenderableObject>().connect<&IRenderPipelineLayer::OnRenderableDestroyed>(this);
-	}
-
-	void IRenderPipelineLayer::OnDetatch()
-	{
-		_renderer->Shutdown();
-	}
-
-	void IRenderPipelineLayer::OnEnable()
-	{
-		// Upload resources in resource manager
-		_renderer->UploadResources();
+		// Initialize runtime asset manager
+		VulkanAssetManager::Instance().Init(_renderer.get());
 
 		// Initialize render pipelines
-		for(auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
+		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
 			IRenderPipeline* pipeline = (*it);
 
 			// Convenience handles
-			pipeline->_scene = Application::GetInstance().GetScene();
-			pipeline->_window = Application::GetInstance().GetWindow().get();
+			pipeline->_window = Application::Instance().GetWindow().get();
 			pipeline->_renderer = _renderer.get();
 			pipeline->_device = &_renderer->GetDevice();
 
@@ -79,10 +81,26 @@ namespace mrs
 			pipeline->_object_descriptor_set_layout = _renderer->GetGlobalObjectSetLayout();
 			pipeline->_global_descriptor_set = _renderer->GetGlobalDescriptorSet();
 
-			pipeline->_asset_manager = _renderer->GetAssetManager();
-		
 			pipeline->Init();
+			_renderable_batches[pipeline] = {};
 		}
+
+		// Subscribe to MeshRenderer component signals
+		Scene* scene = Application::Instance().GetScene();
+		scene->Registry()->on_construct<MeshRenderer>().connect<&IRenderPipelineLayer::OnRenderableCreated>(this);
+		scene->Registry()->on_destroy<MeshRenderer>().connect<&IRenderPipelineLayer::OnRenderableDestroyed>(this);
+	}
+
+	void IRenderPipelineLayer::OnDetatch()
+	{
+		// Shutdown runtime asset manager
+		VulkanAssetManager::Instance().Shutdown();
+
+		_renderer->Shutdown();
+	}
+
+	void IRenderPipelineLayer::OnEnable()
+	{
 	}
 
 	void IRenderPipelineLayer::OnUpdate(float dt)
@@ -90,46 +108,40 @@ namespace mrs
 		uint32_t current_frame_index = _renderer->GetCurrentFrame();
 		VkCommandBuffer cmd = _renderer->GetCurrentFrameData().command_buffer;
 
-		Scene* scene = Application::GetInstance().GetScene();
+		Scene* scene = Application::Instance().GetScene();
+		BuildBatches(scene);
 
-		// Compute Begin
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
-			(*it)->Compute(_renderer->GetCurrentFrameData().compute_command_buffer, current_frame_index, dt);
+			(*it)->Compute(_renderer->GetCurrentFrameData().compute_command_buffer, current_frame_index, dt, &_renderable_batches[*it]);
 		}
 
-		// Graphics Begin
 		_renderer->Begin(scene);
 
-		// Pre passes
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
-			(*it)->OnPreRenderPass(cmd);
+			(*it)->OnPreRenderPass(cmd, &_renderable_batches[*it]);
 		}
 
-		// Begins a mesh pass
 		_renderer->MeshPassStart(cmd, _renderer->_offscreen_framebuffers[current_frame_index], _renderer->_offscreen_render_pass);
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
-			(*it)->Begin(cmd, current_frame_index);
+			(*it)->Begin(cmd,current_frame_index, &_renderable_batches[*it]);
 		}
 
-		// Ends a mesh pass
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
 			(*it)->End(cmd);
 		}
 		_renderer->MeshPassEnd(cmd);
 
-		// Begin frame buffer render pass
 		_renderer->MainPassStart(cmd);
-
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
 			(*it)->OnMainPassBegin(cmd);
 		}
 
-		for(Layer* layer : Application::GetInstance().GetLayers()) 
+		for (Layer* layer : Application::Instance().GetLayers())
 		{
 			layer->OnImGuiRender();
 		}
@@ -147,21 +159,22 @@ namespace mrs
 
 		// Submit commands
 		_renderer->End();
+		ClearBatches();
 	}
 
-	void IRenderPipelineLayer::PushRenderPipeline(IRenderPipeline *pipeline)
+	void IRenderPipelineLayer::PushRenderPipeline(IRenderPipeline* pipeline)
 	{
 		_render_pipeline_layers.PushRenderPipeline(pipeline);
 	}
 
-	void IRenderPipelineLayer::PopRenderPipeline(IRenderPipeline *pipeline)
+	void IRenderPipelineLayer::PopRenderPipeline(IRenderPipeline* pipeline)
 	{
 		_render_pipeline_layers.PopRenderPipeline(pipeline);
 	}
 
 	void IRenderPipelineLayer::OnRenderableCreated(entt::basic_registry<entt::entity>&, entt::entity entity)
 	{
-		static Scene* scene = Application::GetInstance().GetScene();
+		static Scene* scene = Application::Instance().GetScene();
 		Entity e{ entity, scene };
 
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
@@ -172,7 +185,7 @@ namespace mrs
 
 	void IRenderPipelineLayer::OnRenderableDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity)
 	{
-		static Scene* scene = Application::GetInstance().GetScene();
+		static Scene* scene = Application::Instance().GetScene();
 		Entity e{ entity, scene };
 
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
@@ -189,6 +202,30 @@ namespace mrs
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
 			(*it)->OnMaterialsUpdate();
+		}
+	}
+
+	void IRenderPipelineLayer::BuildBatches(Scene* scene)
+	{
+		auto renderables = scene->Registry()->view<MeshRenderer>();
+
+		for (auto entity : renderables)
+		{
+			Entity e(entity, scene);
+			auto& renderable = e.GetComponent<MeshRenderer>();
+			Ref<EffectTemplate> base_template = renderable.GetMaterial()->BaseTemplate();
+
+			for(const ShaderEffect* effect : base_template->shader_effects)
+			{
+				_renderable_batches[effect->render_pipeline].entities.push_back(e);
+			}
+		}
+	}
+	void IRenderPipelineLayer::ClearBatches()
+	{
+		for (auto it = _renderable_batches.begin(); it != _renderable_batches.end(); it++)
+		{
+			it->second.entities.clear();
 		}
 	}
 }

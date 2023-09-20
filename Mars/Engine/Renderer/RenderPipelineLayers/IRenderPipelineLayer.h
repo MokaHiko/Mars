@@ -15,6 +15,14 @@
 
 namespace mrs
 {
+    struct RenderableBatch
+    {
+        std::vector<Entity> entities;
+
+        Material* material;
+        Mesh* mesh;
+    };
+
     // RenderPipeline Stack
     class RenderPipelineStack
     {
@@ -52,6 +60,7 @@ namespace mrs
         Ref<Renderer> GetRenderer() const {return _renderer;}
 
         const RenderPipelineStack& PipelineLayers() const {return _render_pipeline_layers;}
+        IRenderPipeline* FindPipeline(const std::string& name);
 
         virtual ~IRenderPipelineLayer(){};
 
@@ -63,9 +72,7 @@ namespace mrs
         virtual void OnUpdate(float dt) final;
         virtual void OnImGuiRender() final;
 
-        /// <summary>
         ///  Sets the camera for the render pipeline
-        /// </summary>
         void SetCamera(Camera* camera)
         {
             _renderer->SetCamera(camera);
@@ -83,9 +90,17 @@ namespace mrs
         void OnRenderableDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
 
         void OnMaterialsUpdate();
+
+        void UploadResources() {_renderer->UploadResources();}
+    private:
+        // Batches the renderables in scene into IRenderPipelines
+        void BuildBatches(Scene* scene);
+        void ClearBatches();
     private:
         Ref<Renderer> _renderer = nullptr;
 		RenderPipelineStack _render_pipeline_layers;
+
+        std::unordered_map<IRenderPipeline*, RenderableBatch> _renderable_batches;
     };
 }
 
