@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "VulkanStructures.h"
 #include "Core/ResourceManager.h"
 #include <glm/glm.hpp>
 
@@ -17,16 +17,27 @@ namespace mrs {
 		Roughness = 2,
 	};
 
+	class Shader
+	{
+	public:
+		std::string name;
+		std::vector<char> byte_code;
+
+		VkShaderModule shader_module;
+		VkShaderStageFlagBits stage;
+	};
+
 	struct ShaderEffect
 	{
 		IRenderPipeline* render_pipeline;
-		VkDescriptorSetLayout descriptor_set_layout;
-		VkDescriptorSet descriptor_set;
+		std::vector<VkDescriptorSet> descriptor_sets;
 	};
 
+	// Base effect a material is built from
 	struct EffectTemplate
 	{
 		std::vector<ShaderEffect*> shader_effects;
+		std::string name;
 	};
 
 	// Data passed as descriptor set
@@ -52,8 +63,6 @@ namespace mrs {
 		Ref<Texture> MainTexture();
 		Ref<Texture> GetTexture(MaterialTextureType type);
 
-		const uint32_t MaterialIndex() const { return _material_index;}
-
 		static Ref<Material> Create(const std::string& base_template_name, const std::string& alias, const std::string& texture_name = "default_texture");
 		static Ref<Material> Create(Ref<EffectTemplate> base_template, const std::string& alias, const std::string& texture_name = "default_texture");
 		static Ref<Material> Get(const std::string& alias);
@@ -62,21 +71,22 @@ namespace mrs {
 	public:
 		const VkDescriptorSet DescriptorSet() const { return _material_descriptor_set; }
 		VkDescriptorSet& DescriptorSet() { return _material_descriptor_set; }
+
+		AllocatedBuffer& Buffer() { return _material_buffer; }
+		const AllocatedBuffer& Buffer() const { return _material_buffer; }
 	private:
 
 		friend class VulkanAssetManager;
 		friend class ResourceManager;
 
 		Ref<EffectTemplate> _base_template;
+
+		AllocatedBuffer _material_buffer = {};
 		VkDescriptorSet _material_descriptor_set = VK_NULL_HANDLE;
 
 		std::string _name;
 		std::array<Ref<Texture>, 4> _textures = {}; 
-
 		MaterialData _data = {};
-
-		// Index of material in materials buffer
-		uint32_t _material_index;
 	};
 }
 #endif

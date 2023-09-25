@@ -11,7 +11,14 @@ layout(location = 4) in vec4 tese_uv_world_space;
 
 layout(location = 5) in float tese_height;
 
-struct MaterialData {
+layout(set = 0, binding = 0) uniform GlobalBuffer{
+	mat4 view;
+	mat4 view_proj;
+	mat4 view_proj_light;
+	vec4 direction_light_position;
+} _global_buffer;
+
+layout(set = 2, binding = 0) uniform Material {
 	// Albedo
 	vec4 diffuse_color;
 
@@ -21,18 +28,8 @@ struct MaterialData {
 	int texture_channel;
 
 	bool receive_shadows;
-};
+} _material;
 
-layout(set = 0, binding = 0) uniform GlobalBuffer{
-	mat4 view;
-	mat4 view_proj;
-	mat4 view_proj_light;
-	vec4 direction_light_position;
-} _global_buffer;
-
-layout(std140, set = 2, binding = 0) readonly buffer Materials {
-	MaterialData materials[];
-} _materials_buffer;
 layout(set = 2, binding = 1) uniform sampler2D _diffuse_texture;
 
 layout(set = 3, binding = 0) uniform sampler2D _shadow_map_texture;
@@ -62,15 +59,12 @@ float CalculateShadowFactor()
 
 void main()
 {
-	// Get material in material buffer
-	MaterialData material = _materials_buffer.materials[_material_index.material_index];
-
 	// ~ Shadow shadow
 	//float shadow_factor = CalculateShadowFactor();
 	float shadow_factor = 1;
 
 	//  ~ Diffuse
-	vec3 color = texture(_diffuse_texture, tese_uv).xyz * material.diffuse_color.xyz;
+	vec3 color = texture(_diffuse_texture, tese_uv).xyz * _material.diffuse_color.xyz;
 
 	// ~ Directional
 	float diff = max(dot(tese_normal_world_space, normalize(_global_buffer.direction_light_position.xyz)), 0);

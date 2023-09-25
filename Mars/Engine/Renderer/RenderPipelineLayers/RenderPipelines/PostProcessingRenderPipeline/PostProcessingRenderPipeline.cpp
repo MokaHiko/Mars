@@ -71,11 +71,11 @@ void mrs::PostProcessingRenderPipeline::InitPostProcessPipeline()
 	layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
 	layout_info.pSetLayouts = set_layouts.data();
 
-	VK_CHECK(vkCreatePipelineLayout(_renderer->GetDevice().device, &layout_info, nullptr, &_post_process_pipeline_layout));
+	VK_CHECK(vkCreatePipelineLayout(_renderer->Device().device, &layout_info, nullptr, &_post_process_pipeline_layout));
 
 	builder._pipeline_layout = _post_process_pipeline_layout;
 
-	_post_process_pipeline = builder.Build(_renderer->GetDevice().device, _render_pass);
+	_post_process_pipeline = builder.Build(_renderer->Device().device, _render_pass);
 
 	if (_post_process_pipeline == VK_NULL_HANDLE)
 	{
@@ -83,11 +83,11 @@ void mrs::PostProcessingRenderPipeline::InitPostProcessPipeline()
 	}
 
 	// Clean up
-	vkDestroyShaderModule(_renderer->GetDevice().device, vertex_shader, nullptr);
-	vkDestroyShaderModule(_renderer->GetDevice().device, fragment_shader, nullptr);
-	_renderer->GetDeletionQueue().Push([&]() {
-		vkDestroyPipeline(_renderer->GetDevice().device, _post_process_pipeline, nullptr);
-		vkDestroyPipelineLayout(_renderer->GetDevice().device, _post_process_pipeline_layout, nullptr);
+	vkDestroyShaderModule(_renderer->Device().device, vertex_shader, nullptr);
+	vkDestroyShaderModule(_renderer->Device().device, fragment_shader, nullptr);
+	_renderer->DeletionQueue().Push([&]() {
+		vkDestroyPipeline(_renderer->Device().device, _post_process_pipeline, nullptr);
+		vkDestroyPipelineLayout(_renderer->Device().device, _post_process_pipeline_layout, nullptr);
 		});
 }
 
@@ -103,7 +103,7 @@ void mrs::PostProcessingRenderPipeline::InitDescriptors()
 		base_image_info.imageView = _renderer->_offscreen_images_views[i];
 		base_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		vkutil::DescriptorBuilder::Begin(_renderer->_descriptor_layout_cache.get(), _renderer->_descriptor_allocator.get())
+		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
 			.BindImage(0, &base_image_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(&_post_process_descriptor_sets[i], &_post_process_descriptor_set_layout);
 	}
@@ -115,7 +115,7 @@ void mrs::PostProcessingRenderPipeline::OnMainPassBegin(VkCommandBuffer cmd)
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline);
 
 	// Draw scene as quad
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline_layout, 0, 1, &_post_process_descriptor_sets[_renderer->GetCurrentFrame()], 0, nullptr);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline_layout, 0, 1, &_post_process_descriptor_sets[_renderer->CurrentFrame()], 0, nullptr);
 
 	VkDeviceSize offset = 0;
 	vkCmdBindVertexBuffers(cmd, 0, 1, &screen_quad->_buffer.buffer,  &offset);

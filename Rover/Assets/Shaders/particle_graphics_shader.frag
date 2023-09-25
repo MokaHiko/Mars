@@ -5,7 +5,7 @@ layout(location = 1) in vec4 v_color;
 
 layout(location = 3) in vec2 v_uv;
 
-struct MaterialData {
+layout(set = 2, binding = 0) uniform Material {
 	// Albedo
 	vec4 diffuse_color;
 
@@ -15,11 +15,7 @@ struct MaterialData {
 	int texture_channel;
 
 	bool receive_shadows;
-};
-
-layout(std140, set = 2, binding = 0) readonly buffer Materials{
-	MaterialData materials[];
-} _materials_buffer;
+} _material;
 
 layout(set = 2, binding = 1) uniform sampler2D _diffuse_texture;
 
@@ -30,9 +26,6 @@ layout( push_constant ) uniform ParticleSystemPushConstant{
 
 void main()
 {
-	// Get material in material buffer
-	MaterialData material = _materials_buffer.materials[_particle_push_constant.material_index];
-
     vec4 diffuse = texture(_diffuse_texture, v_uv);
 
     if(diffuse.a <= 0.1f)  

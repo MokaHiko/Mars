@@ -7,6 +7,10 @@ add_subdirectory(glm)
 add_subdirectory(entt)
 add_subdirectory(yaml)
 
+set(SPIRV_REFLECT_EXECUTABLE OFF)
+set(SPIRV_REFLECT_STATIC_LIB ON)
+add_subdirectory(spirv_reflect)
+
 set(BOX2D_BUILD_TESTBED OFF)
 set(BOX2D_BUILD_UNIT_TESTS OFF)
 add_subdirectory(box2d)
@@ -22,6 +26,7 @@ target_link_libraries(${PROJECT_NAME}
 					INTERFACE box2d
 					INTERFACE boop
 					INTERFACE yaml-cpp
+					INTERFACE spirv-reflect-static
 					)
 
 # Header only libraries 
@@ -47,3 +52,5 @@ file(GLOB IMGUIZMO_SOURCES "imGuizmo/*.cpp")
 file(GLOB IMGUIZMO_HEADERS "imGuizmo/*.h")
 target_sources(imGuizmo PRIVATE ${IMGUIZMO_SOURCES} ${IMGUI_HEADERS})
 target_link_libraries(imGuizmo PRIVATE imgui)
+
+target_include_directories(${PROJECT_NAME} INTERFACE "./")

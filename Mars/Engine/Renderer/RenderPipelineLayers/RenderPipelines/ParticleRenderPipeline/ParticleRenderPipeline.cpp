@@ -93,7 +93,7 @@ void mrs::ParticleRenderPipeline::InitComputeDescriptors()
 		current_frame_storage_buffer_info.offset = 0;
 		current_frame_storage_buffer_info.range = _particle_buffer_size;
 
-		vkutil::DescriptorBuilder::Begin(_renderer->_descriptor_layout_cache.get(), _renderer->_descriptor_allocator.get())
+		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
 			.BindBuffer(0, &parameter_storage_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
 			.BindBuffer(1, &last_frame_storage_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
 			.BindBuffer(2, &current_frame_storage_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
@@ -101,11 +101,11 @@ void mrs::ParticleRenderPipeline::InitComputeDescriptors()
 	}
 
 	// Clean up
-	_renderer->GetDeletionQueue().Push([&]()
+	_renderer->DeletionQueue().Push([&]()
 		{
 			for (int i = 0; i < _particle_storage_buffers.size(); i++) {
-				vmaDestroyBuffer(_renderer->GetAllocator(), _particle_storage_buffers[i].buffer, _particle_storage_buffers[i].allocation);
-				vmaDestroyBuffer(_renderer->GetAllocator(), _particle_parameter_buffers[i].buffer, _particle_parameter_buffers[i].allocation);
+				vmaDestroyBuffer(_renderer->Allocator(), _particle_storage_buffers[i].buffer, _particle_storage_buffers[i].allocation);
+				vmaDestroyBuffer(_renderer->Allocator(), _particle_parameter_buffers[i].buffer, _particle_parameter_buffers[i].allocation);
 			} });
 }
 
@@ -123,7 +123,7 @@ void mrs::ParticleRenderPipeline::InitComputePipeline() {
 	pipeline_layout_info.pPushConstantRanges = &push_constant;
 	pipeline_layout_info.pushConstantRangeCount = 1;
 
-	VK_CHECK(vkCreatePipelineLayout(_renderer->GetDevice().device,
+	VK_CHECK(vkCreatePipelineLayout(_renderer->Device().device,
 		&pipeline_layout_info, nullptr,
 		&_compute_pipeline_layout));
 
@@ -139,7 +139,7 @@ void mrs::ParticleRenderPipeline::InitComputePipeline() {
 	info.stage.pName = "main";
 	info.stage.module = compute_shader;
 
-	VK_CHECK(vkCreateComputePipelines(_renderer->GetDevice().device,
+	VK_CHECK(vkCreateComputePipelines(_renderer->Device().device,
 		VK_NULL_HANDLE, 1, &info, nullptr,
 		&_compute_pipeline));
 }
@@ -157,12 +157,12 @@ void mrs::ParticleRenderPipeline::InitComputeSyncStructures()
 	_compute_in_flight_semaphores.resize(frame_overlaps);
 	for (uint32_t i = 0; i < frame_overlaps; i++)
 	{
-		VK_CHECK(vkCreateSemaphore(_renderer->GetDevice().device, &semaphore_info, nullptr, &_compute_in_flight_semaphores[i]));
-		VK_CHECK(vkCreateFence(_renderer->GetDevice().device, &fence_info, nullptr, &_compute_in_flight_fences[i]));
+		VK_CHECK(vkCreateSemaphore(_renderer->Device().device, &semaphore_info, nullptr, &_compute_in_flight_semaphores[i]));
+		VK_CHECK(vkCreateFence(_renderer->Device().device, &fence_info, nullptr, &_compute_in_flight_fences[i]));
 
-		_renderer->GetDeletionQueue().Push([&]() {
-			vkDestroyFence(_renderer->GetDevice().device, _compute_in_flight_fences[i], nullptr);
-			vkDestroySemaphore(_renderer->GetDevice().device, _compute_in_flight_semaphores[i], nullptr);
+		_renderer->DeletionQueue().Push([&]() {
+			vkDestroyFence(_renderer->Device().device, _compute_in_flight_fences[i], nullptr);
+			vkDestroySemaphore(_renderer->Device().device, _compute_in_flight_semaphores[i], nullptr);
 			});
 	}
 }
@@ -173,7 +173,7 @@ void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_f
 
 	// Update parameters
 	char *data;
-	vmaMapMemory(_renderer->GetAllocator(), _particle_parameter_buffers[current_frame].allocation, (void **)&data);
+	vmaMapMemory(_renderer->Allocator(), _particle_parameter_buffers[current_frame].allocation, (void **)&data);
 	for (auto  e: batch->entities) {
 		auto &particle_system = e.GetComponent<ParticleSystem>();
 
@@ -237,7 +237,7 @@ void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_f
 		}
 	}
 
-	vmaUnmapMemory(_renderer->GetAllocator(), _particle_parameter_buffers[current_frame].allocation);
+	vmaUnmapMemory(_renderer->Allocator(), _particle_parameter_buffers[current_frame].allocation);
 }
 
 void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
@@ -259,7 +259,7 @@ void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cm
 			// Bind push constant
 			ParticleSystemPushConstant pc;
 			pc.count = ctr++;
-			pc.material_index = particle_system.material->MaterialIndex();
+			//pc.material_index = particle_system.material->MaterialIndex();
 
 			vkCmdPushConstants(cmd, _compute_pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
 
@@ -324,7 +324,7 @@ void mrs::ParticleRenderPipeline::InitGraphicsDescriptors()
 		particles_storage_buffer_info.offset = 0;
 		particles_storage_buffer_info.range = _particle_buffer_size;
 
-		vkutil::DescriptorBuilder::Begin(_renderer->_descriptor_layout_cache.get(), _renderer->_descriptor_allocator.get())
+		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
 			.BindBuffer(0, &parameter_storage_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
 			.BindBuffer(1, &particles_storage_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(&_graphics_descriptor_sets[i], &_graphics_descriptor_set_layout);
@@ -332,90 +332,90 @@ void mrs::ParticleRenderPipeline::InitGraphicsDescriptors()
 }
 
 void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
-	vkutil::PipelineBuilder builder;
+	// vkutil::PipelineBuilder builder;
 
-	// Viewport & scissor
-	builder._scissor.extent = { _window->GetWidth(), _window->GetHeight() };
-	builder._scissor.offset = { 0, 0 };
+	// // Viewport & scissor
+	// builder._scissor.extent = { _window->GetWidth(), _window->GetHeight() };
+	// builder._scissor.offset = { 0, 0 };
 
-	builder._viewport.x = 0.0f;
-	builder._viewport.y = 0.0f;
-	builder._viewport.width = static_cast<float>(_window->GetWidth());
-	builder._viewport.height = static_cast<float>(_window->GetHeight());
-	builder._viewport.minDepth = 0.0f;
-	builder._viewport.maxDepth = 1.0f;
+	// builder._viewport.x = 0.0f;
+	// builder._viewport.y = 0.0f;
+	// builder._viewport.width = static_cast<float>(_window->GetWidth());
+	// builder._viewport.height = static_cast<float>(_window->GetHeight());
+	// builder._viewport.minDepth = 0.0f;
+	// builder._viewport.maxDepth = 1.0f;
 
-	// Shader
-	VkShaderModule vertex_shader;
-	VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/particle_graphics_shader.vert.spv", &vertex_shader);
-	VkShaderModule fragment_shader;
-	VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/particle_graphics_shader.frag.spv", &fragment_shader);
+	// // Shader
+	// VkShaderModule vertex_shader;
+	// VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/particle_graphics_shader.vert.spv", &vertex_shader);
+	// VkShaderModule fragment_shader;
+	// VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/particle_graphics_shader.frag.spv", &fragment_shader);
 
-	builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader));
-	builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader));
+	// builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader));
+	// builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader));
 
-	// Vertex Input
-	VertexInputDescription vertex_desc = Vertex::GetDescription();
-	auto bindings = vertex_desc.bindings;
-	auto attributes = vertex_desc.attributes;
+	// // Vertex Input
+	// VertexInputDescription vertex_desc = Vertex::GetDescription();
+	// auto bindings = vertex_desc.bindings;
+	// auto attributes = vertex_desc.attributes;
 
-	builder._vertex_input_info = vkinit::PipelineVertexInputStateCreateInfo();
-	builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(bindings.size());
-	builder._vertex_input_info.pVertexBindingDescriptions = bindings.data();
-	builder._vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes.size());
-	builder._vertex_input_info.pVertexAttributeDescriptions = attributes.data();
-	builder._input_assembly = vkinit::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	// builder._vertex_input_info = vkinit::PipelineVertexInputStateCreateInfo();
+	// builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(bindings.size());
+	// builder._vertex_input_info.pVertexBindingDescriptions = bindings.data();
+	// builder._vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes.size());
+	// builder._vertex_input_info.pVertexAttributeDescriptions = attributes.data();
+	// builder._input_assembly = vkinit::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
-	// Graphics Settings
-	builder._rasterizer = vkinit::PipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL);
-	builder._multisampling = vkinit::PipelineMultisampleStateCreateInfo();
-	builder._color_blend_attachment = vkinit::PipelineColorBlendAttachmentState(
-		VK_TRUE,
-		VK_BLEND_FACTOR_SRC_ALPHA,
-		VK_BLEND_FACTOR_ONE,
-		VK_BLEND_OP_ADD,
-		VK_BLEND_FACTOR_ONE,
-		VK_BLEND_FACTOR_ONE,
-		VK_BLEND_OP_ADD);
-	builder._depth_stencil = vkinit::PipelineDepthStencilStateCreateInfo(false, false, VK_COMPARE_OP_ALWAYS);
+	// // Graphics Settings
+	// builder._rasterizer = vkinit::PipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL);
+	// builder._multisampling = vkinit::PipelineMultisampleStateCreateInfo();
+	// builder._color_blend_attachment = vkinit::PipelineColorBlendAttachmentState(
+	// 	VK_TRUE,
+	// 	VK_BLEND_FACTOR_SRC_ALPHA,
+	// 	VK_BLEND_FACTOR_ONE,
+	// 	VK_BLEND_OP_ADD,
+	// 	VK_BLEND_FACTOR_ONE,
+	// 	VK_BLEND_FACTOR_ONE,
+	// 	VK_BLEND_OP_ADD);
+	// builder._depth_stencil = vkinit::PipelineDepthStencilStateCreateInfo(false, false, VK_COMPARE_OP_ALWAYS);
 
-	// Pipeline layouts
-	VkPipelineLayoutCreateInfo layout_info = vkinit::PipelineLayoutCreateInfo();
-	std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, VulkanAssetManager::Instance().MaterialDescriptorSetLayout(), _graphics_descriptor_set_layout};
+	// // Pipeline layouts
+	// VkPipelineLayoutCreateInfo layout_info = vkinit::PipelineLayoutCreateInfo();
+	// std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, VulkanAssetManager::Instance().MaterialDescriptorSetLayout(), _graphics_descriptor_set_layout};
 
-	layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
-	layout_info.pSetLayouts = set_layouts.data();
+	// layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
+	// layout_info.pSetLayouts = set_layouts.data();
 
-	VkPushConstantRange push_constant = {};
-	push_constant.offset = 0;
-	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-	push_constant.size = sizeof(ParticleSystemPushConstant);
+	// VkPushConstantRange push_constant = {};
+	// push_constant.offset = 0;
+	// push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+	// push_constant.size = sizeof(ParticleSystemPushConstant);
 
-	layout_info.pPushConstantRanges = &push_constant;
-	layout_info.pushConstantRangeCount = 1;
-	VK_CHECK(vkCreatePipelineLayout(_renderer->GetDevice().device, &layout_info, nullptr, &_graphics_pipeline_layout));
+	// layout_info.pPushConstantRanges = &push_constant;
+	// layout_info.pushConstantRangeCount = 1;
+	// VK_CHECK(vkCreatePipelineLayout(_renderer->Device().device, &layout_info, nullptr, &_graphics_pipeline_layout));
 
-	builder._pipeline_layout = _graphics_pipeline_layout;
+	// builder._pipeline_layout = _graphics_pipeline_layout;
 
-	_graphics_pipeline = builder.Build(_renderer->GetDevice().device, _renderer->_offscreen_render_pass);
+	// _graphics_pipeline = builder.Build(_renderer->Device().device, _renderer->_offscreen_render_pass);
 
-	if (_graphics_pipeline == VK_NULL_HANDLE)
-	{
-		VK_CHECK(VK_ERROR_UNKNOWN);
-	}
+	// if (_graphics_pipeline == VK_NULL_HANDLE)
+	// {
+	// 	VK_CHECK(VK_ERROR_UNKNOWN);
+	// }
 
-	// Clean up
-	vkDestroyShaderModule(_renderer->GetDevice().device, vertex_shader, nullptr);
-	vkDestroyShaderModule(_renderer->GetDevice().device, fragment_shader, nullptr);
-	_renderer->GetDeletionQueue().Push([&]() {
-		vkDestroyPipeline(_renderer->GetDevice().device, _graphics_pipeline, nullptr);
-		vkDestroyPipelineLayout(_renderer->GetDevice().device, _graphics_pipeline_layout, nullptr);
-		});
+	// // Clean up
+	// vkDestroyShaderModule(_renderer->Device().device, vertex_shader, nullptr);
+	// vkDestroyShaderModule(_renderer->Device().device, fragment_shader, nullptr);
+	// _renderer->DeletionQueue().Push([&]() {
+	// 	vkDestroyPipeline(_renderer->Device().device, _graphics_pipeline, nullptr);
+	// 	vkDestroyPipelineLayout(_renderer->Device().device, _graphics_pipeline_layout, nullptr);
+	// 	});
 }
 
 void mrs::ParticleRenderPipeline::Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt, RenderableBatch* compute_batch)
 {
-	VkDevice device = _renderer->GetDevice().device;
+	VkDevice device = _renderer->Device().device;
 
 	vkWaitForFences(device, 1, &_compute_in_flight_fences[current_frame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 	UpdateComputeDescriptorSets(current_frame, dt, compute_batch);
@@ -434,54 +434,54 @@ void mrs::ParticleRenderPipeline::Compute(VkCommandBuffer cmd, uint32_t current_
 	submit_info.pSignalSemaphores = &_compute_in_flight_semaphores[current_frame];
 
 	_renderer->PushGraphicsSemaphore(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, _compute_in_flight_semaphores[current_frame]);
-	VK_CHECK(vkQueueSubmit(_renderer->GetQueues().compute, 1, &submit_info, _compute_in_flight_fences[current_frame]));
+	VK_CHECK(vkQueueSubmit(_renderer->Queues().compute, 1, &submit_info, _compute_in_flight_fences[current_frame]));
 }
 
 
 void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
 {
-	static Ref<Mesh> quad_mesh = Mesh::Get("quad");
+	// static Ref<Mesh> quad_mesh = Mesh::Get("quad");
 
-	VkDescriptorSet _frame_object_set = _renderer->GetCurrentGlobalObjectDescriptorSet();
+	// VkDescriptorSet _frame_object_set = _renderer->GetCurrentGlobalObjectDescriptorSet();
 
-	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline);
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 0, 1, &_global_descriptor_set, 0, 0);
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 1, 1, &_frame_object_set, 0, 0);
+	// vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline);
+	// vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 0, 1, &_global_descriptor_set, 0, 0);
+	// vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 1, 1, &_frame_object_set, 0, 0);
 
-	// Bind particle parameters and particles
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 3, 1, &_graphics_descriptor_sets[current_frame], 0, 0);
+	// // Bind particle parameters and particles
+	// vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 3, 1, &_graphics_descriptor_sets[current_frame], 0, 0);
 
-	// Bind quad meshs
-	VkDeviceSize offset = 0;
-	vkCmdBindVertexBuffers(cmd, 0, 1, &quad_mesh->_buffer.buffer, &offset);
-	vkCmdBindIndexBuffer(cmd, quad_mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+	// // Bind quad meshs
+	// VkDeviceSize offset = 0;
+	// vkCmdBindVertexBuffers(cmd, 0, 1, &quad_mesh->_buffer.buffer, &offset);
+	// vkCmdBindIndexBuffer(cmd, quad_mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-	int ctr = 0;
+	// int ctr = 0;
 
-	// Bind global materials buffer
-	for (auto e : batch->entities)
-	{
-		auto &particle_system = e.GetComponent<ParticleSystem>();
+	// // Bind global materials buffer
+	// for (auto e : batch->entities)
+	// {
+	// 	auto &particle_system = e.GetComponent<ParticleSystem>();
 
-		if (!particle_system.running)
-		{
-			continue;
-		}
+	// 	if (!particle_system.running)
+	// 	{
+	// 		continue;
+	// 	}
 
-		auto &material = particle_system.material;
+	// 	auto &material = particle_system.material;
 
-		// Bind particle system properties and material index
-		ParticleSystemPushConstant pc;
-		pc.count = ctr++;
-		pc.material_index = particle_system.material->MaterialIndex();
-		vkCmdPushConstants(cmd, _graphics_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
+	// 	// Bind particle system properties and material index
+	// 	ParticleSystemPushConstant pc;
+	// 	pc.count = ctr++;
+	// 	//pc.material_index = particle_system.material->MaterialIndex();
+	// 	vkCmdPushConstants(cmd, _graphics_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
 
-		// Bind material textures
-		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 2, 1, &material->DescriptorSet(), 0, 0);
+	// 	// Bind material textures
+	// 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 2, 1, &material->DescriptorSet(), 0, 0);
 
-		// Draw using instancing
-		vkCmdDrawIndexed(cmd, quad_mesh->_index_count, particle_system.live_particles, 0, 0, e.Id());
-	}
+	// 	// Draw using instancing
+	// 	vkCmdDrawIndexed(cmd, quad_mesh->_index_count, particle_system.live_particles, 0, 0, e.Id());
+	// }
 }
 
 void mrs::ParticleRenderPipeline::End(VkCommandBuffer cmd) {}
@@ -549,11 +549,11 @@ void mrs::ParticleRenderPipeline::CacheParticleSystemType(ParticleSystem &partic
 	// Create staging buffer for new particles
 	AllocatedBuffer staging_buffer = _renderer->CreateBuffer(_padded_particle_size * particle_system.max_particles, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	char *data;
-	vmaMapMemory(_renderer->GetAllocator(), staging_buffer.allocation, (void **)&data);
+	vmaMapMemory(_renderer->Allocator(), staging_buffer.allocation, (void **)&data);
 	for (uint32_t i = 0; i < particle_system.max_particles; i++) {
 		memcpy(data + (_padded_particle_size * i), &particles[i], sizeof(Particle));
 	}
-	vmaUnmapMemory(_renderer->GetAllocator(), staging_buffer.allocation);
+	vmaUnmapMemory(_renderer->Allocator(), staging_buffer.allocation);
 
 	// Cache particle system template in particle buffer
 	for (uint32_t i = 0; i < frame_overlaps; i++)
@@ -581,7 +581,7 @@ void mrs::ParticleRenderPipeline::CacheParticleSystemType(ParticleSystem &partic
 	_buffer_next_free_offset += type.buffer_size;
 
 	// Clean up
-	vmaDestroyBuffer(_renderer->GetAllocator(), staging_buffer.buffer, staging_buffer.allocation);
+	vmaDestroyBuffer(_renderer->Allocator(), staging_buffer.buffer, staging_buffer.allocation);
 }
 
 void mrs::ParticleRenderPipeline::OnRenderableDestroyed(Entity e)

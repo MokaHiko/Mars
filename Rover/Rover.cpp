@@ -132,26 +132,27 @@ void mrs::EditorLayer::Stop()
 
 void mrs::EditorLayer::LoadEditorResources()
 {
-	// Create templates
+	// Create effect templates
 	std::vector<ShaderEffect*> default_lit_effects;
 	default_lit_effects.push_back(_render_pipeline_layer->FindPipeline("MeshRenderPipeline")->Effect().get());
-	VulkanAssetManager::Instance().CreateEffectTemplate(default_lit_effects, "default_lit");
+	Ref<EffectTemplate> default_lit = VulkanAssetManager::Instance().CreateEffectTemplate(default_lit_effects, "default_lit");
 
 	// TODO: Load all assets in asset folder
 	//Model::LoadFromAsset("Assets/Models/Room.bp", "room");
+
 	Mesh::LoadFromAsset("Assets/Models/sphere.boop_obj", "sphere");
 	Texture::LoadFromAsset("Assets/Models/white.boop_png", "default_texture");
-	Material::Create("default_lit", "default_material");
+	Material::Create(default_lit, "default_material");
 
 	Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
 	Texture::LoadFromAsset("Assets/Models/textures_container/Container_DiffuseMap.boop_jpg", "container");
-	Material::Create("default_lit", "container", "container");
+	Material::Create(default_lit, "container", "container");
 
 	Texture::LoadFromAsset("Assets/Textures/green.boop_png", "green");
-	Material::Create("default_lit", "green_material", "green");
+	Material::Create(default_lit, "green_material", "green");
 
 	Texture::LoadFromAsset("Assets/Textures/smoke_01.boop_png", "smoke_01");
-	Material::Create("default_lit", "smoke_01_material", "smoke_01");
+	Material::Create(default_lit, "smoke_01_material", "smoke_01");
 
 	// Basic mesh shapes
 	Mesh::LoadFromAsset("Assets/Models/cube.boop_obj", "cube");

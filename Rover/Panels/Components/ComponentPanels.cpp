@@ -17,7 +17,6 @@ namespace mrs
 		DrawComponentUI<Serializer>("Serializer", entity, [](Serializer& serializer) {
 			if (ImGui::Checkbox("Serialize", &serializer.serialize))
 			{
-
 			}
 			});
 	}
@@ -70,24 +69,16 @@ namespace mrs
 	template<>
 	void DrawComponent<MeshRenderer>(Entity entity)
 	{
-		DrawComponentUI<MeshRenderer>("Mesh Renderer", entity, [](MeshRenderer& renderable) {
+		DrawComponentUI<MeshRenderer>("Mesh Renderer", entity, [](MeshRenderer& renderable) 
+		{
 			ImGui::Text("Mesh: %s", renderable.GetMesh()->_mesh_name.c_str());
 			ImGui::Text("Vertices: %d", renderable.GetMesh()->_vertex_count);
 			ImGui::Text("Indices: %d", renderable.GetMesh()->_index_count);
 			ImVec2 region_size = ImGui::GetContentRegionAvail();
 
 			Ref<Material> material = renderable.GetMaterial();
-			// ImGui::Text("Material: %s", material->Name().c_str());
-			// if (ImGui::CollapsingHeader("Albedo"))
-			// {
-			// 	ImGui::ColorPicker4("Color", glm::value_ptr(material->GetAlbedoColor()));
-			// 	ImGui::Text("Texture: %s", material->Name());
-
-			// 	// TODO: Add Material editor
-			// }
-
-			// ImGui::Checkbox("Receive Shadows", &material->GetShadowFlag());
-			});
+			ImGui::Text("material: %s", material->BaseTemplate()->name.c_str());
+		});
 	}
 
 	template<>

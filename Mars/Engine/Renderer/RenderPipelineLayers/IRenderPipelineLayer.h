@@ -80,7 +80,7 @@ namespace mrs
 
         void GetFrameBuffer()
         {
-            _renderer->GetCurrentFrame();
+            _renderer->CurrentFrame();
         }
 
 		void PushRenderPipeline(IRenderPipeline* pipeline);

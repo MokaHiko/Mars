@@ -15,36 +15,34 @@ namespace mrs
         ~MeshRenderPipeline();
 
         virtual void Init() override;
+        virtual void InitDescriptors() override;
 
         virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch) override;
         virtual void End(VkCommandBuffer cmd) override;
 
         virtual void OnPreRenderPass(VkCommandBuffer cmd, RenderableBatch* batch) override;
         virtual void OnMaterialsUpdate() override;
-    public:
-        // Called on renderable created
-        virtual void OnRenderableCreated(Entity e) override;
 
-        // Called on renderable destroyed
+        virtual void OnRenderableCreated(Entity e) override;
         virtual void OnRenderableDestroyed(Entity e) override;
     private:
-        void InitDescriptors();
-        void InitPipelineLayout();
-
         void CreateOffScreenFramebuffer();
 
         void InitIndirectCommands();
-        void InitMeshPipeline();
         void InitOffScreenPipeline();
 
         void BuildBatches(VkCommandBuffer cmd, RenderableBatch* scene);
         void RecordIndirectcommands(VkCommandBuffer cmd, RenderableBatch* scene);
 
-        void DrawShadowMap(VkCommandBuffer cmd, RenderableBatch *scene);
-        void DrawObjects(VkCommandBuffer cmd, RenderableBatch *scene);
+        void DrawShadowMap(VkCommandBuffer cmd, RenderableBatch *batch);
+        void DrawObjects(VkCommandBuffer cmd, RenderableBatch *batch);
     private:
         // Mesh
-        VkDescriptorSet _frame_object_set = VK_NULL_HANDLE;
+        VkDescriptorSet _global_data_set = VK_NULL_HANDLE;
+        VkDescriptorSetLayout _global_data_set_layout = VK_NULL_HANDLE;
+
+        VkDescriptorSetLayout _object_set_layout = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSet> _object_sets = {};
     private:
         // Shadows
         VkFramebuffer _offscreen_framebuffer;
@@ -53,6 +51,7 @@ namespace mrs
 
         VkRenderPass _offscreen_render_pass;
         VkPipeline _offscreen_render_pipeline;
+        VkPipelineLayout _offscreen_render_pipeline_layout;
 
         VkSampler _shadow_map_sampler;
         VkDescriptorSetLayout _shadow_map_descriptor_layout;
@@ -67,7 +66,7 @@ namespace mrs
             uint32_t count; // batch member count
         };
 
-        // Returns vector if indirect batches from renderables from scene
+        // Returns vector of indirect draw batches from renderable batch
         std::vector<IndirectBatch> GetRenderablesAsBatches(RenderableBatch* batch);
 
         // Flag set when draw commands need to be updated i.e Entity creation and destruction

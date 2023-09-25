@@ -19,7 +19,7 @@
 		VkResult err = x;                                               \
 		if (err)                                                        \
 		{                                                               \
-			MRS_ERROR("Detected Vulkan error: " + err); 				\
+			MRS_ERROR("Detected Vulkan error: %d", err); 				\
 			abort();                                                    \
 		}                                                               \
 	} while (0)

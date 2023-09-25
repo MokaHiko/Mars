@@ -16,13 +16,32 @@ namespace mrs
     struct ShaderEffect;
     struct RenderableBatch;
 
+    struct VulkanBinding
+    {
+        uint32_t binding;
+    };
+
+    struct VulkanDescriptorSet
+    {
+        uint32_t set = -1;
+        std::unordered_map<uint32_t, VkDescriptorType> bindings;
+        VkShaderStageFlagBits shader_stage;
+        VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
+
+        void AddBinding(uint32_t binding, VkDescriptorType type, VkShaderStageFlagBits stage)
+        {
+            bindings[binding] = type;
+            shader_stage = static_cast<VkShaderStageFlagBits>(shader_stage | stage);
+        }
+    };
+
     //A render pipeline performs a series of operations that take the contents of a Scene, and displays them on a screen. It implements an instance of a ShaderEffect.
     //A single render pipeline may have one or more actual pipelines.
     class IRenderPipeline
     {
     public:
         IRenderPipeline(const std::string& name);
-        IRenderPipeline(const std::string& name, Renderer *renderer, VkRenderPass _render_pass = nullptr, VkFormat _render_pass_format = VK_FORMAT_UNDEFINED);
+        IRenderPipeline(const std::string& name, VkRenderPass render_pass);
 
         virtual ~IRenderPipeline() {};
 
@@ -30,7 +49,9 @@ namespace mrs
 
         Ref<ShaderEffect> Effect();
     public:
-        virtual void Init() {}
+        virtual void Init() {};
+
+        virtual void InitDescriptors() {};
 
         // Called in in compute pass
         virtual void Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt, RenderableBatch* compute_batch) {};
@@ -64,29 +85,33 @@ namespace mrs
         friend class IRenderPipelineLayer;
         std::string _name;
 
-        // Scene handle
         Window *_window = nullptr;
 
-        // Base resources
         Renderer *_renderer = nullptr;
         VulkanDevice *_device = nullptr;
 
-        // Render pass
         VkRenderPass _render_pass = VK_NULL_HANDLE;
-        VkFormat _render_pass_format = VK_FORMAT_UNDEFINED;
-
-        // Global Descriptor sets
-        VkDescriptorSetLayout _global_descriptor_set_layout = VK_NULL_HANDLE;
-        VkDescriptorSetLayout _object_descriptor_set_layout = VK_NULL_HANDLE;
-        VkDescriptorSet _global_descriptor_set = VK_NULL_HANDLE;
     protected:
+        // Pushes a shader on the pipeline
+        void PushShader(Ref<Shader> shader);
+        void BuildPipeline();
+
         VkPipeline _pipeline = VK_NULL_HANDLE;
         VkPipelineLayout _pipeline_layout = VK_NULL_HANDLE;
 
         VkDescriptorSet _descriptor_set;
         VkDescriptorSetLayout _descriptor_set_layout;
 
+        std::vector<VkDescriptorSet> _descriptor_sets;
+
+        // The effect this pipeline implements
         Ref<ShaderEffect> _shader_effect = nullptr;
+
+        std::vector<Ref<Shader>> _shaders;
+        std::vector<VkDescriptorSetLayout> _descriptor_set_layouts;
+        std::vector<VulkanDescriptorSet> _required_descriptors;
+    private:
+        void ParseDescriptorSetFromSpirV(const void* spirv_code, size_t spirv_nbytes, VkShaderStageFlagBits stage);
     };
 }
 

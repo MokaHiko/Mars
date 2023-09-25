@@ -72,14 +72,9 @@ void IRenderPipelineLayer::OnAttach()
 			// Convenience handles
 			pipeline->_window = Application::Instance().GetWindow().get();
 			pipeline->_renderer = _renderer.get();
-			pipeline->_device = &_renderer->GetDevice();
+			pipeline->_device = &_renderer->Device();
 
-			pipeline->_render_pass = _renderer->GetSwapchainRenderPass();
-			pipeline->_render_pass_format = _renderer->GetSwapchainImageFormat();
-
-			pipeline->_global_descriptor_set_layout = _renderer->GetGlobalSetLayout();
-			pipeline->_object_descriptor_set_layout = _renderer->GetGlobalObjectSetLayout();
-			pipeline->_global_descriptor_set = _renderer->GetGlobalDescriptorSet();
+			pipeline->_render_pass = _renderer->SwapchainRenderPass();
 
 			pipeline->Init();
 			_renderable_batches[pipeline] = {};
@@ -105,15 +100,15 @@ void IRenderPipelineLayer::OnAttach()
 
 	void IRenderPipelineLayer::OnUpdate(float dt)
 	{
-		uint32_t current_frame_index = _renderer->GetCurrentFrame();
-		VkCommandBuffer cmd = _renderer->GetCurrentFrameData().command_buffer;
+		uint32_t current_frame_index = _renderer->CurrentFrame();
+		VkCommandBuffer cmd = _renderer->CurrentFrameData().command_buffer;
 
 		Scene* scene = Application::Instance().GetScene();
 		BuildBatches(scene);
 
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
-			(*it)->Compute(_renderer->GetCurrentFrameData().compute_command_buffer, current_frame_index, dt, &_renderable_batches[*it]);
+			(*it)->Compute(_renderer->CurrentFrameData().compute_command_buffer, current_frame_index, dt, &_renderable_batches[*it]);
 		}
 
 		_renderer->Begin(scene);

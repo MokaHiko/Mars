@@ -91,21 +91,18 @@ namespace mrs
 
 		// Adds semaphore for graphics queue to wait during submission
 		void PushGraphicsSemaphore(VkPipelineStageFlags wait_stage,  VkSemaphore semaphore) {_graphics_wait_stages.push_back(wait_stage), _graphics_wait_semaphores.push_back(semaphore);}
-
-		// Descriptor allocator and layout cache
-		Ref<vkutil::DescriptorAllocator> _descriptor_allocator;
-		Ref<vkutil::DescriptorLayoutCache> _descriptor_layout_cache;
 	public:
-		// ~ OffScreen Rendering
-		void InitOffScreenAttachments();
+		AllocatedBuffer& GlobalBuffer();
+		std::vector<AllocatedBuffer>& ObjectBuffer();
 
-		// Creates an offscreen render_pass;
+		vkutil::DescriptorAllocator* DescriptorAllocator() {return _descriptor_allocator.get();}
+		vkutil::DescriptorLayoutCache* DescriptorLayoutCache() {return _descriptor_layout_cache.get();}
+	public:
+		void InitOffScreenAttachments();
 		void InitOffScreenRenderPass();
 
-		// Creates framebuffer that points the attachments in offscreen render pass to images
 		void InitOffScreenFramebuffers();
 
-        // Offscreen renderpass
 		VkRenderPass _offscreen_render_pass = {};
 
         // Offscreen frame buffers
@@ -118,99 +115,41 @@ namespace mrs
 		AllocatedImage _offscreen_depth_image = {};
 		VkFormat _offscreen_depth_image_format = {};
 		VkImageView _offscreen_depth_image_view = {};
-
-		// ~ OffScreen Rendering
 	public:
-		// Gets handle to the vulkan instance
 		const VkInstance Instance() const { return _instance; }
 
-		// Gets format of swapchain
-		const VkFormat GetSwapchainImageFormat() const {return _swapchain_image_format;}
+		const VkFormat SwapchainImageFormat() const {return _swapchain_image_format;}
+		const std::vector<VkImageView> OffScreenImageViews() const { return _offscreen_images_views; }
+		const std::vector<VkImage> SwapchainImages() const {return _swapchain_images;}
+		const std::vector<VkImageView> SwapchainImageViews() const {return _swapchain_image_views;}
+		const VkRenderPass SwapchainRenderPass() const {return _render_pass;}
 
-		const std::vector<VkImageView> GetOffScreenImageViews() const { return _offscreen_images_views; }
+		const uint32_t CurrentFrame() const { return _frame_count % frame_overlaps; }
+		const VkFramebuffer CurrentFrameBuffer() const { return _framebuffers[_current_swapchain_image]; }
+		const VulkanFrameContext &CurrentFrameData() const { return _frame_data[_frame_count % frame_overlaps]; }
 
-		// Gets format of swapchain
-		const std::vector<VkImage> GetSwapchainImages() const {return _swapchain_images;}
+		VulkanDevice &Device() { return _device; }
+		vkutil::DeletionQueue &DeletionQueue() { return _deletion_queue; }
 
-		// Gets swapchain views
-		const std::vector<VkImageView> GetSwapchainImageViews() const {return _swapchain_image_views;}
-
-		// Returns the render pass used by the swapchain images
-		const VkRenderPass GetSwapchainRenderPass() const {return _render_pass;}
-
-		// Gets index of current frame
-		const uint32_t GetCurrentFrame() const { return _frame_count % frame_overlaps; }
-
-		// Gets index of current frame
-		const VkFramebuffer GetCurrentFrameBuffer() const { return _framebuffers[_current_swapchain_image]; }
-
-		// Get shared global descriptor set
-		const VkDescriptorSet GetGlobalDescriptorSet() const { return _global_descriptor_set; }
-
-		// Get shared global object descriptor set of current farme
-		const VkDescriptorSet GetCurrentGlobalObjectDescriptorSet() const { return _object_descriptor_set[_frame_count % frame_overlaps]; }
-
-		// Get shared global descriptor set layout
-		const VkDescriptorSetLayout GetGlobalSetLayout() const { return _global_descriptor_set_layout; }
-
-		// Get shared global object descriptor set layout
-		const VkDescriptorSetLayout GetGlobalObjectSetLayout() const { return _object_descriptor_set_layout; }
-
-		// Gets index of current frame data
-		const VulkanFrameContext &GetCurrentFrameData() const { return _frame_data[_frame_count % frame_overlaps]; }
-
-		// Gets handle to vulkan device struct
-		VulkanDevice &GetDevice() { return _device; }
-
-		// Gets handle to vulkan resources deletion queue
-		vkutil::DeletionQueue &GetDeletionQueue() { return _deletion_queue; }
-
-		// Gets handle to vulkan resource allocator
-		VmaAllocator &GetAllocator() { return _allocator; }
-
-		// Gets handle to vulkan queues struct
-		VulkanQueues &GetQueues() { return _queues; }
-
-		// Gets handle to vulkan queues struct
+		VmaAllocator &Allocator() { return _allocator; }
+		VulkanQueues &Queues() { return _queues; }
 		VulkanQueueFamilyIndices &GetQueueIndices() { return _queue_indices; }
 
-		// Creates and allocates buffer with given size
 		AllocatedBuffer CreateBuffer(size_t size, VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, VkMemoryPropertyFlags memory_props = 0);
 
-		// Pads size to be compatible with minimum unifrom buffer alignment of physical device
 		size_t PadToUniformBufferSize(size_t original_size);
-
-		// Pads size to be compatible with minimum storage buffer alignment of physical device
 		size_t PadToStorageBufferSize(size_t original_size);
 
-		// Upload mesh to GPU via immediate command buffers
 		void UploadMesh(Ref<Mesh> mesh);
-
-		// Used for immedaite time and blocking execution of commands
 		void ImmediateSubmit(std::function<void(VkCommandBuffer)> &&fn);
 	private:
-		// Initializes core vulkan structures
 		void InitVulkan();
-
-		// Creates swapchain and gets handle to image s/views
 		void InitSwapchain();
-
-		// Creates command pools and command buffers
 		void InitCommands();
-
-		// Creates a default render_pass;
 		void InitDefaultRenderPass();
-
-		// Creates framebuffer that points the attachments in render pass to images in swapchain
 		void InitFramebuffers();
-
-		// Creates all the fences and semaphores
 		void InitSyncStructures();
-
-		// Creates and allocates descriptors
 		void InitGlobalDescriptors();
-
-		// Update Global Descriptor Sets
 		void UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index);
 	public:
 		// General renderer info
@@ -253,14 +192,19 @@ namespace mrs
 
 		uint32_t _current_swapchain_image = -1;
 
-		// Main upload struct
+		// Upload context for immediate submits
 		VulkanUploadContext _upload_context = {};
 
 		vkutil::DeletionQueue _deletion_queue;
+
 		uint32_t _frame_count = 0;
 
 		// Main gpu upload resource allocator
 		VmaAllocator _allocator;
+
+		// Descriptor allocator and layout cache
+		Ref<vkutil::DescriptorAllocator> _descriptor_allocator;
+		Ref<vkutil::DescriptorLayoutCache> _descriptor_layout_cache;
 
 		// Semaphores the graphics queue will wait for during submission
 		std::vector<VkPipelineStageFlags> _graphics_wait_stages = {};

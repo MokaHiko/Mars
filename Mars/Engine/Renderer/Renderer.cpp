@@ -393,7 +393,17 @@ namespace mrs
 			{ vkDestroyRenderPass(_device.device, _render_pass, nullptr); });
 	}
 
-	void Renderer::InitOffScreenAttachments()
+	AllocatedBuffer& Renderer::GlobalBuffer()
+	{
+		return _global_descriptor_buffer;
+	}
+
+	std::vector<AllocatedBuffer>& Renderer::ObjectBuffer()
+	{
+		return _object_descriptor_buffer;
+	}
+
+void Renderer::InitOffScreenAttachments()
 	{
 		VkExtent3D extent = {};
 		extent.depth = 1;
@@ -410,7 +420,7 @@ namespace mrs
 			alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 			alloc_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-			VK_CHECK(vmaCreateImage(GetAllocator(), &image_info, &alloc_info, &_offscreen_images[i].image, &_offscreen_images[i].allocation, nullptr));
+			VK_CHECK(vmaCreateImage(Allocator(), &image_info, &alloc_info, &_offscreen_images[i].image, &_offscreen_images[i].allocation, nullptr));
 			VkImageViewCreateInfo image_view_info = vkinit::ImageViewCreateInfo(_offscreen_images[i].image, _offscreen_framebuffer_format, VK_IMAGE_ASPECT_COLOR_BIT);
 
 			VK_CHECK(vkCreateImageView(_device.device, &image_view_info, nullptr, &_offscreen_images_views[i]));
@@ -429,14 +439,14 @@ namespace mrs
 		depth_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 		depth_alloc_info.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-		vmaCreateImage(GetAllocator(), &depth_image_info, &depth_alloc_info, &_offscreen_depth_image.image, &_offscreen_depth_image.allocation, nullptr);
+		vmaCreateImage(Allocator(), &depth_image_info, &depth_alloc_info, &_offscreen_depth_image.image, &_offscreen_depth_image.allocation, nullptr);
 
 		VkImageViewCreateInfo depth_image_view_info = vkinit::ImageViewCreateInfo(_offscreen_depth_image.image, _offscreen_depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
 		VK_CHECK(vkCreateImageView(_device.device, &depth_image_view_info, nullptr, &_offscreen_depth_image_view));
 
 		// Clean up
-		GetDeletionQueue().Push([&]() {
-			vmaDestroyImage(GetAllocator(), _offscreen_depth_image.image, _offscreen_depth_image.allocation);
+		DeletionQueue().Push([&]() {
+			vmaDestroyImage(Allocator(), _offscreen_depth_image.image, _offscreen_depth_image.allocation);
 			vkDestroyImageView(_device.device, _offscreen_depth_image_view, nullptr);
 
 			for (auto image_view : _offscreen_images_views)
@@ -830,8 +840,8 @@ namespace mrs
 	void Renderer::Begin(Scene *scene)
 	{
 		// Get current frame index, current frame data, current cmd bufffer
-		uint32_t frame_index = GetCurrentFrame();
-		auto &frame = GetCurrentFrameData();
+		uint32_t frame_index = CurrentFrame();
+		auto &frame = CurrentFrameData();
 		VkCommandBuffer cmd = frame.command_buffer;
 
 		// Wait till render fence has been flagged
@@ -891,7 +901,7 @@ namespace mrs
 
 		VkClearValue clear_values[2] = { clear_value, depth_value };
 
-		VkRenderPassBeginInfo render_pass_begin_info = vkinit::RenderPassBeginInfo(GetCurrentFrameBuffer(), GetSwapchainRenderPass(), area, clear_values, 2);
+		VkRenderPassBeginInfo render_pass_begin_info = vkinit::RenderPassBeginInfo(CurrentFrameBuffer(), SwapchainRenderPass(), area, clear_values, 2);
 		vkCmdBeginRenderPass(cmd, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
@@ -902,7 +912,7 @@ namespace mrs
 
 	void Renderer::End()
 	{
-		auto &frame = GetCurrentFrameData();
+		auto &frame = CurrentFrameData();
 		VkCommandBuffer cmd = frame.command_buffer;
 		
 		VK_CHECK(vkEndCommandBuffer(cmd));

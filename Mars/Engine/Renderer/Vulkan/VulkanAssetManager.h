@@ -15,6 +15,7 @@
 namespace mrs
 {
     class Renderer;
+    class Shader;
 
     // Manages runtime allocatiion of vulkan assets (textures, meshes)
     class VulkanAssetManager
@@ -49,17 +50,16 @@ namespace mrs
 		// Returns whether or not shader module was created succesefully
 		bool LoadShaderModule(const char *path, VkShaderModule *module);
 
+	    const Ref<Shader> LoadShader(const char* path, VkShaderStageFlagBits stage);
+
         const VkSampler LinearImageSampler() const {return _linear_image_sampler;}
         const VkSampler NearestImageSampler() const {return _nearest_image_sampler;}
 
         // Returns the storage that contains vulkan materials
-        const AllocatedBuffer& MaterialsBuffer() const {return _materials_descriptor_buffer;}
 		const VkDescriptorSetLayout MaterialDescriptorSetLayout() const {return _material_descriptor_set_layout;}
     private:
         // Materials descriptor set
 		VkDescriptorSetLayout _material_descriptor_set_layout = VK_NULL_HANDLE;
-        AllocatedBuffer _materials_descriptor_buffer = {};
-        uint32_t material_insert_index = 0;
 
 		VkSampler _linear_image_sampler = VK_NULL_HANDLE;
 		VkSampler _nearest_image_sampler = VK_NULL_HANDLE;

@@ -76,9 +76,7 @@ void mrs::TerrainRenderPipeline::Init() {
     height_map_descriptor_info.sampler = VulkanAssetManager::Instance().LinearImageSampler();
 
     vkutil::DescriptorBuilder _descriptor_builder;
-    _descriptor_builder
-        .Begin(_renderer->_descriptor_layout_cache.get(),
-               _renderer->_descriptor_allocator.get())
+    _descriptor_builder.Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
         .BindImage(0, &height_map_descriptor_info,
                    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                    VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
@@ -92,30 +90,30 @@ void mrs::TerrainRenderPipeline::Init() {
 
 void mrs::TerrainRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
 {
-    VkDescriptorSet _frame_object_set = _renderer->GetCurrentGlobalObjectDescriptorSet();
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline);
+    // VkDescriptorSet _frame_object_set = _renderer->GetCurrentGlobalObjectDescriptorSet();
+    // vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline);
 
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 0, 1, &_global_descriptor_set, 0, 0);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 1, 1, &_frame_object_set, 0, 0);
+    // vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 0, 1, &_global_descriptor_set, 0, 0);
+    // vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 1, 1, &_frame_object_set, 0, 0);
 
-    Ref<Material> default_material = Material::Get("default_material");
-    for (auto e  : batch->entities)
-    {
-        auto &terrain_renderer = e.GetComponent<TerrainRenderer>();
+    // Ref<Material> default_material = Material::Get("default_material");
+    // for (auto e  : batch->entities)
+    // {
+    //     auto &terrain_renderer = e.GetComponent<TerrainRenderer>();
 
-        // Bind material buffer and material textures
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 2, 1, &default_material->DescriptorSet(), 0, 0);
-        TerrainGraphicsPushConstant terrain_push_constant = {};
-        terrain_push_constant.material_index = default_material->MaterialIndex();
-        vkCmdPushConstants(cmd, _terrain_render_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TerrainGraphicsPushConstant), &terrain_push_constant);
+    //     // Bind material buffer and material textures
+    //     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 2, 1, &default_material->DescriptorSet(), 0, 0);
+    //     // TerrainGraphicsPushConstant terrain_push_constant = {};
+    //     // terrain_push_constant.material_index = default_material->MaterialIndex();
+    //     // vkCmdPushConstants(cmd, _terrain_render_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(TerrainGraphicsPushConstant), &terrain_push_constant);
 
-        // Bind terrain properties
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 3, 1, &_terrain_descriptor_set, 0, 0);
+    //     // Bind terrain properties
+    //     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _terrain_render_pipeline_layout, 3, 1, &_terrain_descriptor_set, 0, 0);
 
-        VkDeviceSize offset = 0;
-        vkCmdBindVertexBuffers(cmd, 0, 1, &terrain_renderer._terrain_mesh->_buffer.buffer, &offset);
-        vkCmdDraw(cmd, terrain_renderer._terrain_mesh->_vertex_count, 1, 0, e.Id());
-    }
+    //     VkDeviceSize offset = 0;
+    //     vkCmdBindVertexBuffers(cmd, 0, 1, &terrain_renderer._terrain_mesh->_buffer.buffer, &offset);
+    //     vkCmdDraw(cmd, terrain_renderer._terrain_mesh->_vertex_count, 1, 0, e.Id());
+    // }
 }
 
 
@@ -125,20 +123,20 @@ void mrs::TerrainRenderPipeline::End(VkCommandBuffer cmd)
 
 void mrs::TerrainRenderPipeline::CreateTerrainPipelineLayout()
 {
-    std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, VulkanAssetManager::Instance().MaterialDescriptorSetLayout(), _terrain_descriptor_set_layout};
+    // std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, VulkanAssetManager::Instance().MaterialDescriptorSetLayout(), _terrain_descriptor_set_layout};
 
-    VkPushConstantRange push_constant;
-    push_constant.offset = 0;
-    push_constant.size = sizeof(TerrainGraphicsPushConstant);
-    push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    // VkPushConstantRange push_constant;
+    // push_constant.offset = 0;
+    // push_constant.size = sizeof(TerrainGraphicsPushConstant);
+    // push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
-    VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::PipelineLayoutCreateInfo();
-    pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
-    pipeline_layout_info.pSetLayouts = set_layouts.data();
-    pipeline_layout_info.pushConstantRangeCount = 1;
-    pipeline_layout_info.pPushConstantRanges = &push_constant;
+    // VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::PipelineLayoutCreateInfo();
+    // pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
+    // pipeline_layout_info.pSetLayouts = set_layouts.data();
+    // pipeline_layout_info.pushConstantRangeCount = 1;
+    // pipeline_layout_info.pPushConstantRanges = &push_constant;
 
-    VK_CHECK(vkCreatePipelineLayout(_device->device, &pipeline_layout_info, nullptr, &_terrain_render_pipeline_layout));
+    // VK_CHECK(vkCreatePipelineLayout(_device->device, &pipeline_layout_info, nullptr, &_terrain_render_pipeline_layout));
 }
 
 void mrs::TerrainRenderPipeline::CreateTerrainPipeline()
@@ -200,7 +198,7 @@ void mrs::TerrainRenderPipeline::CreateTerrainPipeline()
 
     vkDestroyShaderModule(_device->device, fragment_shader_module, nullptr);
     vkDestroyShaderModule(_device->device, vertex_shader_module, nullptr);
-    _renderer->GetDeletionQueue().Push([=]()
+    _renderer->DeletionQueue().Push([=]()
         {
             vkDestroyPipelineLayout(_device->device, _terrain_render_pipeline_layout, nullptr);
             vkDestroyPipeline(_device->device, _terrain_render_pipeline, nullptr);

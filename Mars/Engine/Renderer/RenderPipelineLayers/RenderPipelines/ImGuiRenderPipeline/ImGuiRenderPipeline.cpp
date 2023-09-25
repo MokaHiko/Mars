@@ -43,7 +43,7 @@ void mrs::ImGuiRenderPipeline::Init() {
   pool_info.pPoolSizes = pool_sizes;
 
   VkDescriptorPool imguiPool;
-  VK_CHECK(vkCreateDescriptorPool(_renderer->GetDevice().device, &pool_info,
+  VK_CHECK(vkCreateDescriptorPool(_renderer->Device().device, &pool_info,
                                   nullptr, &imguiPool));
 
   // 2: initialize imgui library
@@ -70,14 +70,14 @@ void mrs::ImGuiRenderPipeline::Init() {
 	// this initializes imgui for Vulkan
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	init_info.Instance = _renderer->Instance();
-	init_info.PhysicalDevice = _renderer->GetDevice().physical_device;
-	init_info.Device = _renderer->GetDevice().device;
-	init_info.Queue = _renderer->GetQueues().graphics;
+	init_info.PhysicalDevice = _renderer->Device().physical_device;
+	init_info.Device = _renderer->Device().device;
+	init_info.Queue = _renderer->Queues().graphics;
 	init_info.DescriptorPool = imguiPool;
 	init_info.MinImageCount = 3;
 	init_info.ImageCount = 3;
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-	ImGui_ImplVulkan_Init(&init_info, _renderer->GetSwapchainRenderPass());
+	ImGui_ImplVulkan_Init(&init_info, _renderer->SwapchainRenderPass());
 
 	SetupImGuiStyle(1, 1.0f);
 
@@ -89,9 +89,9 @@ void mrs::ImGuiRenderPipeline::Init() {
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 
 	// add the destroy the imgui created structures
-	_renderer->GetDeletionQueue().Push([=]()
+	_renderer->DeletionQueue().Push([=]()
 		{
-			vkDestroyDescriptorPool(_renderer->GetDevice().device, imguiPool, nullptr);
+			vkDestroyDescriptorPool(_renderer->Device().device, imguiPool, nullptr);
 			ImGui_ImplVulkan_Shutdown();
         });
 }
