@@ -10,13 +10,9 @@ mrs::Camera::Camera(CameraType type, uint32_t aspect_w, uint32_t aspect_h, const
 
 	_view_proj = glm::mat4(1.0f);
 	_view = glm::translate(glm::mat4(1.0f), _position);
-	_projection = glm::perspective(glm::radians(70.0f),
-		static_cast<float>(aspect_w) / static_cast<float>(aspect_h),
-		_near,
-		_far);
 
-	// Reconfigure y values as positive for vulkan
-	_projection[1][1] *= -1; 
+	SetType(_type);
+
 	_view_proj = _projection * _view;
 }
 
@@ -41,6 +37,7 @@ void mrs::Camera::UpdateViewProj()
 
 void mrs::Camera::SetType(CameraType type)
 {
+	float zoom = 5;
 	switch (type)
 	{
 	case CameraType::Perspective:

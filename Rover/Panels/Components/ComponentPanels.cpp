@@ -85,7 +85,7 @@ namespace mrs
 	void DrawComponent<DirectionalLight>(Entity entity)
 	{
 		DrawComponentUI<DirectionalLight>("Directional Light", entity, [](DirectionalLight& dir_light) {
-			ImGui::Text("Intensity: %s", dir_light.intensity);
+			ImGui::DragFloat4("Intensity: %s", glm::value_ptr(dir_light.Ambient));
 
 			static bool view_dir_light_camera = false;
 			if (ImGui::Checkbox("Set Channel", &view_dir_light_camera))
@@ -145,10 +145,27 @@ namespace mrs
 	void DrawComponent<RigidBody2D>(Entity entity)
 	{
 		static char* body_types[] = { "UNKNOWN", "STATIC", "DYNAMIC" };
-		DrawComponentUI<RigidBody2D>("RigidBody2D", entity, [](RigidBody2D& rb) {
+		DrawComponentUI<RigidBody2D>("RigidBody2D", entity, [](RigidBody2D& rb) 
+		{
 			ImGui::Checkbox("Use Gravity", &rb.use_gravity);
 			ImGui::Text("Body Type: %s", body_types[(int)rb.type]);
-			});
+		});
+	}
+
+	template<>
+	void DrawComponent<MeshCollider>(Entity entity)
+	{
+		static char* collider_types[] = 
+		{
+			"UKNOWN",
+			"SPHERE_COLLIDER",
+			"PLANE_COLLIDER"
+		};
+
+		DrawComponentUI<MeshCollider>("Mesh Collider", entity, [](MeshCollider& col) {
+			uint8_t type_index = static_cast<uint8_t>(col.type);
+			ImGui::Text("Type: %s", collider_types[type_index]);
+		});
 	}
 
 	template<>

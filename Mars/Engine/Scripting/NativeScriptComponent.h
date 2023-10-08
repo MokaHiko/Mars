@@ -46,6 +46,7 @@ namespace mrs
                 delete script;
                 script = nullptr;
             };
+
         };
 
         // Binds script to entity given registered script

@@ -13,8 +13,12 @@ namespace mrs
         InputLayer(){};
         ~InputLayer(){};
 
-        virtual void OnAttach();
+        virtual void OnAttach() override;
         virtual void OnEvent(Event& event) override;
+
+        virtual void OnEnable() override;
+
+        virtual void OnImGuiRender() override;
     private:
 
     };

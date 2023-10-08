@@ -6,10 +6,9 @@
 #include <ECS/ScriptableEntity.h>
 #include <ECS/Components/Components.h>
 
-
 class GameManager : public mrs::ScriptableEntity
 {
-    
+	
 };
 
 #endif

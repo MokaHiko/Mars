@@ -83,7 +83,10 @@ float mrs::Input::GetAxis(const char axis)
 
 glm::vec2 mrs::Input::GetMousePosition()
 {
-	static float half_width = ((float)Input::window_size_x / 2.0f);
-	static float half_height = ((float)Input::window_size_y / 2.0f);
-	return { x - half_width, (-y) + half_height};
+	// ranged [-width/2 , width/2], [-height/2 , height/2]
+	 //static float half_width = ((float)Input::window_size_x / 2.0f);
+	 //static float half_height = ((float)Input::window_size_y / 2.0f);
+	 //return { x - half_width, (-y) + half_height};
+
+	return {x, y};
 }

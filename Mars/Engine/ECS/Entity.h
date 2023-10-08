@@ -42,6 +42,13 @@ namespace mrs
             return _scene->GetComponent<T>(_id);
         }
 
+        // Returns component of type <T>
+        template <typename T>
+        T* GetScript()
+        {
+            return _scene->GetScript<T>(_id);
+        }
+
         // Returns entity handle
         const uint32_t Id() const { return static_cast<uint32_t>(_id); }
 
@@ -57,7 +64,7 @@ namespace mrs
         friend class ScriptableEntity;
 
         entt::entity _id = entt::null;
-        Scene *_scene;
+        Scene *_scene = nullptr;
     };
 }
 

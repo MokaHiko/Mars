@@ -43,6 +43,9 @@ namespace mrs
 
         VkDescriptorSetLayout _object_set_layout = VK_NULL_HANDLE;
         std::vector<VkDescriptorSet> _object_sets = {};
+
+        VkDescriptorSetLayout _dir_light_layout = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSet>  _dir_light_sets = {};
     private:
         // Shadows
         VkFramebuffer _offscreen_framebuffer;

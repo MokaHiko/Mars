@@ -18,6 +18,7 @@ void mrs::InspectorPanel::Draw(Entity entity)
 		DrawComponent<RigidBody2D>(entity);
 		DrawComponent<ParticleSystem>(entity);
 		DrawComponent<DirectionalLight>(entity);
+		DrawComponent<MeshCollider>(entity);
 
 #ifdef MRS_DEBUG
 		DrawComponent<Serializer>(entity);

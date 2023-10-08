@@ -4,6 +4,8 @@
 #include "Physics.h"
 #include "ECS/Components/Components.h"
 
+#include "Algorithm.h"
+
 namespace mrs
 {
 	void Physics2DLayer::OnAttach()
@@ -121,7 +123,7 @@ namespace mrs
 			b2FixtureDef fixture_def = {};
 			fixture_def.shape = &dynamic_box;
 			fixture_def.density = 1.0f;
-			fixture_def.friction = 0.3f;
+			fixture_def.friction = 0.6f;
 			fixture_def.restitution = 0.2f;
 			rb.body->CreateFixture(&fixture_def);
 		}

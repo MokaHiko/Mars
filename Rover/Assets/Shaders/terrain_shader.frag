@@ -11,11 +11,12 @@ layout(location = 4) in vec4 tese_uv_world_space;
 
 layout(location = 5) in float tese_height;
 
-layout(set = 0, binding = 0) uniform GlobalBuffer{
+layout(set = 0, binding = 0) uniform GlobalBuffer {
 	mat4 view;
 	mat4 view_proj;
-	mat4 view_proj_light;
-	vec4 direction_light_position;
+
+	vec4 camera_position;
+	uint n_dir_lights;
 } _global_buffer;
 
 layout(set = 2, binding = 0) uniform Material {
@@ -67,8 +68,8 @@ void main()
 	vec3 color = texture(_diffuse_texture, tese_uv).xyz * _material.diffuse_color.xyz;
 
 	// ~ Directional
-	float diff = max(dot(tese_normal_world_space, normalize(_global_buffer.direction_light_position.xyz)), 0);
-	color *= diff;
+	//float diff = max(dot(tese_normal_world_space, normalize(_global_buffer.direction_light_position.xyz)), 0);
+	//color *= diff;
 	// frag_color = shadow_factor * vec4(color, 1);
 
 	float h = (tese_height + 16) / 64.0f;

@@ -62,9 +62,12 @@ namespace mrs {
 		
 		Ref<Texture> MainTexture();
 		Ref<Texture> GetTexture(MaterialTextureType type);
+		void SetTexture(MaterialTextureType type, Ref<Texture> texture);
 
-		static Ref<Material> Create(const std::string& base_template_name, const std::string& alias, const std::string& texture_name = "default_texture");
-		static Ref<Material> Create(Ref<EffectTemplate> base_template, const std::string& alias, const std::string& texture_name = "default_texture");
+		static Ref<Material> Create(Ref<EffectTemplate> base_template, Ref<Texture> texture, const std::string& alias = "");
+		static Ref<Material> Create(Ref<EffectTemplate> base_template, const std::string& texture_name = "default_texture", const std::string& alias = "");
+		static Ref<Material> Create(const std::string& base_template_name, const std::string& texture_name = "default_texture", const std::string& alias = "");
+
 		static Ref<Material> Get(const std::string& alias);
 
 		Ref<EffectTemplate> BaseTemplate() { return _base_template; }

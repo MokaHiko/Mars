@@ -18,11 +18,12 @@ struct ObjectData {
 	mat4 model_matrix;
 };
 
-layout(set = 0, binding = 0) uniform GlobalBuffer{
+layout(set = 0, binding = 0) uniform GlobalBuffer {
 	mat4 view;
 	mat4 view_proj;
-	mat4 view_proj_light;
-	vec4 direction_light_position;
+
+	vec4 camera_position;
+	uint n_dir_lights;
 } _global_buffer;
 
 layout(std140, set = 1, binding = 0) readonly buffer ObjectBuffer{

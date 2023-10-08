@@ -23,6 +23,7 @@ layout(set = 0, binding = 0) uniform GlobalBuffer{
 	mat4 view_proj;
 	mat4 view_proj_light;
 	vec4 direction_light_position;
+	vec4 camera_position;
 } _global_buffer;
 
 struct ObjectData {

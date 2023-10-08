@@ -3,15 +3,17 @@
 
 #include "Application.h"
 
+#include <imgui/imgui.h>
+
 void mrs::InputLayer::OnAttach()
 {
-	Window *w = Application::Instance().GetWindow().get();
+	Window* w = Application::Instance().GetWindow().get();
 
 	Input::window_size_x = w->GetWidth();
 	Input::window_size_y = w->GetHeight();
 }
 
-void mrs::InputLayer::OnEvent(Event &event)
+void mrs::InputLayer::OnEvent(Event& event)
 {
 	int32_t key = -1;
 
@@ -40,11 +42,21 @@ void mrs::InputLayer::OnEvent(Event &event)
 		Input::last_x = Input::x;
 		Input::last_y = Input::y;
 
+#ifdef MRS_RELEASE
 		Input::x = event._event.motion.x;
 		Input::y = event._event.motion.y;
+#endif
 
 		Input::x_rel = event._event.motion.xrel;
 		Input::y_rel = event._event.motion.yrel;
 		break;
 	}
+}
+
+void mrs::InputLayer::OnEnable()
+{
+}
+
+void mrs::InputLayer::OnImGuiRender()
+{
 }

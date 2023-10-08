@@ -398,9 +398,14 @@ namespace mrs
 		return _global_descriptor_buffer;
 	}
 
-	std::vector<AllocatedBuffer>& Renderer::ObjectBuffer()
+	std::vector<AllocatedBuffer>& Renderer::DirLightBuffers()
 	{
-		return _object_descriptor_buffer;
+		return _dir_light_descriptor_buffers;
+	}
+
+	std::vector<AllocatedBuffer>& Renderer::ObjectBuffers()
+	{
+		return _object_descriptor_buffers;
 	}
 
 void Renderer::InitOffScreenAttachments()
@@ -652,36 +657,37 @@ void Renderer::InitOffScreenAttachments()
 		_descriptor_layout_cache = std::make_unique<vkutil::DescriptorLayoutCache>();
 		_descriptor_layout_cache->Init(_device.device);
 
-		// ~ Global
+		// ~ Global Data
 		{
-			size_t buffer_size = PadToUniformBufferSize(sizeof(GlobalDescriptorData));
-			_global_descriptor_buffer = CreateBuffer(sizeof(GlobalDescriptorData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+			size_t global_buffer_size = PadToUniformBufferSize(sizeof(GlobalDescriptorData));
+			_global_descriptor_buffer = CreateBuffer(global_buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-			// Describe Buffer
 			VkDescriptorBufferInfo _global_descriptor_buffer_info = {};
 			_global_descriptor_buffer_info.buffer = _global_descriptor_buffer.buffer;
 			_global_descriptor_buffer_info.offset = 0;
 			_global_descriptor_buffer_info.range = sizeof(GlobalDescriptorData);
 
-			// Build descriptors
 			vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
 				.BindBuffer(0, &_global_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
 				.Build(&_global_descriptor_set, &_global_descriptor_set_layout);
 
-			// Clean descriptor resources
 			_deletion_queue.Push([=]()
 				{ vmaDestroyBuffer(_allocator, _global_descriptor_buffer.buffer, _global_descriptor_buffer.allocation); });
 		}
 
-		// ~ Object Data
+		// ~ Scene Data
 		{
-			_object_descriptor_buffer.resize(frame_overlaps);
-			_object_descriptor_set.resize(frame_overlaps);
+			_object_descriptor_buffers.resize(frame_overlaps);
+			_object_descriptor_sets.resize(frame_overlaps);
+
+			_dir_light_descriptor_buffers.resize(frame_overlaps);
+			_dir_light_descriptor_sets.resize(frame_overlaps);
+
 			for (uint32_t i = 0; i < frame_overlaps; i++)
 			{
-				// Create buffer to store per object data per frame
-				size_t buffer_size = PadToStorageBufferSize(sizeof(ObjectData)) * _info.max_objects;
-				_object_descriptor_buffer[i] = CreateBuffer(buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+				// ~ Object Data
+				size_t object_buffer_size = PadToStorageBufferSize(sizeof(ObjectData)) * _info.max_objects;
+				_object_descriptor_buffers[i] = CreateBuffer(object_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 				// Copy Default values to GPU
 				ObjectData object_data = {};
@@ -689,128 +695,159 @@ void Renderer::InitOffScreenAttachments()
 				object_data.color = glm::vec4(1.0f);
 
 				char *data;
-				vmaMapMemory(_allocator, _object_descriptor_buffer[i].allocation, (void **)&data);
+				vmaMapMemory(_allocator, _object_descriptor_buffers[i].allocation, (void **)&data);
 				for (uint32_t i = 0; i < _info.max_objects; i++)
 				{
 					memcpy(data, &object_data, sizeof(ObjectData));
 					data += PadToStorageBufferSize(sizeof(ObjectData));
 				}
-				vmaUnmapMemory(_allocator, _object_descriptor_buffer[i].allocation);
+				vmaUnmapMemory(_allocator, _object_descriptor_buffers[i].allocation);
 
 				// Describe Buffer
 				VkDescriptorBufferInfo _object_descriptor_buffer_info = {};
-				_object_descriptor_buffer_info.buffer = _object_descriptor_buffer[i].buffer;
+				_object_descriptor_buffer_info.buffer = _object_descriptor_buffers[i].buffer;
 				_object_descriptor_buffer_info.offset = 0;
-				_object_descriptor_buffer_info.range = PadToStorageBufferSize(sizeof(ObjectData)) * _info.max_objects;
+				_object_descriptor_buffer_info.range = object_buffer_size;
 
 				// Build descriptors
 				vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
 					.BindBuffer(0, &_object_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-					.Build(&_object_descriptor_set[i], &_object_descriptor_set_layout);
+					.Build(&_object_descriptor_sets[i], &_object_descriptor_set_layout);
 
 				// Clean descriptor resources
 				_deletion_queue.Push([=]()
-					{ vmaDestroyBuffer(_allocator, _object_descriptor_buffer[i].buffer, _object_descriptor_buffer[i].allocation); });
+					{ vmaDestroyBuffer(_allocator, _object_descriptor_buffers[i].buffer, _object_descriptor_buffers[i].allocation); });
+				
+				// ~ Dir lights
+				size_t dir_light_buffer_size = PadToStorageBufferSize(sizeof(DirectionalLight)) * _info.max_dir_lights;
+				_dir_light_descriptor_buffers[i] = CreateBuffer(dir_light_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+				VkDescriptorBufferInfo _dir_light_descriptor_buffer_info = {};
+				_dir_light_descriptor_buffer_info.buffer = _dir_light_descriptor_buffers[i].buffer;
+				_dir_light_descriptor_buffer_info.offset = 0;
+				_dir_light_descriptor_buffer_info.range = dir_light_buffer_size;
+
+				// Build descriptors
+				vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
+					.BindBuffer(0, &_dir_light_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+					.Build(&_dir_light_descriptor_sets[i], &_object_descriptor_set_layout);
+
+				// Clean descriptor resources
+				_deletion_queue.Push([=]()
+					{ vmaDestroyBuffer(_allocator, _dir_light_descriptor_buffers[i].buffer, _dir_light_descriptor_buffers[i].allocation); });
 			}
 		}
 	}
 
 	void Renderer::UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index)
 	{
-		// Search for active camera if none found each frame
-		if (!_camera || !_camera->IsActive())
+		// ~ Directional lights
+		int dir_light_count = 0;
 		{
-			auto cam_view = scene->Registry()->view<Transform, Camera>();
-
-			bool active_camera_found = false;
-			for (auto entity : cam_view)
+			char* dir_light_data;
+			vmaMapMemory(_allocator, _dir_light_descriptor_buffers[frame_index].allocation, (void**)&dir_light_data);
+			auto dir_lights_view = scene->Registry()->view<Transform, DirectionalLight>();
+			for (auto entity : dir_lights_view)
 			{
 				Entity e(entity, scene);
-				Camera *camera = &e.GetComponent<Camera>();
+				Transform &transform = e.GetComponent<Transform>();
+				DirectionalLight& light = e.GetComponent<DirectionalLight>();
 
-				MRS_INFO("Switching camera to: %s", e.GetComponent<Tag>().tag.c_str());
-				if (camera->IsActive())
+				DirectionalLight dir_light = {};
+				dir_light.Direction = glm::normalize(glm::vec4(-transform.position, 0.0f));
+				dir_light.Ambient = light.Ambient;
+				dir_light.Diffuse = light.Diffuse;
+				dir_light.Specular = light.Specular;
+
+				static bool use_ortho = false;
+				static float aspect_w = 100;
+				static float aspect_h = 60;
+				static float aspect_far = 1000;
+
+				glm::mat4 dir_light_proj = glm::ortho(-aspect_w, aspect_w, -aspect_h, aspect_h, 0.1f, aspect_far);
+				dir_light_proj[1][1] *= -1; // Reconfigure y values as positive for vulkan
+				glm::mat4 dir_light_view = glm::lookAt(transform.position, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+				dir_light.view_proj = dir_light_proj * dir_light_view;
+
+				static size_t padded_dir_light_size = PadToStorageBufferSize(sizeof(DirectionalLight));
+				size_t offset = dir_light_count * padded_dir_light_size;
+				memcpy(dir_light_data + offset, &dir_light, padded_dir_light_size);
+
+				dir_light_count++;
+			}
+			vmaUnmapMemory(_allocator, _dir_light_descriptor_buffers[frame_index].allocation);
+		}
+
+		// Global Descriptor
+		{
+			if (!_camera || !_camera->IsActive())
+			{
+				auto cam_view = scene->Registry()->view<Transform, Camera>();
+
+				bool active_camera_found = false;
+				for (auto entity : cam_view)
 				{
-					_camera = camera;
-					active_camera_found = true;
+					Entity e(entity, scene);
+					Camera *camera = &e.GetComponent<Camera>();
+
+					MRS_INFO("Switching camera to: %s", e.GetComponent<Tag>().tag.c_str());
+					if (camera->IsActive())
+					{
+						_camera = camera;
+						active_camera_found = true;
+					}
+				}
+				if(!active_camera_found)
+				{
+					MRS_ERROR("No active camera in scene!");
 				}
 			}
-
-			if(!active_camera_found)
+			void *global_data;
+			vmaMapMemory(_allocator, _global_descriptor_buffer.allocation, &global_data);
+			GlobalDescriptorData global_info = {};
+			if (_camera)
 			{
-				MRS_ERROR("No active camera in scene!");
+				global_info.view = _camera->GetView();
+				global_info.view_proj = _camera->GetViewProj();
+				
+				const glm::vec3& cam_pos = _camera->GetPosition();
+				global_info.camera_position = glm::vec4(cam_pos.x, cam_pos.y, cam_pos.z, 0);
+
+				global_info.n_dir_lights = dir_light_count;
 			}
+			memcpy(global_data, &global_info, sizeof(GlobalDescriptorData));
+			vmaUnmapMemory(_allocator, _global_descriptor_buffer.allocation);
 		}
-
-		void *global_data;
-		vmaMapMemory(_allocator, _global_descriptor_buffer.allocation, &global_data);
-
-		GlobalDescriptorData global_info = {};
-
-		// ~ Camera
-		if (_camera)
-		{
-			global_info.view = _camera->GetView();
-			global_info.view_proj = _camera->GetViewProj();
-		}
-
-		// ~ Directional light
-		auto lights_view = scene->Registry()->view<Transform, DirectionalLight>();
-		for (auto entity : lights_view)
-		{
-			Transform &transform = Entity(entity, scene).GetComponent<Transform>();
-			global_info.directional_light_position = glm::vec4(transform.position, 0.0f);
-
-			static bool use_ortho = false;
-			static float aspect_w = 100;
-			static float aspect_h = 60;
-			static float aspect_far = 1000;
-
-			glm::mat4 dir_light_proj = glm::ortho(-aspect_w, aspect_w, -aspect_h, aspect_h, 0.1f, aspect_far);
-			dir_light_proj[1][1] *= -1; // Reconfigure y values as positive for vulkan
-			glm::mat4 dir_light_view = glm::lookAt(transform.position, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
-			global_info.view_proj_light = dir_light_proj * dir_light_view;
-
-			if (use_ortho)
-			{
-				global_info.view_proj = dir_light_proj * dir_light_view;
-			}
-
-			break;
-		}
-
-		// Objects positions
-		memcpy(global_data, &global_info, sizeof(GlobalDescriptorData));
-		vmaUnmapMemory(_allocator, _global_descriptor_buffer.allocation);
-
-		auto view = scene->Registry()->view<Tag, Transform>();
 
 		// Update object data storage buffer
-		char *objectData;
-		vmaMapMemory(_allocator, _object_descriptor_buffer[frame_index].allocation, (void **)&objectData);
-		for (auto entity : view)
 		{
-			Entity e = Entity(entity, scene);
-			Transform &transform = e.GetComponent<Transform>();
+			auto view = scene->Registry()->view<Tag, Transform>();
+			char *objectData;
+			vmaMapMemory(_allocator, _object_descriptor_buffers[frame_index].allocation, (void **)&objectData);
+			for (auto entity : view)
+			{
+				Entity e = Entity(entity, scene);
+				Transform &transform = e.GetComponent<Transform>();
 
-			glm::mat4 model(1.0f);
-			glm::vec3 pos = transform.position;
+				glm::mat4 model(1.0f);
+				glm::vec3 pos = transform.position;
 
-			model = glm::translate(model, pos);
-			model = glm::rotate(model, glm::radians(transform.rotation.x), glm::vec3(1.0, 0.0, 0.0));
-			model = glm::rotate(model, glm::radians(transform.rotation.y), glm::vec3(0.0, 1.0, 0.0));
-			model = glm::rotate(model, glm::radians(transform.rotation.z), glm::vec3(0.0, 0.0, 1.0));
-			model = glm::scale(model, transform.scale);
+				model = glm::translate(model, pos);
+				model = glm::rotate(model, glm::radians(transform.rotation.x), glm::vec3(1.0, 0.0, 0.0));
+				model = glm::rotate(model, glm::radians(transform.rotation.y), glm::vec3(0.0, 1.0, 0.0));
+				model = glm::rotate(model, glm::radians(transform.rotation.z), glm::vec3(0.0, 0.0, 1.0));
+				model = glm::scale(model, transform.scale);
 
-			ObjectData obj_info = {};
-			obj_info.color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-			obj_info.model_matrix = model;
+				ObjectData obj_info = {};
+				obj_info.color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+				obj_info.model_matrix = model;
 
-			static size_t padded_object_buffer_size = PadToStorageBufferSize(sizeof(ObjectData));
-			size_t offset = e.Id() * padded_object_buffer_size;
-			memcpy(objectData + offset, &obj_info, sizeof(ObjectData));
+				static size_t padded_object_buffer_size = PadToStorageBufferSize(sizeof(ObjectData));
+				size_t offset = e.Id() * padded_object_buffer_size;
+				memcpy(objectData + offset, &obj_info, sizeof(ObjectData));
+			}
+			vmaUnmapMemory(_allocator, _object_descriptor_buffers[frame_index].allocation);
 		}
-		vmaUnmapMemory(_allocator, _object_descriptor_buffer[frame_index].allocation);
 	}
 
 	size_t Renderer::PadToUniformBufferSize(size_t original_size)

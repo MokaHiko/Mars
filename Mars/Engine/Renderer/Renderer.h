@@ -34,6 +34,9 @@ namespace mrs
 		GraphicsSettings graphics_settings = {};
 		uint32_t max_objects = 1000;
 		uint32_t max_materials = 100;
+		
+		uint32_t max_dir_lights = 10;
+		uint32_t max_point_lights = 100;
 	};
 
 	// Common object data unique to each entity (Model matrix, ...)
@@ -43,13 +46,24 @@ namespace mrs
 		glm::mat4 model_matrix{ 1.0f };
 	};
 
+	struct DirectionalLight
+	{
+		glm::mat4 view_proj;
+		glm::vec4 Direction;
+
+		glm::vec4 Ambient = glm::vec4(1.0f);
+		glm::vec4 Diffuse = glm::vec4(1.0f);
+		glm::vec4 Specular = glm::vec4(1.0f);
+	};
+
 	// Global shared scene data
 	struct GlobalDescriptorData
 	{
 		glm::mat4 view;
 		glm::mat4 view_proj;
-		glm::mat4 view_proj_light;
-		glm::vec4 directional_light_position;
+		glm::vec4 camera_position;
+
+		uint32_t n_dir_lights;
 	};
 
 	// Main vulkan state wrapper that manages the lifetime of vulkan resources and execution of renderpasses and renderpipelines
@@ -93,7 +107,8 @@ namespace mrs
 		void PushGraphicsSemaphore(VkPipelineStageFlags wait_stage,  VkSemaphore semaphore) {_graphics_wait_stages.push_back(wait_stage), _graphics_wait_semaphores.push_back(semaphore);}
 	public:
 		AllocatedBuffer& GlobalBuffer();
-		std::vector<AllocatedBuffer>& ObjectBuffer();
+		std::vector<AllocatedBuffer>& ObjectBuffers();
+		std::vector<AllocatedBuffer>& DirLightBuffers();
 
 		vkutil::DescriptorAllocator* DescriptorAllocator() {return _descriptor_allocator.get();}
 		vkutil::DescriptorLayoutCache* DescriptorLayoutCache() {return _descriptor_layout_cache.get();}
@@ -166,9 +181,14 @@ namespace mrs
 		VkDescriptorSetLayout _global_descriptor_set_layout;
 		AllocatedBuffer _global_descriptor_buffer;
 
+		// Directional lights descriptors
+		std::vector<VkDescriptorSet> _dir_light_descriptor_sets;
+		std::vector<AllocatedBuffer> _dir_light_descriptor_buffers;
+
 		// Global Object descriptors (per frame)
-		std::vector<VkDescriptorSet> _object_descriptor_set;
-		std::vector<AllocatedBuffer> _object_descriptor_buffer;
+		std::vector<VkDescriptorSet> _object_descriptor_sets;
+		std::vector<AllocatedBuffer> _object_descriptor_buffers;
+
 		VkDescriptorSetLayout _object_descriptor_set_layout;
 
 		VulkanFrameContext _frame_data[frame_overlaps];

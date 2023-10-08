@@ -10,6 +10,10 @@ void GameLayer::RegisterScripts()
 	mrs::Script::Register<Unit>();
 	mrs::Script::Register<Spawner>();
 	mrs::Script::Register<GameManager>();
+	mrs::Script::Register<Player>();
+
+	// TODO: Load all assets in asset folder
+	//Model::LoadFromAsset("Assets/Models/Room.bp", "room");
 }
 
 void GameLayer::OnDetatch() {};

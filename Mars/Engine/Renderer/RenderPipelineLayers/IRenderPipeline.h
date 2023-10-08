@@ -16,11 +16,6 @@ namespace mrs
     struct ShaderEffect;
     struct RenderableBatch;
 
-    struct VulkanBinding
-    {
-        uint32_t binding;
-    };
-
     struct VulkanDescriptorSet
     {
         uint32_t set = -1;

@@ -31,6 +31,19 @@ mrs::Application* mrs::CreateApplication()
 	return MRS_NEW Rover();
 }
 
+Ref<mrs::IPanel> mrs::EditorLayer::FindPanel(const std::string& name)
+{
+	for(Ref<IPanel> panel : _panels)
+	{
+		if(panel->Name() == name)
+		{
+			return panel;
+		}
+	}
+
+	return nullptr;
+}
+
 void mrs::EditorLayer::FocusEntity(Entity entity)
 {
 	 CameraController* camera_controller = (CameraController*)(void*)(_editor_camera.GetComponent<Script>().script);
@@ -78,10 +91,10 @@ void mrs::EditorLayer::OnEnable()
 void mrs::EditorLayer::OnUpdate(float dt)
 {
 	static bool first_run = [&]()
-		{
-			Stop();
-			return true;
-		}();
+	{
+		Stop();
+		return true;
+	}();
 }
 
 void mrs::EditorLayer::OnImGuiRender()
@@ -132,42 +145,45 @@ void mrs::EditorLayer::Stop()
 
 void mrs::EditorLayer::LoadEditorResources()
 {
-	// Create effect templates
+	// Default effect templates
 	std::vector<ShaderEffect*> default_lit_effects;
 	default_lit_effects.push_back(_render_pipeline_layer->FindPipeline("MeshRenderPipeline")->Effect().get());
 	Ref<EffectTemplate> default_lit = VulkanAssetManager::Instance().CreateEffectTemplate(default_lit_effects, "default_lit");
 
-	// TODO: Load all assets in asset folder
-	//Model::LoadFromAsset("Assets/Models/Room.bp", "room");
+	Ref<Texture> default_texture = Texture::LoadFromAsset("Assets/Models/white.boop_png", "default");
 
-	Mesh::LoadFromAsset("Assets/Models/sphere.boop_obj", "sphere");
-	Texture::LoadFromAsset("Assets/Models/white.boop_png", "default_texture");
-	Material::Create(default_lit, "default_material");
+	Ref<Texture> container_texture = Texture::LoadFromAsset("Assets/Models/textures_container/Container_DiffuseMap.boop_jpg", "container");
+	Ref<Texture> container_specular = Texture::LoadFromAsset("Assets/Textures/Container_SpecularMap.bp", "container_specular");
 
-	Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
-	Texture::LoadFromAsset("Assets/Models/textures_container/Container_DiffuseMap.boop_jpg", "container");
-	Material::Create(default_lit, "container", "container");
+	Ref<Texture> green_texture = Texture::LoadFromAsset("Assets/Textures/green.boop_png", "green");
+	Ref<Texture> checkered_texture = Texture::LoadFromAsset("Assets/Textures/checkered.bp", "checkered");
+	Ref<Texture> smoke_01_texture = Texture::LoadFromAsset("Assets/Textures/smoke_01.boop_png", "smoke_01");
+	
+	Material::Create(default_lit, default_texture, "default");
+	Material::Create(default_lit, checkered_texture, "checkered");
 
-	Texture::LoadFromAsset("Assets/Textures/green.boop_png", "green");
-	Material::Create(default_lit, "green_material", "green");
+	Ref<Material> container_material = Material::Create(default_lit, container_texture, "container");
+	container_material->SetTexture(MaterialTextureType::SpecularTexture, container_specular);
 
-	Texture::LoadFromAsset("Assets/Textures/smoke_01.boop_png", "smoke_01");
-	Material::Create(default_lit, "smoke_01_material", "smoke_01");
+	Material::Create(default_lit, green_texture, "green");
+	Material::Create(default_lit, smoke_01_texture, "smoke_01");
 
-	// Basic mesh shapes
 	Mesh::LoadFromAsset("Assets/Models/cube.boop_obj", "cube");
 	Mesh::LoadFromAsset("Assets/Models/cone.boop_obj", "cone");
 	Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj", "monkey");
 	Mesh::LoadFromAsset("Assets/Models/quad.boop_obj", "quad");
+	Mesh::LoadFromAsset("Assets/Models/plane.boop_obj", "plane");
+	Mesh::LoadFromAsset("Assets/Models/sphere.boop_obj", "sphere");
+
+	Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
+	Mesh::LoadFromAsset("Assets/Models/soldier.boop_obj", "soldier");
 
 	// Manually built meshes
 	auto screen_quad = Mesh::Create("screen_quad");
-
 	screen_quad->_vertices.push_back({ { -1.0f, -1.0f, 0.0f }, {}, {}, {} });
 	screen_quad->_vertices.push_back({ { -1.0f, 1.0f, 0.0f }, {}, {}, {} });
 	screen_quad->_vertices.push_back({ { 1.0f, -1.0f, 0.0f }, {}, {}, {} });
 	screen_quad->_vertices.push_back({ { 1.0f,  1.0f, 0.0f }, {}, {}, {} });
-
 	screen_quad->_vertex_count = 4;
 
 	screen_quad->_indices = { 0,2,1,1,2,3 };
@@ -233,7 +249,7 @@ void mrs::EditorLayer::Play()
 		}
 	}
 
-	// Enable play time layers
+	// Enable runtime layers
 	application.EnableLayer("Physics2DLayer");
 	_native_scripting_layer->EnableScripts(_editor_camera);
 

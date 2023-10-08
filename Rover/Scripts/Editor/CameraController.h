@@ -10,6 +10,7 @@
 
 #include "SDL.h"
 #include "ECS/Components/Components.h"
+#include "Physics/Physics.h"
 
 namespace mrs
 {
@@ -30,6 +31,8 @@ namespace mrs
 
         virtual void OnStart() override;
         virtual void OnUpdate(float dt) override;
+
+        const Ray ScreenPointToRay(const glm::vec2& point) const;
 
     private:
         void HandleKeyBoardInput(float dt);

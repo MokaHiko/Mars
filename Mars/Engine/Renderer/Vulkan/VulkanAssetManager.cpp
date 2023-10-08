@@ -27,6 +27,7 @@ namespace mrs
 		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
 			.BindBuffer(0, nullptr, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
 			.BindImage(1, nullptr, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+			.BindImage(2, nullptr, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(nullptr, &_material_descriptor_set_layout);
 
 		_renderer->DeletionQueue().Push([&]()
@@ -100,14 +101,21 @@ namespace mrs
 		material_buffer_info.offset = 0;
 		material_buffer_info.range = sizeof(MaterialData);
 
-		VkDescriptorImageInfo image_buffer_info = {};
-		image_buffer_info.sampler = _linear_image_sampler;
-		image_buffer_info.imageView = material->MainTexture()->_image_view;
-		image_buffer_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		VkDescriptorImageInfo diffuse_image_info = {};
+		diffuse_image_info.sampler = _nearest_image_sampler;
+		diffuse_image_info.imageView = material->MainTexture()->_image_view;
+		diffuse_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+		VkDescriptorImageInfo specular_image_info = {};
+		specular_image_info.sampler = _nearest_image_sampler;
+		specular_image_info.imageView = material->GetTexture(MaterialTextureType::SpecularTexture)->_image_view;
+		specular_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		// TODO: Should be done per type of material or type of pipeline
 		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
 			.BindBuffer(0, &material_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-			.BindImage(1, &image_buffer_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+			.BindImage(1, &diffuse_image_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+			.BindImage(2, &specular_image_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 			.Build(&material->DescriptorSet(), &_material_descriptor_set_layout);
 	}
 

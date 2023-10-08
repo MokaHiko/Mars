@@ -17,7 +17,7 @@ namespace mrs
         MeshRenderer()
         {
             mesh = Mesh::Get("cube");
-            material = Material::Get("default_material");
+            material = Material::Get("default");
         };
 
         MeshRenderer(Ref<Mesh> mesh_, Ref<Material> material_)
@@ -43,11 +43,6 @@ namespace mrs
     private:
         Ref<Mesh> mesh = nullptr;
         Ref<Material> material = nullptr;
-    };
-
-    struct DirectionalLight
-    {
-        float intensity = 0.0f;
     };
 
     struct PointLight

@@ -19,16 +19,26 @@ void mrs::MeshRenderPipeline::InitDescriptors() {
         .Build(&_global_data_set, &_global_data_set_layout);
 
     _object_sets.resize(frame_overlaps);
+    _dir_light_sets.resize(frame_overlaps);
     for(uint32_t i = 0; i < frame_overlaps; i++)
     {
         VkDescriptorBufferInfo global_buffer_info = {};
-        global_buffer_info.buffer = _renderer->ObjectBuffer()[i].buffer;
+        global_buffer_info.buffer = _renderer->ObjectBuffers()[i].buffer;
         global_buffer_info.offset = 0;
         global_buffer_info.range = VK_WHOLE_SIZE;
 
         vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
             .BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
             .Build(&_object_sets[i], &_object_set_layout);
+
+        VkDescriptorBufferInfo dir_light_buffer_info = {};
+        dir_light_buffer_info.buffer = _renderer->DirLightBuffers()[i].buffer;
+        dir_light_buffer_info.offset = 0;
+        dir_light_buffer_info.range = VK_WHOLE_SIZE;
+
+        vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+            .BindBuffer(0, &dir_light_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .Build(&_dir_light_sets[i], &_dir_light_layout);
     }
 
     VkDescriptorImageInfo shadow_map_image_info = {};
@@ -121,10 +131,11 @@ void mrs::MeshRenderPipeline::DrawObjects(VkCommandBuffer cmd, RenderableBatch* 
 
     VulkanFrameContext frame_context = _renderer->CurrentFrameData();
 
-    // Bind global and object descriptors
+    // Bind global, object, and light descriptors
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_set, 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[n_frame], 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 4, 1, &_dir_light_sets[n_frame], 0, nullptr);
 
     for (auto& batch : _batches)
     {
@@ -305,7 +316,7 @@ void mrs::MeshRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, Render
 
             VkDrawIndexedIndirectCommand draw_command = {};
             draw_command.vertexOffset = 0;
-            draw_command.indexCount = renderable.GetMesh()->_index_count;
+           draw_command.indexCount = renderable.GetMesh()->_index_count;
             draw_command.instanceCount = 1;
             draw_command.firstInstance = e.Id();
 

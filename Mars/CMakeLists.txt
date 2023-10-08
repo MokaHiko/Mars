@@ -108,6 +108,10 @@ add_library(${PROJECT_NAME}
 			Engine/Physics/Physics2DLayer.h
 			Engine/Physics/Physics.h
 			Engine/Physics/Physics.cpp
+			Engine/Physics/Collider.h
+			Engine/Physics/Collider.cpp
+			Engine/Physics/Algorithm.h
+			Engine/Physics/Algorithm.cpp
 			)
 target_precompile_headers(${PROJECT_NAME} PUBLIC mrspch.h)
 target_include_directories(${PROJECT_NAME} PUBLIC

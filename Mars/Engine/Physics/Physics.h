@@ -12,6 +12,7 @@
 
 #include "ECS/Entity.h"
 #include "Core/Application.h"
+#include "Collider.h"
 
 namespace mrs
 {
@@ -28,13 +29,13 @@ namespace mrs
         static constexpr auto in_place_delete = true;
 
         // Adds force as impulse
-        void AddImpulse(const glm::vec2 value)
+        void AddImpulse(const glm::vec2& value)
         {
             body->ApplyLinearImpulse({value.x, value.y}, body->GetWorldCenter(), true);
         }
 
         // Sets instantaneous velocity 
-        void SetVelocity(const glm::vec2 value)
+        void SetVelocity(const glm::vec2& value)
         {
             body->SetLinearVelocity({value.x, value.y});
         }
@@ -72,6 +73,32 @@ namespace mrs
 
         float width = 1.0f;
         float height = 1.0f;
+    };
+
+    struct MeshCollider
+    {
+        // TODO: Make pointer safe
+        ColliderType type;
+        Ref<Collider> collider = nullptr;
+    };
+
+    struct Ray
+    {
+        glm::vec3 origin;
+        glm::vec3 direction;
+    };
+
+    struct Collision
+    {
+        Entity entity = {};
+        CollisionPoints collision_points = {};
+    };
+
+    class Physics
+    {
+    public: 
+        // Cast a ray into a scene
+        static const Collision Raycast(Scene* scene, const Ray& ray, float range = 1000.0f);
     };
 };
 

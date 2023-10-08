@@ -223,7 +223,9 @@ bool mrs::SceneSerializer::DeserializeText(const std::string &scene_path)
 		if (dir_light_node)
 		{
 			auto &dir_light = new_entity.AddComponent<DirectionalLight>();
-			dir_light.intensity = dir_light_node["Intensity"].as<float>();
+			dir_light.Ambient = dir_light_node["Ambient"].as<glm::vec4>();
+			dir_light.Diffuse = dir_light_node["Diffuse"].as<glm::vec4>();
+			dir_light.Specular = dir_light_node["Specular"].as<glm::vec4>();
 		}
 
 		auto point_light_node = entity["PointlLight"];
@@ -238,6 +240,7 @@ bool mrs::SceneSerializer::DeserializeText(const std::string &scene_path)
 		{
 			auto &script = new_entity.AddComponent<Script>();
 			script.Bind(script_node["Binding"].as<std::string>());
+			script.enabled = false;
 		}
 
 		auto rb2D_node = entity["RigidBody2D"];
@@ -246,6 +249,28 @@ bool mrs::SceneSerializer::DeserializeText(const std::string &scene_path)
 			auto &rb2D = new_entity.AddComponent<RigidBody2D>();
 			rb2D.type = (BodyType)rb2D_node["Type"].as<int>();
 			rb2D.use_gravity = rb2D_node["UseGravity"].as<bool>();
+		}
+
+		auto mesh_collider_node = entity["MeshCollider"];
+		if (mesh_collider_node)
+		{
+			auto &mesh_collider = new_entity.AddComponent<MeshCollider>();
+			mesh_collider.type = (ColliderType)mesh_collider_node["Type"].as<int>();
+
+			// Move to on mesh collider create callback
+			switch(mesh_collider.type)
+			{
+				case(ColliderType::SphereCollider):
+				{
+					mesh_collider.collider = CreateRef<SphereCollider>();
+				}break;
+				case(ColliderType::PlaneCollider):
+				{
+					mesh_collider.collider = CreateRef<PlaneCollider>();
+				}break;
+				default:
+					break;
+			}
 		}
 
 		auto particles_node = entity["ParticleSystem"];
@@ -353,7 +378,10 @@ void mrs::SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::BeginMap;
 
 		auto &dir_light = entity.GetComponent<DirectionalLight>();
-		out << YAML::Key << "Intensity" << YAML::Value << dir_light.intensity;
+		out << YAML::Key << "Ambient" << YAML::Value << dir_light.Ambient;
+		out << YAML::Key << "Diffuse" << YAML::Value << dir_light.Diffuse;
+		out << YAML::Key << "Specular" << YAML::Value << dir_light.Specular;
+
 		out << YAML::EndMap;
 	}
 
@@ -375,6 +403,25 @@ void mrs::SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity)
 		auto &rb = entity.GetComponent<RigidBody2D>();
 		out << YAML::Key << "Type" << YAML::Value << (int)rb.type;
 		out << YAML::Key << "UseGravity" << YAML::Value << rb.use_gravity;
+
+		out << YAML::EndMap;
+	}
+
+	if (entity.HasComponent<MeshCollider>())
+	{
+		out << YAML::Key << "MeshCollider";
+		out << YAML::BeginMap;
+
+		auto &col = entity.GetComponent<MeshCollider>();
+		out << YAML::Key << "Type" << YAML::Value << (int)col.type;
+
+		switch(col.type)
+		{
+			case(ColliderType::PlaneCollider):
+				break;
+			default:
+				break;
+		}
 
 		out << YAML::EndMap;
 	}

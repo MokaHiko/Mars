@@ -144,11 +144,6 @@ void mrs::NativeScriptingLayer::EnableScripts(Entity except)
 	}
 }
 
-void mrs::NativeScriptingLayer::OnScriptCreated(entt::basic_registry<entt::entity> &, entt::entity entity) 
-{
-	Entity e{entity, _scene};
-}
-
 void mrs::NativeScriptingLayer::OnScriptDestroyed(entt::basic_registry<entt::entity> &, entt::entity entity) 
 {
 	Entity e{entity, _scene};

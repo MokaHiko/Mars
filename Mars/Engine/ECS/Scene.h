@@ -34,9 +34,9 @@ namespace mrs
         template<typename T>
         Entity FindEntityWithComponent()
         {
-            for (auto e : _registry->view<T>())
+            for (entt::entity e : _registry.view<T>())
             {
-                return { e, this };
+                return Entity{ e, this };
             }
 
             return {};
@@ -81,6 +81,17 @@ namespace mrs
 
             MRS_ERROR("Entity has no such component!");
             throw std::runtime_error("Entity has no such component!");
+        }
+
+        template <typename T>
+        T* GetScript(entt::entity id)
+        { 
+            if (HasComponent<Script>(id))
+            {
+		        return dynamic_cast<T*>(_registry.get<Script>(id).script);
+            }
+
+            return nullptr;
         }
 
         // Create and returns entity

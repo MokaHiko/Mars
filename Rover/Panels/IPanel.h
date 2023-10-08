@@ -12,6 +12,8 @@ namespace mrs {
         virtual ~IPanel();
 
         virtual void Draw() = 0;
+    public:
+        const std::string Name();
     protected:
         EditorLayer* _editor_layer = nullptr;
     private:

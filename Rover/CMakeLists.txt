@@ -28,6 +28,8 @@ add_executable(Rover
 	"GameLayer/GameLayer.cpp"
 	"GameLayer/Scripts/Unit.h"
 	"GameLayer/Scripts/Unit.cpp"
+	"GameLayer/Scripts/Player.h"
+	"GameLayer/Scripts/Player.cpp"
 	"GameLayer/Scripts/Spawner.h"
 	"GameLayer/Scripts/Spawner.cpp"
 	"GameLayer/Scripts/GameManager.h"

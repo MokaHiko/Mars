@@ -21,7 +21,6 @@ namespace mrs
         void DisableScripts(Entity except = {});
         void EnableScripts(Entity except = {});
 
-        void OnScriptCreated(entt::basic_registry<entt::entity>&, entt::entity entity);
         void OnScriptDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
     private:
         Scene *_scene = nullptr;

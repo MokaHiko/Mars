@@ -17,11 +17,12 @@ struct ObjectData {
 	mat4 model_matrix;
 };
 
-layout(set = 0, binding = 0) uniform GlobalBuffer{
+layout(set = 0, binding = 0) uniform GlobalBuffer {
 	mat4 view;
 	mat4 view_proj;
-	mat4 view_proj_light;
-	vec4 direction_light_position;
+
+	vec4 camera_position;
+	uint n_dir_lights;
 } _global_buffer;
 
 layout(std140, set = 1, binding = 0) readonly buffer ObjectBuffer{
@@ -35,9 +36,12 @@ void main()
 	v_color = _object_buffer.s_objects[gl_BaseInstance].color.xyz;
 	v_uv = _uv;
 
-	v_position_world_space = mat3(model_matrix) * _position; // position in world space
-	v_normal_world_space = normalize(mat3(model_matrix) * _normal); // Scaling must be uniform
-	v_uv_world_space = _global_buffer.view_proj_light * vec4(v_position_world_space, 1.0f); // fragment uv in clip space
+	v_position_world_space = mat3(model_matrix) * _position; 
+
+	v_normal_world_space = normalize(mat3(model_matrix) * _normal); // For uniform scaled objects
+	//v_normal_world_space = normalize(mat3(transpose(inverse(model_matrix))) * _normal); 
+
+	//v_uv_world_space = _global_buffer.view_proj_light * vec4(v_position_world_space, 1.0f); // fragment uv in clip space
 
 	gl_Position = _global_buffer.view_proj * model_matrix * vec4(_position, 1.0f);
 }

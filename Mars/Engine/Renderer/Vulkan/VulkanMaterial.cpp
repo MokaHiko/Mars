@@ -10,27 +10,44 @@ Ref<mrs::Texture> mrs::Material::MainTexture()
 
 Ref<mrs::Texture> mrs::Material::GetTexture(MaterialTextureType type)
 {
-	if(static_cast<uint8_t>(type) < _textures.size())
+	uint32_t index = static_cast<uint8_t>(type);
+	if(index < _textures.size())
 	{
- 		return _textures[static_cast<uint8_t>(MaterialTextureType::DiffuseTexture)];
+ 		return _textures[index];
 	}
 
 	return nullptr;
 }
 
-Ref<mrs::Material> mrs::Material::Create(const std::string& base_template_name, const std::string& alias, const std::string& texture_name)
+void mrs::Material::SetTexture(MaterialTextureType type, Ref<Texture> texture)
 {
-	return Create(VulkanAssetManager::Instance().FindEffectTemplate(base_template_name), alias, texture_name);
+	uint32_t index = static_cast<uint8_t>(type);
+	if(index < _textures.size())
+	{
+ 		_textures[index] = texture;
+	}
 }
 
-Ref<mrs::Material> mrs::Material::Create(Ref<EffectTemplate> base_template, const std::string& alias, const std::string& texture_name)
+Ref<mrs::Material> mrs::Material::Create(Ref<EffectTemplate> base_template, Ref<Texture> texture, const std::string& alias)
 {
 	ResourceManager::Get()._materials[alias] = std::make_shared<Material>();
 	ResourceManager::Get()._materials[alias]->_name = alias;
 	ResourceManager::Get()._materials[alias]->_base_template = base_template;
-	ResourceManager::Get()._materials[alias]->_textures[static_cast<uint8_t>(MaterialTextureType::DiffuseTexture)] = Texture::Get(texture_name);
+
+	ResourceManager::Get()._materials[alias]->_textures[static_cast<uint8_t>(MaterialTextureType::DiffuseTexture)] = texture;
+	ResourceManager::Get()._materials[alias]->_textures[static_cast<uint8_t>(MaterialTextureType::SpecularTexture)] = Texture::Get("default");
 
 	return ResourceManager::Get()._materials[alias];
+}
+
+Ref<mrs::Material> mrs::Material::Create(const std::string& base_template_name, const std::string& texture_name, const std::string& alias)
+{
+	return Create(VulkanAssetManager::Instance().FindEffectTemplate(base_template_name), texture_name, alias);
+}
+
+Ref<mrs::Material> mrs::Material::Create(Ref<EffectTemplate> base_template, const std::string& texture_name, const std::string& alias)
+{
+	return Create(base_template, Texture::Get(texture_name), alias);
 }
 
 Ref<mrs::Material> mrs::Material::Get(const std::string& alias)
