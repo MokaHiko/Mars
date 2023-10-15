@@ -9,6 +9,7 @@
 #include <ToolBox/SignalToolBox.h>
 
 #include "Core/Log.h"
+#include "Core/Memory.h"
 
 namespace mrs
 {
@@ -25,6 +26,8 @@ namespace mrs
         ~Scene();
 
         void Serialization(bool serializing) { _serializing = serializing; }
+
+        Entity Root();
 
         entt::registry* Registry()
         {
@@ -81,7 +84,7 @@ namespace mrs
 
             MRS_ERROR("Entity has no such component!");
             throw std::runtime_error("Entity has no such component!");
-        }
+      }
 
         template <typename T>
         T* GetScript(entt::entity id)
@@ -109,9 +112,11 @@ namespace mrs
         // ECS signals
         tbx::Signal<Entity> _entity_destroyed;
         tbx::Signal<Entity> _entity_created;
+
     private:
         friend class Entity;
         entt::registry _registry;
+        entt::entity _root;
 
         // Entity ids free to be reused
         std::vector<Entity> _free_queue;

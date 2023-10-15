@@ -41,7 +41,7 @@ namespace mrs
         {
             _game_object._scene->QueueDestroy(_game_object);
         }
-
+        
         template<typename ScriptType>
         Entity FindEntityWithScript()
         {

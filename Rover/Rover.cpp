@@ -17,6 +17,7 @@
 #include "Core/InputLayer.h"
 #include "Scripting/NativeScriptingLayer.h"
 #include "Renderer/RenderPipelineLayers/DefaultRenderPipelineLayer/DefaultRenderPipelineLayer.h"
+#include "SceneGraph/SceneGraphLayer.h"
 
 #include "GameLayer/GameLayer.h"
 #include <imgui_impl_sdl2.h>
@@ -178,6 +179,8 @@ void mrs::EditorLayer::LoadEditorResources()
 	Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
 	Mesh::LoadFromAsset("Assets/Models/soldier.boop_obj", "soldier");
 
+	// Model::LoadFromAsset("Assets/Models/Room.bp", "room");
+
 	// Manually built meshes
 	auto screen_quad = Mesh::Create("screen_quad");
 	screen_quad->_vertices.push_back({ { -1.0f, -1.0f, 0.0f }, {}, {}, {} });
@@ -216,7 +219,7 @@ void mrs::EditorLayer::LoadEditorScene()
 	// for (auto mesh : Model::Get("room")->_meshes)
 	// {
 	// 	Entity e = app.GetScene()->Instantiate(mesh->_mesh_name);
-	// 	e.AddComponent<MeshRenderer>(mesh, Material::Get("default_material"));
+	// 	e.AddComponent<MeshRenderer>(mesh, Material::Get("default"));
 	// }
 
 	_render_pipeline_layer->SetCamera(&camera_component);
@@ -269,6 +272,7 @@ mrs::Rover::Rover()
 	PushLayer(MRS_NEW DefaultRenderPipelineLayer());
 	PushLayer(MRS_NEW Physics2DLayer());
 	PushLayer(MRS_NEW NativeScriptingLayer());
+	PushLayer(MRS_NEW SceneGraphLayer());
 
 	// Client layers
 	PushLayer(MRS_NEW EditorLayer());

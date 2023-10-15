@@ -829,18 +829,11 @@ void Renderer::InitOffScreenAttachments()
 				Entity e = Entity(entity, scene);
 				Transform &transform = e.GetComponent<Transform>();
 
-				glm::mat4 model(1.0f);
 				glm::vec3 pos = transform.position;
-
-				model = glm::translate(model, pos);
-				model = glm::rotate(model, glm::radians(transform.rotation.x), glm::vec3(1.0, 0.0, 0.0));
-				model = glm::rotate(model, glm::radians(transform.rotation.y), glm::vec3(0.0, 1.0, 0.0));
-				model = glm::rotate(model, glm::radians(transform.rotation.z), glm::vec3(0.0, 0.0, 1.0));
-				model = glm::scale(model, transform.scale);
 
 				ObjectData obj_info = {};
 				obj_info.color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-				obj_info.model_matrix = model;
+				obj_info.model_matrix = transform.model_matrix;
 
 				static size_t padded_object_buffer_size = PadToStorageBufferSize(sizeof(ObjectData));
 				size_t offset = e.Id() * padded_object_buffer_size;

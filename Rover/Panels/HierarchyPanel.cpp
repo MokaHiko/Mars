@@ -6,44 +6,20 @@
 #include "InspectorPanel.h"
 #include "Rover.h"
 
-mrs::HierarchyPanel::HierarchyPanel(EditorLayer *editor_layer,const std::string &name, Scene *scene)
+mrs::HierarchyPanel::HierarchyPanel(EditorLayer* editor_layer, const std::string& name, Scene* scene)
 	:IPanel(editor_layer, name), _scene(scene) {}
 
 mrs::HierarchyPanel::~HierarchyPanel() {}
 
 void mrs::HierarchyPanel::Draw()
 {
-	auto view = _scene->Registry()->view<Tag, Transform>();
 	ImGui::Begin("Entity Hierarchy");
-	int ctr = 0;
 
-	// Select entity
-	for (auto entity : view)
-	{
-		ImGui::PushID(ctr++);
+	// Recursively draw scene hierarchy
+	Entity root = _scene->Root();
+	DrawNodeRecursive(root);
 
-		Entity e = { entity, _scene };
-		Tag& tag = e.GetComponent<Tag>();
-
-		if (ImGui::Selectable(tag.tag.c_str(), e == _editor_layer->SelectedEntity()))
-		{
-			if (ImGui::IsMouseClicked(1))
-			{
-				MRS_INFO("Object options!");
-				ImGui::OpenPopup("Object Options");
-			}
-
-			if (ImGui::BeginPopup("Object Options"))
-			{
-				ImGui::Button("Delete Object");
-				ImGui::EndPopup();
-			}
-
-			_editor_layer->FocusEntity(e);
-		}
-		ImGui::PopID();
-	}
-
+	// Inspect selected entity
 	InspectorPanel::Draw(_editor_layer->SelectedEntity());
 
 	// Creating entity
@@ -67,4 +43,37 @@ void mrs::HierarchyPanel::Draw()
 	}
 
 	ImGui::End();
+}
+
+void mrs::HierarchyPanel::DrawNodeRecursive(Entity node)
+{
+	static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow;
+	ImGuiTreeNodeFlags node_flags = base_flags;
+
+	const Transform& node_transform = node.GetComponent<Transform>();
+	const Tag& node_tag = node.GetComponent<Tag>();
+
+	bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)(node.Id()), node_flags, "%s", node_tag.tag.c_str());
+
+	if (ImGui::IsItemClicked())
+	{
+		_editor_layer->FocusEntity(node);
+	}
+
+	if (_editor_layer->SelectedEntity() == node)
+	{
+		node_flags |= ImGuiTreeNodeFlags_Selected;
+	}
+
+	if (node_open)
+	{
+		for (uint32_t i = 0; i < node_transform.children_count; i++)
+		{
+			Entity e = { node_transform.children[i], _scene };
+			DrawNodeRecursive(node_transform.children[i]);
+		}
+
+		ImGui::TreePop();
+	}
+
 }

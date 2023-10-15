@@ -96,12 +96,13 @@ std::vector<glm::vec2> Player::GenerateBoxPositions(const glm::vec2& position, u
 	float unit_radius = 2.0f;
 
 	std::vector<glm::vec2> positions(n_positions);
-	uint32_t side_length = static_cast<uint32_t>(glm::ceil(glm::sqrt(n_positions)) * unit_radius);
+	int side_length = static_cast<int>(glm::ceil(glm::sqrt(n_positions)) * unit_radius);
 
-	int left = position.x - (side_length / 2);
-	int right = position.x + (side_length / 2);
-	int bottom = position.y - (side_length / 2);
-	int top = position.y + (side_length / 2);
+	int half_length = static_cast<int>(side_length / 2);
+	int left = position.x - half_length;
+	int right = position.x + half_length;
+	int bottom = position.y - half_length;
+	int top = position.y + half_length;
 
 	// Going from top left to bottom right
 	glm::vec2 next_position = glm::vec2(left, top);

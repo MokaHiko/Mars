@@ -31,9 +31,27 @@ namespace mrs
 
     struct Transform
     {
+    public:
+        static const int MAX_CHILDREN = 10;
+
         glm::vec3 position{0.0f};
         glm::vec3 rotation{0.0f};
         glm::vec3 scale{1.0f};
+
+        glm::mat4 model_matrix{1.0f};
+
+        Entity self = {};
+        Entity parent = {};
+        std::array<Entity, MAX_CHILDREN> children = {};
+        uint32_t children_count = 0;
+    public:
+        void AddChild(Entity e);
+        glm::mat4 LocalModelMatrix() const;
+    private:
+        friend class SceneGraphLayer;
+
+        void UpdateModelMatrix();
+        bool dirty_flag = false;
     };
 }
 #endif

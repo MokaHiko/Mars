@@ -7,6 +7,7 @@
 
 namespace mrs {
     class Scene;
+    class Entity;
     class HierarchyPanel : public IPanel
     {
     public:
@@ -15,6 +16,7 @@ namespace mrs {
 
         virtual void Draw() override;
     private:
+        void DrawNodeRecursive(Entity node);
         Scene* _scene;
     };
 }

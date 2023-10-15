@@ -22,7 +22,7 @@ protected:
     void Die();
 
     float _health = 100.0f;
-    float _movement_speed = 100.0f;
+    float _movement_speed = 50.0f;
     glm::vec2 _target_position = {};
 private:
     Player* _owner = nullptr;

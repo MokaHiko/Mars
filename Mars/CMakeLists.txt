@@ -99,6 +99,9 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/TerrainRenderPipeline/TerrainComponent.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/TerrainRenderPipeline/TerrainComponent.cpp
 
+			Engine/SceneGraph/SceneGraphLayer.h
+			Engine/SceneGraph/SceneGraphLayer.cpp
+
 			Engine/Scripting/NativeScriptingLayer.h
 			Engine/Scripting/NativeScriptingLayer.cpp
 			Engine/Scripting/NativeScriptComponent.h

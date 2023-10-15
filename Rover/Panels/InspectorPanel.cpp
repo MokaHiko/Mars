@@ -8,6 +8,7 @@ void mrs::InspectorPanel::Draw(Entity entity)
 		Tag& tag = entity.GetComponent<Tag>();
 
 		//ImGui::InputText("##label", &tag.tag);
+		ImGui::Text("%s", tag.tag.c_str());
 
 		ImGui::Separator();
 
