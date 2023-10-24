@@ -32,7 +32,7 @@ namespace mrs
     struct Transform
     {
     public:
-        static const int MAX_CHILDREN = 10;
+        static const int MAX_CHILDREN = 500;
 
         glm::vec3 position{0.0f};
         glm::vec3 rotation{0.0f};
@@ -46,6 +46,7 @@ namespace mrs
         uint32_t children_count = 0;
     public:
         void AddChild(Entity e);
+        void RemoveChild(Entity e);
         glm::mat4 LocalModelMatrix() const;
     private:
         friend class SceneGraphLayer;

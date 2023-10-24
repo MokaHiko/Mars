@@ -157,17 +157,18 @@ void mrs::EditorLayer::LoadEditorResources()
 	Ref<Texture> container_specular = Texture::LoadFromAsset("Assets/Textures/Container_SpecularMap.bp", "container_specular");
 
 	Ref<Texture> green_texture = Texture::LoadFromAsset("Assets/Textures/green.boop_png", "green");
+
 	Ref<Texture> checkered_texture = Texture::LoadFromAsset("Assets/Textures/checkered.bp", "checkered");
-	Ref<Texture> smoke_01_texture = Texture::LoadFromAsset("Assets/Textures/smoke_01.boop_png", "smoke_01");
-	
+	Ref<Texture> space_texture = Texture::LoadFromAsset("Assets/Textures/space.bp", "space");
+
 	Material::Create(default_lit, default_texture, "default");
 	Material::Create(default_lit, checkered_texture, "checkered");
+	Material::Create(default_lit, space_texture , "space");
 
 	Ref<Material> container_material = Material::Create(default_lit, container_texture, "container");
 	container_material->SetTexture(MaterialTextureType::SpecularTexture, container_specular);
 
 	Material::Create(default_lit, green_texture, "green");
-	Material::Create(default_lit, smoke_01_texture, "smoke_01");
 
 	Mesh::LoadFromAsset("Assets/Models/cube.boop_obj", "cube");
 	Mesh::LoadFromAsset("Assets/Models/cone.boop_obj", "cone");
@@ -179,7 +180,7 @@ void mrs::EditorLayer::LoadEditorResources()
 	Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
 	Mesh::LoadFromAsset("Assets/Models/soldier.boop_obj", "soldier");
 
-	// Model::LoadFromAsset("Assets/Models/Room.bp", "room");
+	Model::LoadFromAsset("Assets/Models/millennium_falcon_battlefront.bp", true, "falcon");
 
 	// Manually built meshes
 	auto screen_quad = Mesh::Create("screen_quad");
@@ -214,13 +215,6 @@ void mrs::EditorLayer::LoadEditorScene()
 
 	_editor_camera.AddComponent<Script>().Bind<CameraController>();
 	_editor_camera.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, 50.0f);
-
-	// TODO: Move to Scene Hiechy implementation
-	// for (auto mesh : Model::Get("room")->_meshes)
-	// {
-	// 	Entity e = app.GetScene()->Instantiate(mesh->_mesh_name);
-	// 	e.AddComponent<MeshRenderer>(mesh, Material::Get("default"));
-	// }
 
 	_render_pipeline_layer->SetCamera(&camera_component);
 }

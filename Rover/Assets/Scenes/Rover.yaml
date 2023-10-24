@@ -1,76 +1,6 @@
 Scene: Rover
 Entities:
-  - Entity: 222006628
-    Tag:
-      Tag: Spawner
-    Transform:
-      Position: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Script:
-      Binding: class Spawner
-  - Entity: 638596970
-    Tag:
-      Tag: Directional Light
-    Transform:
-      Position: [100, 100, 100]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    MeshRenderer:
-      Mesh: cube
-      Material: default
-    DirectionalLight:
-      Ambient: [0.5, 0.5, 0.5, 0]
-      Diffuse: [0.200000003, 0.200000003, 0.200000003, 0]
-      Specular: [1, 1, 1, 0]
-  - Entity: 1617350537
-    Tag:
-      Tag: Container
-    Transform:
-      Position: [-50, 50, 0]
-      Rotation: [90, 45, 0]
-      Scale: [0.05, 0.05, 0.05]
-    MeshRenderer:
-      Mesh: container
-      Material: container
-    RigidBody2D:
-      Type: 1
-      UseGravity: false
-  - Entity: 1617350535
-    Tag:
-      Tag: Container
-    Transform:
-      Position: [50, 50, 0]
-      Rotation: [90, 45, 0]
-      Scale: [0.05, 0.05, 0.05]
-    MeshRenderer:
-      Mesh: container
-      Material: container
-    RigidBody2D:
-      Type: 1
-      UseGravity: false
-  - Entity: 2970542136
-    Tag:
-      Tag: Plane
-    Transform:
-      Position: [0, 0, 0]
-      Rotation: [90, 0, 0]
-      Scale: [100, 100, 100]
-    MeshRenderer:
-      Mesh: plane
-      Material: checkered
-    MeshCollider:
-      Type: 2
-  - Entity: 2269386998
-    Tag:
-      Tag: PlayerController
-    Transform:
-      Position: [36.7554207, -201.272247, 141.286575]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Script:
-      Binding: class Player
-  - Entity: 2269386991
+  - Entity: 1330993331
     Tag:
       Tag: Game Camera
     Transform:
@@ -81,12 +11,91 @@ Entities:
       Binding: class mrs::CameraController
     Camera:
       Type: 2
-      Front: [0, 0,0]
+      Front: [0, 0, 0]
       Right: [0, 0, 0]
-      Up: [0, 0 ,0]
+      Up: [0, 0, 0]
       WorldUp: [0, 1, 0]
-      Yaw: -90.0
-      Pitch: 0.0
+      Yaw: -90
+      Pitch: 0
       AspectW: 1600
       AspectH: 900
       Active: true
+  - Entity: 3967625336
+    Tag:
+      Tag: PlayerController
+    Transform:
+      Position: [36.7554207, -201.272247, 141.286575]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Script:
+      Binding: class Player
+  - Entity: 2663438841
+    Tag:
+      Tag: Plane
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [90, 0, 0]
+      Scale: [500, 1, 500]
+    MeshRenderer:
+      Mesh: plane
+      Material: space
+    MeshCollider:
+      Type: 2
+  - Entity: 1583337057
+    Tag:
+      Tag: Container
+    Transform:
+      Position: [50, 50, 0]
+      Rotation: [90, 45, 0]
+      Scale: [0.0500000007, 0.0500000007, 0.0500000007]
+    MeshRenderer:
+      Mesh: container
+      Material: container
+    RigidBody2D:
+      Type: 1
+      UseGravity: false
+  - Entity: 3304355643
+    Tag:
+      Tag: MilleniumFalcon
+    Transform:
+      Position: [50, -7, 11]
+      Rotation: [0, 0, 0]
+      Scale: [0.0250000004, 0.0250000004, 0.0250000004]
+    ModelRenderer:
+      Model: falcon
+  - Entity: 651083731
+    Tag:
+      Tag: Container
+    Transform:
+      Position: [-50, 50, 0]
+      Rotation: [90, 45, 0]
+      Scale: [0.0500000007, 0.0500000007, 0.0500000007]
+    MeshRenderer:
+      Mesh: container
+      Material: container
+    RigidBody2D:
+      Type: 1
+      UseGravity: false
+  - Entity: 22164873
+    Tag:
+      Tag: Directional Light
+    Transform:
+      Position: [-35, 186, 555]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRenderer:
+      Mesh: cube
+      Material: default
+    DirectionalLight:
+      Ambient: [1, 1, 1, 1]
+      Diffuse: [0.5, 0.5, 0.5, 1]
+      Specular: [1, 1, 1, 1]
+  - Entity: 3979237728
+    Tag:
+      Tag: Spawner
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Script:
+      Binding: class Spawner

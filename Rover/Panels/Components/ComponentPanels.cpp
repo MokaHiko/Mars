@@ -77,7 +77,9 @@ namespace mrs
 			ImVec2 region_size = ImGui::GetContentRegionAvail();
 
 			Ref<Material> material = renderable.GetMaterial();
-			ImGui::Text("material: %s", material->BaseTemplate()->name.c_str());
+			ImGui::Text("material: %s", material->Name().c_str());
+			ImGui::Text("diffuse: %s", material->GetTexture(mrs::MaterialTextureType::DiffuseTexture)->_name.c_str());
+			ImGui::Text("specular: %s", material->GetTexture(mrs::MaterialTextureType::SpecularTexture)->_name.c_str());
 		});
 	}
 
@@ -85,7 +87,9 @@ namespace mrs
 	void DrawComponent<DirectionalLight>(Entity entity)
 	{
 		DrawComponentUI<DirectionalLight>("Directional Light", entity, [](DirectionalLight& dir_light) {
-			ImGui::DragFloat4("Intensity: %s", glm::value_ptr(dir_light.Ambient));
+			ImGui::DragFloat4("Ambient: ", glm::value_ptr(dir_light.Ambient));
+			ImGui::DragFloat4("Diffuse: ", glm::value_ptr(dir_light.Diffuse));
+			ImGui::DragFloat4("Specular: ", glm::value_ptr(dir_light.Specular));
 
 			static bool view_dir_light_camera = false;
 			if (ImGui::Checkbox("Set Channel", &view_dir_light_camera))

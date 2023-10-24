@@ -102,12 +102,12 @@ namespace mrs
 		material_buffer_info.range = sizeof(MaterialData);
 
 		VkDescriptorImageInfo diffuse_image_info = {};
-		diffuse_image_info.sampler = _nearest_image_sampler;
+		diffuse_image_info.sampler = _linear_image_sampler;
 		diffuse_image_info.imageView = material->MainTexture()->_image_view;
 		diffuse_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		VkDescriptorImageInfo specular_image_info = {};
-		specular_image_info.sampler = _nearest_image_sampler;
+		specular_image_info.sampler = _linear_image_sampler;
 		specular_image_info.imageView = material->GetTexture(MaterialTextureType::SpecularTexture)->_image_view;
 		specular_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 

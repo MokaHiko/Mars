@@ -8,9 +8,20 @@
 #include "Renderer/Vulkan/VulkanMesh.h"
 #include "Renderer/Vulkan/VulkanMaterial.h"
 #include "Renderer/Camera.h"
+#include "Renderer/Model.h"
 
 namespace mrs
 {
+    struct ModelRenderer
+    {
+        ModelRenderer(Ref<Model> m)
+        {
+            model = m;
+        }
+
+        Ref<Model> model;
+    };
+
     // Base renderer class component that makes an object appear on the screen. Inherited by all rendererable types.
     struct MeshRenderer
     {

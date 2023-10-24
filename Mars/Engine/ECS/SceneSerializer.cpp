@@ -199,6 +199,12 @@ bool mrs::SceneSerializer::DeserializeText(const std::string &scene_path)
 			renderable_object.SetMaterial(Material::Get(renderable_node["Material"].as<std::string>()));
 		}
 
+		auto model_node = entity["ModelRenderer"];
+		if (model_node)
+		{
+			auto &renderable_object = new_entity.AddComponent<ModelRenderer>(Model::Get(model_node["Model"].as<std::string>()));
+		}
+
 		auto camera_node = entity["Camera"];
 		if (camera_node)
 		{
@@ -334,6 +340,17 @@ void mrs::SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity)
 		auto &renderable = entity.GetComponent<MeshRenderer>();
 		out << YAML::Key << "Mesh" << YAML::Value << renderable.GetMesh()->_mesh_name;
 		out << YAML::Key << "Material" << YAML::Value << renderable.GetMaterial()->Name();
+
+		out << YAML::EndMap;
+	}
+
+	if (entity.HasComponent<ModelRenderer>())
+	{
+		out << YAML::Key << "ModelRenderer";
+		out << YAML::BeginMap;
+
+		auto &renderable = entity.GetComponent<ModelRenderer>();
+		out << YAML::Key << "Model" << YAML::Value << renderable.model->Name();
 
 		out << YAML::EndMap;
 	}

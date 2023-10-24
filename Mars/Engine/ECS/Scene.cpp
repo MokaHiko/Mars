@@ -13,7 +13,7 @@ namespace mrs
 		for (auto entity : view)
 		{
 			Entity e(entity, this);
-			Script &script_component = e.GetComponent<Script>();
+			Script& script_component = e.GetComponent<Script>();
 			script_component.script = script_component.InstantiateScript();
 			script_component.DestroyScript();
 		}
@@ -28,16 +28,16 @@ namespace mrs
 	{
 		// Create root node
 		Entity e = {};
-		if(!_free_queue.empty())
+		if (!_free_queue.empty())
 		{
 			Entity idx = _free_queue.back();
 			_free_queue.pop_back();
 
-			e = Entity{_registry.create(idx), this};
+			e = Entity{ _registry.create(idx), this };
 		}
 		else
 		{
-			e = Entity{_registry.create(), this};
+			e = Entity{ _registry.create(), this };
 		}
 
 		// Determine if serializable
@@ -59,16 +59,16 @@ namespace mrs
 	Entity Scene::Instantiate(const std::string& name, const glm::vec3& position, bool* serialize)
 	{
 		Entity e = {};
-		if(!_free_queue.empty())
+		if (!_free_queue.empty())
 		{
 			Entity idx = _free_queue.back();
 			_free_queue.pop_back();
 
-			e = Entity{_registry.create(idx), this};
+			e = Entity{ _registry.create(idx), this };
 		}
 		else
 		{
-			e = Entity{_registry.create(), this};
+			e = Entity{ _registry.create(), this };
 		}
 
 		// Determine if serializable
@@ -80,7 +80,7 @@ namespace mrs
 		transform.self = e;
 
 		// Add to root if not provided 
-		Entity root = {_root, this};
+		Entity root = { _root, this };
 		root.GetComponent<Transform>().AddChild(e);
 
 		// Fire off created signal
@@ -89,7 +89,7 @@ namespace mrs
 	}
 
 
-void Scene::QueueDestroy(Entity entity)
+	void Scene::QueueDestroy(Entity entity)
 	{
 		_destruction_queue.push_back(entity);
 	}
@@ -110,8 +110,14 @@ void Scene::QueueDestroy(Entity entity)
 	void Scene::Destroy(Entity entity)
 	{
 		// Add to free queue to recycled entity id
-		if(entity)
+		if (entity)
 		{
+			if (entity == _root)
+			{
+				MRS_INFO("Cannot destroy root!");
+				return;
+			}
+
 			// Fire off destroy signal
 			_entity_destroyed(entity);
 

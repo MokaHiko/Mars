@@ -77,6 +77,9 @@ namespace mrs {
 
 		AllocatedBuffer& Buffer() { return _material_buffer; }
 		const AllocatedBuffer& Buffer() const { return _material_buffer; }
+
+		MaterialData& Data() { return _data; }
+		const MaterialData& Data() const { return _data; }
 	private:
 
 		friend class VulkanAssetManager;

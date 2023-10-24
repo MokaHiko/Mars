@@ -58,6 +58,15 @@ void mrs::CameraController::HandleKeyBoardInput(float dt)
 		}
 	}
 
+	if (Input::IsKeyPressed(SDLK_LSHIFT))
+	{
+		_movement_speed = 120.0f;
+	}
+	else
+	{
+		_movement_speed = 40.0f;
+	}
+
 	if (Input::IsKeyPressed(SDLK_SPACE))
 	{
 		camera_transform.position += _camera->Up() * _movement_speed * dt;
