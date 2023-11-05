@@ -1,8 +1,10 @@
 #include "ScriptableEntity.h"
 #include "Scene.h"
 
-
 #include "ECS/Components/Components.h"
+#include "Scripting/ProcessLayer.h"
+
+#include "Core/Log.h"
 
 namespace mrs 
 {
@@ -24,5 +26,19 @@ namespace mrs
 		e.GetComponent<Serializer>().serialize = false;
 
 		return e;
+	}
+
+	void ScriptableEntity::StartProcess(Ref<Process> process)
+	{
+		static ProcessLayer* process_layer = dynamic_cast<ProcessLayer*>(Application::Instance().FindLayer("ProcessLayer"));
+
+		if(process_layer)
+		{
+			process_layer->AttachProcess(process);
+		}
+		else
+		{
+			MRS_ERROR("Process Layer not found!");
+		}
 	}
 }

@@ -807,6 +807,8 @@ void Renderer::InitOffScreenAttachments()
 			GlobalDescriptorData global_info = {};
 			if (_camera)
 			{
+				_camera->UpdateViewProj();
+
 				global_info.view = _camera->GetView();
 				global_info.view_proj = _camera->GetViewProj();
 				
@@ -900,7 +902,7 @@ void Renderer::InitOffScreenAttachments()
 
 		// Begin main render pass
 		VkClearValue clear_value = {};
-		clear_value.color = { 0.1f, 0.1f, 0.1f, 1.0f };
+		clear_value.color = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 		VkClearValue depth_value = {};
 		depth_value.depthStencil = { 1.0f, 0 };

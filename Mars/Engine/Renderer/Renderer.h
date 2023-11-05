@@ -220,7 +220,7 @@ namespace mrs
 		uint32_t _frame_count = 0;
 
 		// Main gpu upload resource allocator
-		VmaAllocator _allocator;
+		VmaAllocator _allocator = {};
 
 		// Descriptor allocator and layout cache
 		Ref<vkutil::DescriptorAllocator> _descriptor_allocator;

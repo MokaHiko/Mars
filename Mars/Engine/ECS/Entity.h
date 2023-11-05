@@ -4,8 +4,8 @@
 #pragma once
 
 #include <entt/entt.hpp>
-
 #include "Scene.h"
+
 namespace mrs
 {
     class Entity
@@ -39,7 +39,7 @@ namespace mrs
         template <typename T>
         T &GetComponent()
         {
-            return _scene->GetComponent<T>(_id);
+           return _scene->GetComponent<T>(_id);
         }
 
         // Returns component of type <T>

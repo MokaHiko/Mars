@@ -4,10 +4,6 @@
 #pragma once
 
 #include <Mars.h>
-#include "Scripts/Unit.h"
-#include "Scripts/Spawner.h"
-#include "Scripts/GameManager.h"
-#include "Scripts/Player.h"
 
 class GameLayer : public mrs::Layer
 {

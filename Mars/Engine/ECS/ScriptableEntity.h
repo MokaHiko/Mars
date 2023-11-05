@@ -7,6 +7,7 @@
 
 namespace mrs
 {
+    class Process;
     class ScriptableEntity
     {
     public:
@@ -58,6 +59,8 @@ namespace mrs
 
             return {};
         }
+
+        void StartProcess(Ref<Process> process);
 
         Entity _game_object = {};
     };

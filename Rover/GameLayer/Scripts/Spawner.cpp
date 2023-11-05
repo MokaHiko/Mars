@@ -10,7 +10,8 @@ void Spawner::OnStart()
 
 void Spawner::OnUpdate(float dt) {
 	_timer += dt;
-	if (_timer > _spawn_rate) {
+	if (_timer > _spawn_rate)
+	{
 		SpawnUnit();
 		_timer = 0;
 	}

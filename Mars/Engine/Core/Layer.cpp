@@ -57,6 +57,11 @@ void mrs::LayerStack::DisableLayer(const std::string & layer_name)
 	MRS_ERROR("No layer with such name");
 }
 
+mrs::Layer::Layer(const std::string & name)
+{
+	_name = name;
+}
+
 void mrs::Layer::Enable() 
 {
 	_enabled = true;

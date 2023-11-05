@@ -20,6 +20,7 @@ void Player::OnStart()
 	if (cam)
 	{
 		_camera = cam.GetScript<mrs::CameraController>();
+		MRS_INFO("Found %s", cam.GetComponent<mrs::Tag>().tag.c_str());
 	}
 	else
 	{
@@ -29,44 +30,44 @@ void Player::OnStart()
 
 void Player::OnUpdate(float dt)
 {
-	if (mrs::Input::IsMouseButtonDown(SDL_BUTTON_LEFT))
-	{
-		glm::vec2 mouse_pos = mrs::Input::GetMousePosition();
-		mrs::Ray ray = _camera->ScreenPointToRay(mrs::Input::GetMousePosition());
+	// if (mrs::Input::IsMouseButtonDown(SDL_BUTTON_LEFT))
+	// {
+	// 	glm::vec2 mouse_pos = mrs::Input::GetMousePosition();
+	// 	mrs::Ray ray = _camera->ScreenPointToRay(mrs::Input::GetMousePosition());
 
-		mrs::Collision col = mrs::Physics::Raycast(_scene, ray);
-		if(col.entity)
-		{
-			Select(col.entity);
-		}
-		else
-		{
-			for (auto& e : _selected_units)
-			{
-				// TODO: Remove Select UI
-			}
-			_selected_units.clear();
-		}
-	}
+	// 	mrs::Collision col = mrs::Physics::Raycast(_scene, ray);
+	// 	if(col.entity)
+	// 	{
+	// 		Select(col.entity);
+	// 	}
+	// 	else
+	// 	{
+	// 		for (auto& e : _selected_units)
+	// 		{
+	// 			// TODO: Remove Select UI
+	// 		}
+	// 		_selected_units.clear();
+	// 	}
+	// }
 
-	if(mrs::Input::IsMouseButtonDown((SDL_BUTTON_RIGHT)))
-	{
-		glm::vec2 mouse_pos = mrs::Input::GetMousePosition();
-		mrs::Ray ray = _camera->ScreenPointToRay(mrs::Input::GetMousePosition());
+	// if(mrs::Input::IsMouseButtonDown((SDL_BUTTON_RIGHT)))
+	// {
+	// 	glm::vec2 mouse_pos = mrs::Input::GetMousePosition();
+	// 	mrs::Ray ray = _camera->ScreenPointToRay(mrs::Input::GetMousePosition());
 
-		mrs::Collision col = mrs::Physics::Raycast(_scene, ray);
-		std::vector<glm::vec2> positions = GenerateBoxPositions({col.collision_points.a}, _selected_units.size());
+	// 	mrs::Collision col = mrs::Physics::Raycast(_scene, ray);
+	// 	std::vector<glm::vec2> positions = GenerateBoxPositions({col.collision_points.a}, _selected_units.size());
 
-		int ctr = 0;
-		for (auto& e : _selected_units)
-		{
-			Unit* unit = dynamic_cast<Unit*>(e.GetComponent<mrs::Script>().script);
-			if (unit)
-			{
-				unit->MoveTo(positions[ctr++]);
-			}
-		}
-	}
+	// 	int ctr = 0;
+	// 	for (auto& e : _selected_units)
+	// 	{
+	// 		Unit* unit = dynamic_cast<Unit*>(e.GetComponent<mrs::Script>().script);
+	// 		if (unit)
+	// 		{
+	// 			unit->MoveTo(positions[ctr++]);
+	// 		}
+	// 	}
+	// }
 }
 
 void Player::OnCollisionEnter2D(mrs::Entity other)
@@ -122,4 +123,7 @@ std::vector<glm::vec2> Player::GenerateBoxPositions(const glm::vec2& position, u
 	return positions;
 }
 
-void Player::OnCreate() {}
+void Player::OnCreate()
+{
+
+}

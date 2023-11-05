@@ -106,6 +106,8 @@ add_library(${PROJECT_NAME}
 			Engine/Scripting/NativeScriptingLayer.cpp
 			Engine/Scripting/NativeScriptComponent.h
 			Engine/Scripting/NativeScriptComponent.cpp
+			Engine/Scripting/ProcessLayer.h
+			Engine/Scripting/ProcessLayer.cpp
 
 			Engine/Physics/Physics2DLayer.cpp
 			Engine/Physics/Physics2DLayer.h

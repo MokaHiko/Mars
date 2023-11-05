@@ -4,16 +4,16 @@ Entities:
     Tag:
       Tag: Game Camera
     Transform:
-      Position: [0, 0, 50]
+      Position: [0, 0, 120]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     Script:
-      Binding: class mrs::CameraController
+      Binding: class GameCamera
     Camera:
       Type: 2
-      Front: [0, 0, 0]
-      Right: [0, 0, 0]
-      Up: [0, 0, 0]
+      Front: [0, 0, -1]
+      Right: [0, 0, 1]
+      Up: [0, 1, 0]
       WorldUp: [0, 1, 0]
       Yaw: -90
       Pitch: 0
@@ -35,46 +35,25 @@ Entities:
     Transform:
       Position: [0, 0, 0]
       Rotation: [90, 0, 0]
-      Scale: [500, 1, 500]
+      Scale: [1000, 1, 1000]
     MeshRenderer:
       Mesh: plane
       Material: space
     MeshCollider:
       Type: 2
-  - Entity: 1583337057
-    Tag:
-      Tag: Container
-    Transform:
-      Position: [50, 50, 0]
-      Rotation: [90, 45, 0]
-      Scale: [0.0500000007, 0.0500000007, 0.0500000007]
-    MeshRenderer:
-      Mesh: container
-      Material: container
-    RigidBody2D:
-      Type: 1
-      UseGravity: false
   - Entity: 3304355643
     Tag:
       Tag: MilleniumFalcon
     Transform:
-      Position: [50, -7, 11]
-      Rotation: [0, 0, 0]
+      Position: [0, 0, 11]
+      Rotation: [0, 0, 180]
       Scale: [0.0250000004, 0.0250000004, 0.0250000004]
     ModelRenderer:
       Model: falcon
-  - Entity: 651083731
-    Tag:
-      Tag: Container
-    Transform:
-      Position: [-50, 50, 0]
-      Rotation: [90, 45, 0]
-      Scale: [0.0500000007, 0.0500000007, 0.0500000007]
-    MeshRenderer:
-      Mesh: container
-      Material: container
+    Script:
+      Binding: class Ship
     RigidBody2D:
-      Type: 1
+      Type: 2
       UseGravity: false
   - Entity: 22164873
     Tag:
@@ -90,12 +69,12 @@ Entities:
       Ambient: [1, 1, 1, 1]
       Diffuse: [0.5, 0.5, 0.5, 1]
       Specular: [1, 1, 1, 1]
-  - Entity: 3979237728
-    Tag:
-      Tag: Spawner
-    Transform:
-      Position: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    Script:
-      Binding: class Spawner
+  # - Entity: 3979237728
+  #   Tag:
+  #     Tag: Spawner
+  #   Transform:
+  #     Position: [0, 0, 0]
+  #     Rotation: [0, 0, 0]
+  #     Scale: [1, 1, 1]
+  #   Script:
+  #     Binding: class Spawner

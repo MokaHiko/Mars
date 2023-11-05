@@ -9,12 +9,10 @@ void mrs::CameraController::OnStart()
 
 void mrs::CameraController::OnUpdate(float dt)
 {
-
 	if (_camera->_active)
 	{
 		HandleKeyBoardInput(dt);
 		HandleMouseInput(dt);
-		_camera->UpdateViewProj();
 	}
 }
 
@@ -31,7 +29,7 @@ const mrs::Ray mrs::CameraController::ScreenPointToRay(const glm::vec2& point) c
 
 	glm::vec4 clip_space = { ndc.x, ndc.y, -1, 1.0f };
 
-	// Clip space to eye space
+	// Clip
 	glm::vec4 eye_space = glm::inverse(_camera->GetProj()) * clip_space;
 	eye_space.z = -1;
 	eye_space.w = 0;
@@ -42,6 +40,7 @@ const mrs::Ray mrs::CameraController::ScreenPointToRay(const glm::vec2& point) c
 
 	r.origin = _camera->GetPosition();
 	r.direction = ray_dir;
+
 	return r;
 }
 

@@ -120,7 +120,9 @@ void mrs::NativeScriptingLayer::DisableScripts(Entity except)
 void mrs::NativeScriptingLayer::EnableScripts(Entity except) 
 {
 	auto view = _scene->Registry()->view<Transform, Script>().use<Script>();
-	for (auto entity : view) {
+
+	for (auto entity : view) 
+	{
 		Entity e(entity, _scene);
 
 		if(e == except)
@@ -130,7 +132,7 @@ void mrs::NativeScriptingLayer::EnableScripts(Entity except)
 
 		Script &script_component = e.GetComponent<Script>();
 
-		// Call Scripts OnStart
+		// Call Scripts OnCreate
 		if(!script_component.script)
 		{
 			script_component.script = script_component.InstantiateScript();
@@ -138,8 +140,20 @@ void mrs::NativeScriptingLayer::EnableScripts(Entity except)
 		}
 
 		script_component.enabled = true;
-
 		script_component.script->OnCreate();
+	}
+
+	for (auto entity : view) 
+	{
+		Entity e(entity, _scene);
+
+		if(e == except)
+		{
+			continue;
+		}
+
+		// Call Scripts OnStart
+		Script &script_component = e.GetComponent<Script>();
 		script_component.script->OnStart();
 	}
 }

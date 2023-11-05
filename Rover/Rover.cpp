@@ -8,6 +8,7 @@
 #include <Renderer/Model.h>
 
 #include <Physics/Physics2DLayer.h>
+#include <Scripting/ProcessLayer.h>
 
 #include "Scripts/Editor/EditorManager.h"
 #include "UIHelpers.h"
@@ -234,21 +235,23 @@ void mrs::EditorLayer::Play()
 	// Destroy editor scene entities
 	_editor_camera.GetComponent<Camera>().SetActive(false);
 	Scene* scene = application.GetScene();
-	auto& view = scene->Registry()->view<Transform, Serializer>();
-	for (auto entity : view)
-	{
-		Entity e(entity, scene);
-		auto& serializer = e.GetComponent<Serializer>();
+	scene->Destroy(_editor_camera);
 
-		if (!serializer.serialize)
-		{
-			scene->Destroy(e);
-		}
-	}
+	// auto& view = scene->Registry()->view<Transform, Serializer>();
+	// for (auto entity : view)
+	// {
+	// 	Entity e(entity, scene);
+	// 	auto& serializer = e.GetComponent<Serializer>();
+
+	// 	if (!serializer.serialize)
+	// 	{
+	// 		scene->Destroy(e);
+	// 	}
+	// }
 
 	// Enable runtime layers
 	application.EnableLayer("Physics2DLayer");
-	_native_scripting_layer->EnableScripts(_editor_camera);
+	_native_scripting_layer->EnableScripts();
 
 	_state = EditorState::Playing;
 }
@@ -266,6 +269,7 @@ mrs::Rover::Rover()
 	PushLayer(MRS_NEW DefaultRenderPipelineLayer());
 	PushLayer(MRS_NEW Physics2DLayer());
 	PushLayer(MRS_NEW NativeScriptingLayer());
+	PushLayer(MRS_NEW ProcessLayer());
 	PushLayer(MRS_NEW SceneGraphLayer());
 
 	// Client layers
