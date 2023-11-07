@@ -47,11 +47,11 @@ namespace mrs
     public:
         void AddChild(Entity e);
         void RemoveChild(Entity e);
+
+        void UpdateModelMatrix();
         glm::mat4 LocalModelMatrix() const;
     private:
         friend class SceneGraphLayer;
-
-        void UpdateModelMatrix();
         bool dirty_flag = false;
     };
 }

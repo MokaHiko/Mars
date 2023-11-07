@@ -30,6 +30,9 @@ add_library(${PROJECT_NAME}
 			Engine/Core/Platform/Win32/PlatformWin32.h
 			Engine/Core/Platform/Win32/PlatformWin32.cpp
 
+			Engine/Math/Math.h
+			Engine/Math/Math.cpp
+
 			Engine/Events/Events.h
 			Engine/Events/Events.cpp
 
@@ -106,6 +109,8 @@ add_library(${PROJECT_NAME}
 			Engine/Scripting/NativeScriptingLayer.cpp
 			Engine/Scripting/NativeScriptComponent.h
 			Engine/Scripting/NativeScriptComponent.cpp
+			Engine/Scripting/Process.h
+			Engine/Scripting/Process.cpp
 			Engine/Scripting/ProcessLayer.h
 			Engine/Scripting/ProcessLayer.cpp
 

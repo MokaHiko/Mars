@@ -30,6 +30,16 @@ namespace mrs
 
 	void ScriptableEntity::StartProcess(Ref<Process> process)
 	{
+		if(!process)
+		{
+			return;
+		}
+
+		if(process->IsAlive())
+		{
+			MRS_ERROR("Process already started!");
+		}
+
 		static ProcessLayer* process_layer = dynamic_cast<ProcessLayer*>(Application::Instance().FindLayer("ProcessLayer"));
 
 		if(process_layer)

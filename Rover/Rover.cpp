@@ -35,9 +35,9 @@ mrs::Application* mrs::CreateApplication()
 
 Ref<mrs::IPanel> mrs::EditorLayer::FindPanel(const std::string& name)
 {
-	for(Ref<IPanel> panel : _panels)
+	for (Ref<IPanel> panel : _panels)
 	{
-		if(panel->Name() == name)
+		if (panel->Name() == name)
 		{
 			return panel;
 		}
@@ -48,13 +48,18 @@ Ref<mrs::IPanel> mrs::EditorLayer::FindPanel(const std::string& name)
 
 void mrs::EditorLayer::FocusEntity(Entity entity)
 {
-	 CameraController* camera_controller = (CameraController*)(void*)(_editor_camera.GetComponent<Script>().script);
-	 _selected_entity = entity;
+	_selected_entity = entity;
 
-	 if (camera_controller != nullptr)
-	 {
+	if (!_editor_camera.HasComponent<Script>());
+	{
+		return;
+	}
+
+	CameraController* camera_controller = (CameraController*)(void*)(_editor_camera.GetComponent<Script>().script);
+	if (camera_controller != nullptr)
+	{
 		camera_controller->_focused = entity;
-	 }
+	}
 }
 
 void mrs::EditorLayer::OnAttach()
@@ -93,10 +98,10 @@ void mrs::EditorLayer::OnEnable()
 void mrs::EditorLayer::OnUpdate(float dt)
 {
 	static bool first_run = [&]()
-	{
-		Stop();
-		return true;
-	}();
+		{
+			Stop();
+			return true;
+		}();
 }
 
 void mrs::EditorLayer::OnImGuiRender()
@@ -163,8 +168,13 @@ void mrs::EditorLayer::LoadEditorResources()
 	Ref<Texture> space_texture = Texture::LoadFromAsset("Assets/Textures/space.bp", "space");
 
 	Material::Create(default_lit, default_texture, "default");
+
+	Material::Create(default_lit, default_texture, "red")->DiffuseColor() = glm::vec4(1, 0, 0, 1);
+	Material::Create(default_lit, default_texture, "green")->DiffuseColor() = glm::vec4(0, 1, 0, 1);
+	Material::Create(default_lit, default_texture, "blue")->DiffuseColor() = glm::vec4(0, 0, 1, 1);
+
 	Material::Create(default_lit, checkered_texture, "checkered");
-	Material::Create(default_lit, space_texture , "space");
+	Material::Create(default_lit, space_texture, "space");
 
 	Ref<Material> container_material = Material::Create(default_lit, container_texture, "container");
 	container_material->SetTexture(MaterialTextureType::SpecularTexture, container_specular);
@@ -181,7 +191,7 @@ void mrs::EditorLayer::LoadEditorResources()
 	Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
 	Mesh::LoadFromAsset("Assets/Models/soldier.boop_obj", "soldier");
 
-	Model::LoadFromAsset("Assets/Models/millennium_falcon_battlefront.bp", true, "falcon");
+	Model::LoadFromAsset("Assets/Models/ships/Zenith.bp", true, "zenith");
 
 	// Manually built meshes
 	auto screen_quad = Mesh::Create("screen_quad");

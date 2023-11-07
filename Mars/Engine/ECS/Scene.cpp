@@ -126,8 +126,6 @@ namespace mrs
 
 			// Remove all components
 			Registry()->destroy(entity);
-
-			entity._id = {};
 		}
 	}
 }

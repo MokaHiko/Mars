@@ -5,6 +5,13 @@
 #include <imgui_impl_vulkan.h>
 #include <Core/Input.h>
 
+#include <Rover.h>
+#include <ImGuizmo.h>
+
+#include <glm/gtc/type_ptr.hpp>
+
+#include <Math/Math.h>
+
 mrs::Viewport::Viewport(EditorLayer* editor_layer, const std::string& name, IRenderPipelineLayer* render_pipeline_layer)
 	:IPanel(editor_layer, name)
 {
@@ -54,5 +61,49 @@ void mrs::Viewport::Draw()
 	// viewport_size.x = aspects.x * 0.75f;
 	// viewport_size.y = aspects.y * 0.75f;
 	ImGui::Image(_viewport_descriptor_sets[frame], viewport_size);
+
+	// Gizmos
+	auto cam = _editor_layer->EditorCamera();
+	if(cam && cam.HasComponent<Camera>() && cam.GetComponent<Camera>().IsActive())
+	{
+		auto e = _editor_layer->SelectedEntity();
+		if(e)
+		{
+			ImGuizmo::SetOrthographic(false);
+			ImGuizmo::SetDrawlist();
+
+			float window_width = (float)(ImGui::GetWindowWidth());
+			float window_height = (float)(ImGui::GetWindowHeight());
+			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, window_width, window_height);
+
+			// Camera
+			const Camera& camera = cam.GetComponent<Camera>();
+			const glm::mat4& view = camera.GetView();
+
+			glm::mat4 proj = camera.GetProj();
+			proj[1][1] *= -1;
+
+			// Entity transform
+			Transform& transform = e.GetComponent<Transform>();
+			glm::mat4 transform_matrix = transform.model_matrix;
+
+			ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), ImGuizmo::SCALE, ImGuizmo::LOCAL, glm::value_ptr(transform_matrix));
+
+			glm::vec3 translation, rotation, scale = {};
+
+			DecomposeTransform(transform_matrix, translation, rotation, scale);
+
+			if(ImGuizmo::IsUsing())
+			{
+				transform.position = translation;
+				transform.scale = scale;
+
+				// TODO: Fix rotations 
+				// glm::vec3 delta_rotation = rotation - transform.rotation;
+				// transform.rotation += delta_rotation;
+			}
+		}
+	}
+
 	ImGui::End();
 }

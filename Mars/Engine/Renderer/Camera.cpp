@@ -22,6 +22,24 @@ mrs::Camera::~Camera()
 
 void mrs::Camera::UpdateViewProj()
 {
+	switch (_type)
+	{
+	case CameraType::Perspective:
+	{
+		_projection = glm::perspective(glm::radians(70.0f), static_cast<float>(_aspect_w) / static_cast<float>(_aspect_h), _near, _far);
+		_projection[1][1] *= -1; // Reconfigure y values as positive for vulkan
+	} break;
+	case CameraType::Orthographic:
+	{
+		float half_width = static_cast<float>(_aspect_w);
+		float half_height = static_cast<float>(_aspect_h);
+		_projection = glm::ortho(-half_width, half_width, -half_height, half_height, _near, _far);
+		_projection[1][1] *= -1; // Reconfigure y values as positive for vulkan
+	} break;
+	default:
+		break;
+	}
+
 	glm::vec3 front{};
 	front.x = cos(glm::radians(_yaw)) * glm::cos(glm::radians(_pitch));
 	front.y = sin(glm::radians(_pitch));
@@ -38,19 +56,5 @@ void mrs::Camera::UpdateViewProj()
 void mrs::Camera::SetType(CameraType type)
 {
 	float zoom = 5;
-	switch (type)
-	{
-	case CameraType::Perspective:
-		_projection = glm::perspective(glm::radians(70.0f), static_cast<float>(_aspect_w) / static_cast<float>(_aspect_h), _near, _far);
-		_projection[1][1] *= -1; // Reconfigure y values as positive for vulkan
-		break;
-	case CameraType::Orthographic:
-		_projection = glm::ortho(0.0f, static_cast<float>(_aspect_w), 0.0f, static_cast<float>(_aspect_h), _near, _far);
-		_projection[1][1] *= -1; // Reconfigure y values as positive for vulkan
-		break;
-	default:
-		break;
-	}
-
 	_type = type;
 }

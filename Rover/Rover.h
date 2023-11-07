@@ -26,6 +26,8 @@ namespace mrs {
 		const Entity& SelectedEntity() const {return _selected_entity;}
 		void SetSelectedEntity(Entity e) {_selected_entity = e;}
 
+		const Entity& EditorCamera() const {return _editor_camera;}
+
 		Ref<IPanel> FindPanel(const std::string& name);
 
 		void FocusEntity(Entity entity);

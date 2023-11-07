@@ -16,10 +16,19 @@ Entities:
       Up: [0, 1, 0]
       WorldUp: [0, 1, 0]
       Yaw: -90
-      Pitch: 0
+      Pitch: 45
       AspectW: 1600
       AspectH: 900
       Active: true
+  - Entity: 3379237728
+    Tag:
+      Tag: GameManager
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Script:
+      Binding: class GameManager
   - Entity: 3967625336
     Tag:
       Tag: PlayerController
@@ -29,27 +38,27 @@ Entities:
       Scale: [1, 1, 1]
     Script:
       Binding: class Player
-  - Entity: 2663438841
-    Tag:
-      Tag: Plane
-    Transform:
-      Position: [0, 0, 0]
-      Rotation: [90, 0, 0]
-      Scale: [1000, 1, 1000]
-    MeshRenderer:
-      Mesh: plane
-      Material: space
-    MeshCollider:
-      Type: 2
+  # - Entity: 2663438841
+  #   Tag:
+  #     Tag: Plane
+  #   Transform:
+  #     Position: [0, 0, 0]
+  #     Rotation: [90, 0, 0]
+  #     Scale: [1000, 1, 1000]
+  #   MeshRenderer:
+  #     Mesh: plane
+  #     Material: space
+  #   MeshCollider:
+  #     Type: 2
   - Entity: 3304355643
     Tag:
-      Tag: MilleniumFalcon
+      Tag: Zenith
     Transform:
       Position: [0, 0, 11]
       Rotation: [0, 0, 180]
-      Scale: [0.0250000004, 0.0250000004, 0.0250000004]
+      Scale: [1.0, 1.0, 1.0]
     ModelRenderer:
-      Model: falcon
+      Model: zenith
     Script:
       Binding: class Ship
     RigidBody2D:

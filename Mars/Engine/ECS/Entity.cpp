@@ -5,7 +5,6 @@
 mrs::Entity::Entity(entt::entity id, Scene* scene)
 	:_id(id), _scene(scene)
 {
-	
 }
 
 std::ostream& mrs::operator<<(std::ostream& stream, Entity& e)

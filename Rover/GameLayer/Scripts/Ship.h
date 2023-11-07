@@ -6,9 +6,6 @@
 #include <ECS/ScriptableEntity.h>
 #include <ECS/Components/Components.h>
 
-#include <Scripts/Editor/CameraController.h>
-#include <Scripting/ProcessLayer.h>
-
 class Ship : public mrs::ScriptableEntity
 {
 public:

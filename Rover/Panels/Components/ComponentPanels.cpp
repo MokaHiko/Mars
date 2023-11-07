@@ -129,6 +129,12 @@ namespace mrs
 				ImGui::Text("Far: "); ImGui::SameLine();
 				ImGui::DragFloat("##Far", (float*)(&camera._far));
 
+				ImGui::Text("Yaw: "); ImGui::SameLine();
+				ImGui::DragFloat("##Yaw", (float*)(&camera.Yaw()));
+
+				ImGui::Text("Pitch: "); ImGui::SameLine();
+				ImGui::DragFloat("##Pitch", (float*)(&camera.Pitch()));
+
 				if (ImGui::Checkbox("Orthographic", &is_orthographic))
 				{
 					camera.SetType(CameraType::Orthographic);

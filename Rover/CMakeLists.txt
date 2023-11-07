@@ -32,6 +32,8 @@ add_executable(Rover
 	"GameLayer/Scripts/Ship.cpp"
 	"GameLayer/Scripts/Player.h"
 	"GameLayer/Scripts/Player.cpp"
+	"GameLayer/Scripts/Planet.h"
+	"GameLayer/Scripts/Planet.cpp"
 	"GameLayer/Scripts/Spawner.h"
 	"GameLayer/Scripts/Spawner.cpp"
 	"GameLayer/Scripts/GameCamera.h"

@@ -28,6 +28,16 @@ void mrs::Material::SetTexture(MaterialTextureType type, Ref<Texture> texture)
 	}
 }
 
+glm::vec4 & mrs::Material::DiffuseColor()
+{
+	return _data.diffuse_color;
+}
+
+const glm::vec4& mrs::Material::DiffuseColor() const
+{
+	return _data.diffuse_color;
+}
+
 Ref<mrs::Material> mrs::Material::Create(Ref<EffectTemplate> base_template, Ref<Texture> texture, const std::string& alias)
 {
 	ResourceManager::Get()._materials[alias] = std::make_shared<Material>();

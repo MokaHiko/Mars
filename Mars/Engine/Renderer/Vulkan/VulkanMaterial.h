@@ -62,7 +62,11 @@ namespace mrs {
 		
 		Ref<Texture> MainTexture();
 		Ref<Texture> GetTexture(MaterialTextureType type);
+
 		void SetTexture(MaterialTextureType type, Ref<Texture> texture);
+
+		glm::vec4& DiffuseColor();
+		const glm::vec4& DiffuseColor() const;
 
 		static Ref<Material> Create(Ref<EffectTemplate> base_template, Ref<Texture> texture, const std::string& alias = "");
 		static Ref<Material> Create(Ref<EffectTemplate> base_template, const std::string& texture_name = "default_texture", const std::string& alias = "");
