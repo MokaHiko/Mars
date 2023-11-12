@@ -5,6 +5,9 @@
 
 #include <Mars.h>
 
+#include <Renderer/RenderPipelineLayers/DefaultRenderPipelineLayer/DefaultRenderPipelineLayer.h>
+#include "GameLayer/RenderPipelines/CBRenderPipeline.h"
+
 namespace mrs {
 	class NativeScriptingLayer;
 	class IRenderPipelineLayer;
@@ -62,6 +65,18 @@ namespace mrs {
 
 		std::vector<Ref<IPanel>> _panels;
 	};
+
+	// Custome render pipeline for Escape Velocity
+    class EVRenderPipelineLayer : public mrs::DefaultRenderPipelineLayer
+    {
+    public:
+        EVRenderPipelineLayer()
+        {
+			PushRenderPipeline(MRS_NEW CBRenderPipeline);
+        };
+
+        ~EVRenderPipelineLayer() {};
+    };
 
 	class Rover : public Application
 	{

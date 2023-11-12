@@ -50,7 +50,7 @@ void mrs::EditorLayer::FocusEntity(Entity entity)
 {
 	_selected_entity = entity;
 
-	if (!_editor_camera.HasComponent<Script>());
+	if (!_editor_camera.HasComponent<Script>())
 	{
 		return;
 	}
@@ -204,6 +204,16 @@ void mrs::EditorLayer::LoadEditorResources()
 	screen_quad->_indices = { 0,2,1,1,2,3 };
 	screen_quad->_index_count = 6;
 
+	// ~ Escape Velocity
+	{
+		// Create Planet Material
+		std::vector<mrs::ShaderEffect*> cb_effects;
+		cb_effects.push_back(_render_pipeline_layer->FindPipeline("CBRenderPipeline")->Effect().get());
+		Ref<mrs::EffectTemplate> cb_effect = VulkanAssetManager::Instance().CreateEffectTemplate(cb_effects, "celestial_body_effect");
+
+		Material::Create(cb_effect, default_texture, "celestial_body");
+	}
+
 	// Upload resources to runtime
 	_render_pipeline_layer->UploadResources();
 }
@@ -276,7 +286,10 @@ mrs::Rover::Rover()
 {
 	// Default layers
 	PushLayer(MRS_NEW InputLayer());
-	PushLayer(MRS_NEW DefaultRenderPipelineLayer());
+
+	// Custom render pipeline
+	PushLayer(MRS_NEW EVRenderPipelineLayer());
+
 	PushLayer(MRS_NEW Physics2DLayer());
 	PushLayer(MRS_NEW NativeScriptingLayer());
 	PushLayer(MRS_NEW ProcessLayer());

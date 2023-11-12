@@ -60,15 +60,6 @@ namespace mrs
         VkDescriptorSetLayout _shadow_map_descriptor_layout;
         VkDescriptorSet _shadow_map_descriptor;
     private:
-        struct IndirectBatch
-        {
-            Mesh *mesh;
-            Material *material;
-
-            uint32_t first; // batches first instance in draw indirect buffer
-            uint32_t count; // batch member count
-        };
-
         // Returns vector of indirect draw batches from renderable batch
         std::vector<IndirectBatch> GetRenderablesAsBatches(RenderableBatch* batch);
 

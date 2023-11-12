@@ -185,7 +185,7 @@ void mrs::MeshRenderPipeline::InitIndirectCommands()
     }
 }
 
-std::vector<mrs::MeshRenderPipeline::IndirectBatch> mrs::MeshRenderPipeline::GetRenderablesAsBatches(RenderableBatch* batch)
+std::vector<mrs::IndirectBatch> mrs::MeshRenderPipeline::GetRenderablesAsBatches(RenderableBatch* batch)
 {
     std::vector<IndirectBatch> batches;
 

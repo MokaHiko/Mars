@@ -87,6 +87,7 @@ void mrs::NativeScriptingLayer::OnUpdate(float dt)
 			script_component.script = script_component.InstantiateScript();
 			script_component.script->_game_object = e;
 
+			// Call OnCreate and OnStart if created during runtime
 			script_component.script->OnCreate();
 			script_component.script->OnStart();
 			continue;
@@ -132,14 +133,17 @@ void mrs::NativeScriptingLayer::EnableScripts(Entity except)
 
 		Script &script_component = e.GetComponent<Script>();
 
-		// Call Scripts OnCreate
-		if(!script_component.script)
+		// Call Scripts On Createe callback
+		if(script_component.script == nullptr)
 		{
 			script_component.script = script_component.InstantiateScript();
+			MRS_ASSERT(script != nullptr, "Cannot instantiate script!");
+
 			script_component.script->_game_object = e;
 		}
 
 		script_component.enabled = true;
+
 		script_component.script->OnCreate();
 	}
 
@@ -152,8 +156,18 @@ void mrs::NativeScriptingLayer::EnableScripts(Entity except)
 			continue;
 		}
 
-		// Call Scripts OnStart
 		Script &script_component = e.GetComponent<Script>();
+
+		// Call Scripts OnStart callback
+		if(script_component.script == nullptr)
+		{
+			script_component.script = script_component.InstantiateScript();
+			MRS_ASSERT(script != nullptr, "Cannot instantiate script!");
+
+			script_component.script->_game_object = e;
+		}
+
+		script_component.enabled = true;
 		script_component.script->OnStart();
 	}
 }

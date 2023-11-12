@@ -16,6 +16,16 @@ namespace mrs
     struct ShaderEffect;
     struct RenderableBatch;
 
+    // Indirect Drawing
+    struct IndirectBatch
+    {
+        mrs::Mesh* mesh;
+        mrs::Material* material;
+
+        uint32_t first; // batches first instance in draw indirect buffer
+        uint32_t count; // batch member count
+    };
+
     struct VulkanDescriptorSet
     {
         uint32_t set = -1;
@@ -35,6 +45,15 @@ namespace mrs
     class IRenderPipeline
     {
     public:
+        struct RenderPipelineSettings
+        {
+            VkPrimitiveTopology primitive_topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            VkPolygonMode polygon_mode = VK_POLYGON_MODE_FILL;
+
+            // When greater than 0, tesselation will be enabled
+            uint32_t tesselation_control_points = 0;
+        };
+
         IRenderPipeline(const std::string& name);
         IRenderPipeline(const std::string& name, VkRenderPass render_pass);
 
@@ -87,6 +106,8 @@ namespace mrs
 
         VkRenderPass _render_pass = VK_NULL_HANDLE;
     protected:
+        RenderPipelineSettings _render_pipeline_settings = {};
+
         // Pushes a shader on the pipeline
         void PushShader(Ref<Shader> shader);
         void BuildPipeline();

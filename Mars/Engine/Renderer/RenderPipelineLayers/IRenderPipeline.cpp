@@ -152,7 +152,7 @@ void mrs::IRenderPipeline::BuildPipeline()
   }
 
   // Vertex input (Primitives and Vertex Input Descriptions
-  pipeline_builder._input_assembly = vkinit::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+  pipeline_builder._input_assembly = vkinit::PipelineInputAssemblyStateCreateInfo(_render_pipeline_settings.primitive_topology);
   VertexInputDescription& vb_desc = Vertex::GetDescription();
 
   pipeline_builder._vertex_input_info = vkinit::PipelineVertexInputStateCreateInfo();
@@ -164,10 +164,15 @@ void mrs::IRenderPipeline::BuildPipeline()
   pipeline_builder._vertex_input_info.pVertexAttributeDescriptions = vb_desc.attributes.data();
 
   // Graphics Settings
-  pipeline_builder._rasterizer = vkinit::PipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL);
+  pipeline_builder._rasterizer = vkinit::PipelineRasterizationStateCreateInfo(_render_pipeline_settings.polygon_mode);
   pipeline_builder._multisampling = vkinit::PipelineMultisampleStateCreateInfo();
   pipeline_builder._color_blend_attachment = vkinit::PipelineColorBlendAttachmentState();
   pipeline_builder._depth_stencil = vkinit::PipelineDepthStencilStateCreateInfo(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+
+  if(_render_pipeline_settings.tesselation_control_points > 0)
+  {
+    pipeline_builder._tesselation_state = vkinit::PipelineTesselationStateCreateInfo(_render_pipeline_settings.tesselation_control_points);
+  }
 
   pipeline_builder._pipeline_layout = _pipeline_layout;
 

@@ -17,3 +17,8 @@ cd /D "%~dp0"
 "%VULKAN_SDK%/bin/glslc.exe" terrain_shader.tesc -o terrain_shader.tesc.spv
 "%VULKAN_SDK%/bin/glslc.exe" terrain_shader.tese -o terrain_shader.tese.spv
 
+"%VULKAN_SDK%/bin/glslc.exe" cb_shader.vert -o cb_shader.vert.spv
+"%VULKAN_SDK%/bin/glslc.exe" cb_shader.frag -o cb_shader.frag.spv
+"%VULKAN_SDK%/bin/glslc.exe" cb_shader.tesc -o cb_shader.tesc.spv
+"%VULKAN_SDK%/bin/glslc.exe" cb_shader.tese -o cb_shader.tese.spv
+

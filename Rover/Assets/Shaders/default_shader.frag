@@ -22,8 +22,8 @@ struct DirectionalLight
 layout(set = 0, binding = 0) uniform GlobalBuffer {
 	mat4 view;
 	mat4 view_proj;
-	vec4 camera_position;
 
+	vec4 camera_position;
 	uint n_dir_lights;
 } _global_buffer;
 

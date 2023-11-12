@@ -87,7 +87,7 @@ void mrs::Viewport::Draw()
 			Transform& transform = e.GetComponent<Transform>();
 			glm::mat4 transform_matrix = transform.model_matrix;
 
-			ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), ImGuizmo::SCALE, ImGuizmo::LOCAL, glm::value_ptr(transform_matrix));
+			ImGuizmo::Manipulate(glm::value_ptr(view), glm::value_ptr(proj), ImGuizmo::TRANSLATE, ImGuizmo::LOCAL, glm::value_ptr(transform_matrix));
 
 			glm::vec3 translation, rotation, scale = {};
 

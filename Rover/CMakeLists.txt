@@ -26,6 +26,10 @@ add_executable(Rover
 
 	"GameLayer/GameLayer.h"
 	"GameLayer/GameLayer.cpp"
+
+	"GameLayer/RenderPipelines/CBRenderPipeline.h"
+	"GameLayer/RenderPipelines/CBRenderPipeline.cpp"
+
 	"GameLayer/Scripts/Unit.h"
 	"GameLayer/Scripts/Unit.cpp"
 	"GameLayer/Scripts/Ship.h"

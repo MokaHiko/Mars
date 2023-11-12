@@ -2,7 +2,6 @@
 
 layout(vertices = 4) out;
 
-
 layout(location = 0) out int[] tc_entity_id;
 layout(location = 1) out vec3[] tc_color;
 layout(location = 2) out vec3[] tc_normal;
