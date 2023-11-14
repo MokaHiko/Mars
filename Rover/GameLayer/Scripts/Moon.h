@@ -1,5 +1,5 @@
-#ifndef PLANET_H
-#define PLANET_H
+#ifndef MOON_H
+#define MOON_H
 
 #pragma once
 
@@ -7,20 +7,20 @@
 #include <ECS/Components/Components.h>
 #include <Math/Math.h>
 
-struct PlanetProperties
+struct MoonProperties
 {
-    mrs::Vector3 axis_of_rotation;
-    mrs::Vector3 rotation_rate;
-
-    uint32_t population = 0;
+    mrs::Entity _planet;
+    float a, b = 1;
 };
 
-class Planet : public mrs::ScriptableEntity
+class Moon : public mrs::ScriptableEntity
 {
 public:
     virtual void OnStart() override;
     virtual void OnUpdate(float dt) override;
 private:
+    MoonProperties _props;
+    float theta = 0;
 };
 
 #endif

@@ -46,7 +46,6 @@ void mrs::InputLayer::OnEvent(Event& event)
 		Input::x = event._event.motion.x;
 		Input::y = event._event.motion.y;
 #endif
-
 		Input::x_rel = event._event.motion.xrel;
 		Input::y_rel = event._event.motion.yrel;
 		break;

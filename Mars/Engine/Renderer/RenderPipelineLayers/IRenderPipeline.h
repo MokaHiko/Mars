@@ -49,6 +49,7 @@ namespace mrs
         {
             VkPrimitiveTopology primitive_topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             VkPolygonMode polygon_mode = VK_POLYGON_MODE_FILL;
+            std::vector<VkPushConstantRange> push_constants = {};
 
             // When greater than 0, tesselation will be enabled
             uint32_t tesselation_control_points = 0;

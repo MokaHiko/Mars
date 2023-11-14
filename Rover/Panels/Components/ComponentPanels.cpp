@@ -9,6 +9,8 @@
 #include <Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.h>
 #include <Core/Application.h>
 
+#include "GameLayer/RenderPipelines/CBRenderPipeline.h"
+
 namespace mrs
 {
 	template<>
@@ -221,6 +223,22 @@ namespace mrs
 
 				ImGui::TreePop();
 			}
+		});
+	}
+
+	template<>
+	void DrawComponent<CelestialBody>(Entity entity)
+	{
+		DrawComponentUI<CelestialBody>("Celestial Body", entity, [](CelestialBody& col) {
+			ImGui::DragInt("Radius", &col._radius, 0.1f, 0.0f, 1000.0f);
+			ImGui::DragFloat("Strength", &col._strength, 0.01f, 0.0f, 1000.0f);
+			ImGui::DragFloat("Rougness", &col._roughness, 0.01f, 0.0f, 1000.0f);
+
+			int min_resolution = col._min_resolution;
+			ImGui::DragInt("Resolution", &min_resolution, 0.5f, 0.0f, 128.0f);
+			col._min_resolution = min_resolution;
+
+			ImGui::DragFloat4("Center", glm::value_ptr(col.center), 0.1f, 0.0f, 1000.0f);
 		});
 	}
 };

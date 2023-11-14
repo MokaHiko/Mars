@@ -1,5 +1,8 @@
 #include "GameManager.h"
+
 #include "Planet.h"
+#include "Striker.h"
+#include "Moon.h"
 
 #include "GameLayer/RenderPipelines/CBRenderPipeline.h"
 
@@ -27,26 +30,55 @@ void GameManager::OnStart()
 	}
 
 	{
-		auto star = Instantiate("Planet 0");
-		auto& transform = star.GetComponent<mrs::Transform>();
-		transform.position = glm::vec3(-10, 0, 10);
+		auto planet = Instantiate("Planet 0");
+		auto& transform = planet.GetComponent<mrs::Transform>();
+		transform.position = glm::vec3(-10, 0, -50);
 		transform.scale *= 10;
 
-		auto& celestial_body = star.AddComponent<CelestialBody>();
-		auto& mesh_renderer = star.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
+		auto& celestial_body = planet.AddComponent<CelestialBody>();
+		auto& mesh_renderer = planet.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
 
-		star.AddComponent<mrs::Script>().Bind<Planet>();
+		planet.AddComponent<mrs::Script>().Bind<Planet>();
+
+		{
+			auto moon = Instantiate("Moon 0");
+			auto& moon_transform = moon.GetComponent<mrs::Transform>();
+			moon_transform.position = glm::vec3(0, 0, -50.0f);
+			moon_transform.scale *= 2.5;
+
+			auto& moon_celestial_body = moon.AddComponent<CelestialBody>();
+			auto& moon_mesh_renderer = moon.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
+
+			auto& moon_props = moon.AddComponent<MoonProperties>();
+			moon_props._planet = planet;
+			moon_props.a = 70;
+			moon_props.b = 25;
+			moon.AddComponent<mrs::Script>().Bind<Moon>();
+		}
 	}
+
+	// {
+	// 	auto star = Instantiate("Planet 1");
+	// 	auto& transform = star.GetComponent<mrs::Transform>();
+	// 	transform.position = glm::vec3(10, 0, -50);
+	// 	transform.scale *= 10;
+
+	// 	auto& celestial_body = star.AddComponent<CelestialBody>();
+	// 	auto& mesh_renderer = star.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
+
+	// 	star.AddComponent<mrs::Script>().Bind<Planet>();
+	// }
+
 	{
-		auto star = Instantiate("Planet 1");
-		auto& transform = star.GetComponent<mrs::Transform>();
-		transform.position = glm::vec3(10, 0, 10);
-		transform.scale *= 10;
+		auto striker = Instantiate("Enemy_Striker");
+		auto& transform = striker.GetComponent<mrs::Transform>();
+		transform.position = glm::vec3(10, 0, 0);
 
-		auto& celestial_body = star.AddComponent<CelestialBody>();
-		auto& mesh_renderer = star.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
+		auto& mesh_renderer = striker.AddComponent<mrs::ModelRenderer>(mrs::Model::Get("striker"));
 
-		star.AddComponent<mrs::Script>().Bind<Planet>();
+		auto& rb = striker.AddComponent<mrs::RigidBody2D>();
+		striker.AddComponent<mrs::Script>().Bind<Striker>();
+		rb.use_gravity = false;
 	}
 }
 

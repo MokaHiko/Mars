@@ -29,6 +29,16 @@ layout(std140, set = 1, binding = 0) readonly buffer ObjectBuffer{
 	ObjectData s_objects[];
 } _object_buffer;
 
+layout(push_constant) uniform CelestialBodyData {
+  uint resolution;
+  float radius;
+  float strength;
+  float roughness;
+  float dt;
+
+  vec4 center;
+} cb_data;
+
 const int MIN_TESS_LEVEL = 4;
 const int MAX_TESS_LEVEL = 64;
 const float MIN_DISTANCE = 20;
@@ -69,13 +79,13 @@ void main()
 		// gl_TessLevelInner[0] = max(tessLevel0, tessLevel2);
 		// gl_TessLevelInner[1] = max(tessLevel1, tessLevel3);
 
-		gl_TessLevelOuter[0] = 1;	
-		gl_TessLevelOuter[1] = 1;
-		gl_TessLevelOuter[2] = 1;
-		gl_TessLevelOuter[3] = 1;
+		gl_TessLevelOuter[0] = cb_data.resolution;	
+		gl_TessLevelOuter[1] = cb_data.resolution;
+		gl_TessLevelOuter[2] = cb_data.resolution;
+		gl_TessLevelOuter[3] = cb_data.resolution;
 
-		gl_TessLevelInner[0] = 1;
-		gl_TessLevelInner[1] = 1;
+		gl_TessLevelInner[0] = cb_data.resolution;
+		gl_TessLevelInner[1] = cb_data.resolution;
 	}
 
 	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;

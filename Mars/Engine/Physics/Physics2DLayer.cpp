@@ -123,8 +123,9 @@ namespace mrs
 			b2FixtureDef fixture_def = {};
 			fixture_def.shape = &dynamic_box;
 			fixture_def.density = 1.0f;
-			fixture_def.friction = 0.6f;
+			fixture_def.friction = rb.friction;
 			fixture_def.restitution = 0.2f;
+
 			rb.body->CreateFixture(&fixture_def);
 		}
 		else if (type == BodyType::STATIC)

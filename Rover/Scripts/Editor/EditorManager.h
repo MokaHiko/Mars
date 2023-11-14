@@ -18,9 +18,6 @@ namespace mrs
         CameraController* _camera_controller = nullptr;
         Entity _camera = {};
     public:
-        EditorManager() {};
-        ~EditorManager() {};
-
         virtual void OnCreate() override;
 
         virtual void OnStart() override;

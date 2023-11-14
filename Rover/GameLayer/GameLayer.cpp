@@ -20,9 +20,6 @@ void GameLayer::RegisterScripts()
 	mrs::Script::Register<GameCamera>();
 	mrs::Script::Register<Player>();
 	mrs::Script::Register<Ship>();
-
-	// TODO: Load all assets in asset folder
-	//Model::LoadFromAsset("Assets/Models/Room.bp", "room");
 }
 
 void GameLayer::OnDetatch() {};

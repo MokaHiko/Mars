@@ -11,9 +11,6 @@
 class Player : public mrs::ScriptableEntity
 {
 public:
-    Player();
-    ~Player();
-
     virtual void OnCreate() override;
     virtual void OnStart() override;
     virtual void OnUpdate(float dt) override;

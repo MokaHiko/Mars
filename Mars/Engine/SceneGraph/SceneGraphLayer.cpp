@@ -46,7 +46,15 @@ void mrs::SceneGraphLayer::OnTransformDestroyed(entt::basic_registry<entt::entit
 
 	if (transform.parent)
 	{
-		transform.parent.GetComponent<Transform>().RemoveChild(e);
+		// Set parent directly to root if parent has been destroyed
+		if (transform.parent.HasComponent<Transform>())
+		{
+			transform.parent.GetComponent<Transform>().RemoveChild(e);
+		}
+		else
+		{
+			transform.parent = _scene->Root();
+		}
 	}
 
 	// Destroy children

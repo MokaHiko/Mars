@@ -26,7 +26,7 @@ private:
     mrs::Vector3 _axis_b = {}; // forward vector
 };
 
-class CelestialBody
+struct CelestialBody
 {
 public:
     enum class Type
@@ -39,8 +39,14 @@ public:
 
     const Type CelestialType() const {return _type;}
     std::vector<TerrainFace> terrain_faces = {};
-private:
-    int _radius = 0;
+public:
+    int _radius = 1;
+    uint32_t _min_resolution = 16;
+    uint32_t _max_resolution = 16;
+    float _strength = 0.25;
+    float _roughness = 1.0f;
+
+    mrs::Vector4 center = { 0,0,0,0 };
     Type _type = {};
 };
 
@@ -64,8 +70,23 @@ public:
     virtual void OnRenderableCreated(mrs::Entity e) override;
     virtual void OnRenderableDestroyed(mrs::Entity e) override;
 
+private:
     void OnCelestialBodyCreated(entt::basic_registry<entt::entity>&, entt::entity entity);
     void OnCelestialBodyDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
+
+    struct CelstialBodyData
+    {
+        uint32_t resolution = 16;
+        float radius = 1;
+        float strength = 1;
+        float roughness = 1;
+        float dt = 0;
+
+        mrs::Vector4 center;
+    };
+
+    std::vector<AllocatedBuffer> _celestial_body_buffers = {};
+    std::vector<VkDescriptorSet> _celestial_body_sets = {};
 private:
     // Mesh
     VkDescriptorSet _global_data_set = VK_NULL_HANDLE;
@@ -93,6 +114,7 @@ private:
 
     std::vector<AllocatedBuffer> _indirect_buffers;
     std::vector<mrs::IndirectBatch> _batches = {};
+    std::vector<CelestialBody> _celestial_bodies = {};
 };
 
 #endif

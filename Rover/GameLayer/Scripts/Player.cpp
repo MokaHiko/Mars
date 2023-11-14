@@ -4,15 +4,6 @@
 #include "Unit.h"
 #include <Physics/Collider.h>
 
-Player::Player()
-{
-
-}
-
-Player::~Player()
-{
-}
-
 void Player::OnStart()
 {
 	_scene = mrs::Application::Instance().GetScene();

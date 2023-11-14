@@ -42,7 +42,14 @@ Ref<mrs::Model> mrs::Model::LoadFromAsset(const std::string& path, bool flip_uvs
 	Ref<mrs::EffectTemplate> default_lit = VulkanAssetManager::Instance().FindEffectTemplate("default_lit");
 	for (auto i = 0; i < info.material_count; i++)
 	{
-		const auto& material_info = info.materials[i];
+		auto& material_info = info.materials[i];
+
+		if (Material::Get(material_info.name) != nullptr)
+		{
+			// TODO: Replace materials with UUIDS
+			material_info.name = material_info.name + material_info.diffuse_texture_path + material_info.specular_texture_path;
+		}
+
 		auto mesh_material = Material::Create(default_lit, "default_texture", material_info.name);
 		auto& material_data = mesh_material->Data();
 

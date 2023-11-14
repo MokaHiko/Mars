@@ -26,9 +26,6 @@ namespace mrs
         float _mouse_sensitivity = 0.15f;
         float _movement_speed = 40.0f;
     public:
-        CameraController() = default;
-        ~CameraController() {};
-
         virtual void OnStart() override;
         virtual void OnUpdate(float dt) override;
 

@@ -128,6 +128,9 @@ void mrs::IRenderPipeline::BuildPipeline()
   VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::PipelineLayoutCreateInfo();
   pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
   pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
+  pipeline_layout_info.pPushConstantRanges = _render_pipeline_settings.push_constants.data();
+  pipeline_layout_info.pushConstantRangeCount = static_cast<uint32_t>(_render_pipeline_settings.push_constants.size());
+
   VK_CHECK(vkCreatePipelineLayout(_device->device, &pipeline_layout_info, nullptr, &_pipeline_layout));
 
   // Build pipeline

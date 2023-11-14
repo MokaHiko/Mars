@@ -40,6 +40,12 @@ namespace mrs
         // Queues attached entity for destruction
         void QueueDestroy()
         {
+            if(_queued_destroy)
+            {
+                return;
+            }
+
+            _queued_destroy = true;
             _game_object._scene->QueueDestroy(_game_object);
         }
         
@@ -63,6 +69,8 @@ namespace mrs
         void StartProcess(Ref<Process> process);
 
         Entity _game_object = {};
+    private:
+        bool _queued_destroy = false;
     };
 }
 

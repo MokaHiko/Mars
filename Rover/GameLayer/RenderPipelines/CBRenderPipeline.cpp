@@ -9,6 +9,8 @@
 #include <Math/Math.h>
 #include <Renderer/RenderPipelineLayers/IRenderPipelineLayer.h>
 
+#include <Core/Time.h>
+
 CBRenderPipeline::CBRenderPipeline(const std::string& name)
     :IRenderPipeline(name) {}
 
@@ -49,13 +51,22 @@ void CBRenderPipeline::Init()
     _render_pass = _renderer->_offscreen_render_pass;
 
     // Configure pipeline settings
-    _render_pipeline_settings.polygon_mode = VK_POLYGON_MODE_LINE;
+     _render_pipeline_settings.polygon_mode = VK_POLYGON_MODE_LINE;
+    // _render_pipeline_settings.polygon_mode = VK_POLYGON_MODE_FILL;
     _render_pipeline_settings.primitive_topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
     _render_pipeline_settings.tesselation_control_points = 4;
 
+    // Push constants
+    VkPushConstantRange cb_push_constant;
+    cb_push_constant.offset = 0;
+    cb_push_constant.size = sizeof(CelstialBodyData);
+    cb_push_constant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+    _render_pipeline_settings.push_constants.push_back(cb_push_constant);
+
+    // Build Render Pipeline
     BuildPipeline();
 
-    // Indirect drawing
+    // Init Indirect drawing
     InitIndirectCommands();
 }
 
@@ -74,6 +85,9 @@ void CBRenderPipeline::InitDescriptors()
 
     _object_sets.resize(frame_overlaps);
     _dir_light_sets.resize(frame_overlaps);
+
+    _celestial_body_buffers.resize(frame_overlaps);
+    _celestial_body_sets.resize(frame_overlaps);
 
     for (uint32_t i = 0; i < frame_overlaps; i++)
     {
@@ -104,6 +118,8 @@ void CBRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, mrs::R
         return;
     }
 
+    // TODO: Add on CB properties change
+    _rerecord = true;
     if (_rerecord)
     {
         BuildBatches(cmd, batch);
@@ -157,7 +173,7 @@ void CBRenderPipeline::OnCelestialBodyCreated(entt::basic_registry<entt::entity>
     cb.terrain_faces.resize(6);
     for (int i = 0; i < 6; i++)
     {
-        cb.terrain_faces[i] = { 4, directions[i] };
+        cb.terrain_faces[i] = { 1, directions[i] };
         cb.terrain_faces[i].ConstructMesh();
         _renderer->UploadMesh(cb.terrain_faces[i].Mesh());
     }
@@ -182,6 +198,9 @@ std::vector<mrs::IndirectBatch> CBRenderPipeline::GetRenderablesAsBatches(mrs::R
 
     int batch_first = 0;
 
+    // TODO: Change to caching cb properties
+    _celestial_bodies.clear();
+
     for (auto e : batch->entities)
     {
         auto& cb = e.GetComponent<CelestialBody>();
@@ -196,6 +215,9 @@ std::vector<mrs::IndirectBatch> CBRenderPipeline::GetRenderablesAsBatches(mrs::R
             bool new_batch = renderable.GetMaterial().get() != last_material || renderable.GetMesh().get() != last_mesh;
             if (new_batch)
             {
+                // TODO: Check if new celestial body
+                _celestial_bodies.push_back(cb);
+
                 IndirectBatch batch = {};
 
                 batch.count = 1;
@@ -303,8 +325,20 @@ void CBRenderPipeline::DrawObjects(VkCommandBuffer cmd, mrs::RenderableBatch* ba
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[n_frame], 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 3, 1, &_dir_light_sets[n_frame], 0, nullptr);
 
+    int ctr = 0;
     for (auto& batch : _batches)
     {
+        // Bind celstial body push constants
+        CBRenderPipeline::CelstialBodyData cb_data = {};
+        cb_data.strength = _celestial_bodies[ctr]._strength;
+        cb_data.resolution = _celestial_bodies[ctr]._min_resolution;
+        cb_data.radius = _celestial_bodies[ctr]._radius;
+        cb_data.roughness = _celestial_bodies[ctr]._roughness;
+        cb_data.center = _celestial_bodies[ctr++].center;
+        cb_data.dt = Time::DeltaTime();
+
+        vkCmdPushConstants(cmd, _pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 0, sizeof(CBRenderPipeline::CelstialBodyData), &cb_data);
+
         // Bind material buffer and material texures
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 2, 1, &batch.material->DescriptorSet(), 0, nullptr);
 
@@ -346,6 +380,7 @@ void TerrainFace::ConstructMesh()
     for (uint32_t i = 0; i < _resolution; i++) {
         for (uint32_t j = 0; j < _resolution; j++) {
             Vertex vertex = {};
+            vertex.normal = _local_up;
 
             vertex.position = Vector3{ 0 };
             vertex.position += _axis_a * (-width / 2.0f + (width * i / static_cast<float>(_resolution)));

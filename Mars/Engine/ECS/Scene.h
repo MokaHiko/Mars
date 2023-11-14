@@ -84,7 +84,7 @@ namespace mrs
 
             MRS_ERROR("Entity has no such component!");
             throw std::runtime_error("Entity has no such component!");
-     }
+    }
 
         template <typename T>
         T* GetScript(entt::entity id)
@@ -122,7 +122,7 @@ namespace mrs
         std::vector<Entity> _free_queue;
 
         // Queue of entities to destroy
-        std::vector<Entity> _destruction_queue;
+        std::list<Entity> _destruction_queue;
 
         // Serialization mode
         bool _serializing = false;

@@ -1,4 +1,5 @@
 #include "InspectorPanel.h"
+#include "GameLayer/RenderPipelines/CBRenderPipeline.h"
 
 void mrs::InspectorPanel::Draw(Entity entity)
 {
@@ -20,6 +21,7 @@ void mrs::InspectorPanel::Draw(Entity entity)
 		DrawComponent<ParticleSystem>(entity);
 		DrawComponent<DirectionalLight>(entity);
 		DrawComponent<MeshCollider>(entity);
+		DrawComponent<CelestialBody>(entity);
 
 #ifdef MRS_DEBUG
 		DrawComponent<Serializer>(entity);

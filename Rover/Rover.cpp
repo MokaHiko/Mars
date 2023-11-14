@@ -191,8 +191,6 @@ void mrs::EditorLayer::LoadEditorResources()
 	Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
 	Mesh::LoadFromAsset("Assets/Models/soldier.boop_obj", "soldier");
 
-	Model::LoadFromAsset("Assets/Models/ships/Zenith.bp", true, "zenith");
-
 	// Manually built meshes
 	auto screen_quad = Mesh::Create("screen_quad");
 	screen_quad->_vertices.push_back({ { -1.0f, -1.0f, 0.0f }, {}, {}, {} });
@@ -206,6 +204,10 @@ void mrs::EditorLayer::LoadEditorResources()
 
 	// ~ Escape Velocity
 	{
+		// Ships
+		Model::LoadFromAsset("Assets/Models/ships/Zenith.bp", true, "zenith");
+		Model::LoadFromAsset("Assets/Models/ships/Striker.bp", true, "striker");
+
 		// Create Planet Material
 		std::vector<mrs::ShaderEffect*> cb_effects;
 		cb_effects.push_back(_render_pipeline_layer->FindPipeline("CBRenderPipeline")->Effect().get());

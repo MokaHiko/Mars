@@ -31,12 +31,10 @@ namespace mrs {
 		~ResourceManager();
 
 	public:
+		// TODO: Replace with hashed properties
 		std::unordered_map<std::string, Ref<Mesh>> _meshes;
-
 		std::unordered_map<std::string, Ref<Texture>> _textures;
-
 		std::unordered_map<std::string, Ref<Material>> _materials;
-
 		std::unordered_map<std::string, Ref<Model>> _models;
 	};
 }

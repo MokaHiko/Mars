@@ -34,6 +34,13 @@ namespace mrs
             body->ApplyLinearImpulse({value.x, value.y}, body->GetWorldCenter(), true);
         }
 
+        void SetMass(float mass)
+        {
+            b2MassData mass_data = {};
+            mass_data.mass = mass;
+            body->SetMassData(&mass_data);
+        }
+
         // Sets instantaneous velocity 
         void SetVelocity(const glm::vec2& value)
         {
@@ -63,6 +70,7 @@ namespace mrs
 
     public:
         bool use_gravity = true;
+        float friction = 0.6f;
         b2Body *body = nullptr;
         BodyType type = BodyType::DYNAMIC;
     };

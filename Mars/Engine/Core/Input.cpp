@@ -42,7 +42,11 @@ bool mrs::Input::IsKeyDown(int key_code)
 {
 	auto scan_code = SDL_GetScancodeFromKey(key_code);
 	if (scan_code < 322) {
-		return Keys[scan_code] && !LastKeys[scan_code];
+		if (Keys[scan_code] && !LastKeys[scan_code])
+		{
+			LastKeys[scan_code] = true;
+			return true;
+		}
 	}
 
 	return false;
