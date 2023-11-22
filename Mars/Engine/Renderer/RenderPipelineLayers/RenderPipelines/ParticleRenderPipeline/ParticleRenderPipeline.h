@@ -98,6 +98,16 @@ namespace mrs
         // Next free offset into particles buffer
         size_t _buffer_next_free_offset;
     private:
+        // Mesh
+        VkDescriptorSet _global_data_set = VK_NULL_HANDLE;
+        VkDescriptorSetLayout _global_data_set_layout = VK_NULL_HANDLE;
+
+        VkDescriptorSetLayout _object_set_layout = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSet> _object_sets = {};
+
+        VkDescriptorSetLayout _dir_light_layout = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSet>  _dir_light_sets = {};
+    private:
         virtual void UploadResources();
 
         size_t _padded_particle_size = 0;

@@ -1,10 +1,11 @@
 #include "InspectorPanel.h"
-#include "GameLayer/RenderPipelines/CBRenderPipeline.h"
+
+std::vector<std::function<void(mrs::Entity)>> mrs::InspectorPanel::_custom_component_fns = {};
 
 void mrs::InspectorPanel::Draw(Entity entity)
 {
 	ImGui::Begin("Inspector");
-	if (entity.Id() != entt::null)
+	if (entity)
 	{
 		Tag& tag = entity.GetComponent<Tag>();
 
@@ -21,7 +22,11 @@ void mrs::InspectorPanel::Draw(Entity entity)
 		DrawComponent<ParticleSystem>(entity);
 		DrawComponent<DirectionalLight>(entity);
 		DrawComponent<MeshCollider>(entity);
-		DrawComponent<CelestialBody>(entity);
+
+		for(auto& fn : _custom_component_fns)
+		{
+			fn(entity);
+		}
 
 #ifdef MRS_DEBUG
 		DrawComponent<Serializer>(entity);

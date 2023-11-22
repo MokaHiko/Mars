@@ -48,7 +48,12 @@ namespace mrs
     private:
         void InitWorld();
         void ShutdownWorld();
+
+        void FlushQueues(); // Operates and Clears physics request queues
     private:
+        std::vector<Entity> _construction_queue;
+        std::vector<b2Body*> _destruction_queue;
+
         b2World* _physics_world = nullptr;
         ContactListener* _contact_listener = nullptr;
 

@@ -29,6 +29,29 @@ Entities:
       Scale: [1, 1, 1]
     Script:
       Binding: class GameManager
+  - Entity: 3967625336
+    Tag:
+      Tag: PlayerController
+    Transform:
+      Position: [36.7554207, -201.272247, 141.286575]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    Script:
+      Binding: class Player
+  - Entity: 3304355643
+    Tag:
+      Tag: Zenith
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 180]
+      Scale: [1.0, 1.0, 1.0]
+    ModelRenderer:
+      Model: zenith
+    Script:
+      Binding: class Ship
+    RigidBody2D:
+      Type: 2
+      UseGravity: false
   - Entity: 22164873
     Tag:
       Tag: Directional Light

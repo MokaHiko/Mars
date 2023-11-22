@@ -21,7 +21,7 @@ namespace mrs
     public:
         ParticleSystem()
         {
-            material = Material::Get("default_material");
+            material = Material::Get("default_particle");
         };
 
         // Material

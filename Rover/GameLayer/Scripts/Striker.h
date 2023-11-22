@@ -10,9 +10,6 @@
 class Striker: public mrs::ScriptableEntity
 {
 public:
-    void TakeDamage(float damage);
-private:
-    float _health = 100.0f;
 };
 
 #endif

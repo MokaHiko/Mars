@@ -12,6 +12,10 @@ struct ProjectileProperties
     float damage = 10.0f;
     float speed = 5.0f;
     float life_span = 5.0f;
+
+    int side = 1;
+
+    mrs::Entity target = {}; // The projectiles target. Will follow if tracking is enabled
     mrs::Vector2 direction = {0,1};
 };
 
@@ -22,8 +26,15 @@ public:
     virtual void OnUpdate(float dt) override;
 
     virtual void OnCollisionEnter2D(mrs::Entity other) override;
-private:
 
+    virtual void Die();
+private:
+    mrs::Vector2 _start_pos = {};
+
+    bool _tracking = true;
+
+    float _time_alive = 0;
+    float _duration = 0.5f;
 };
 
 #endif

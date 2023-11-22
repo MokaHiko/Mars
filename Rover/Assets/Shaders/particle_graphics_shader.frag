@@ -16,9 +16,10 @@ layout(set = 2, binding = 0) uniform Material {
 
 	bool receive_shadows;
 } _material;
-
 layout(set = 2, binding = 1) uniform sampler2D _diffuse_texture;
+layout(set = 2, binding = 2) uniform sampler2D _specular_texture;
 
+// TODO: Remove material_index
 layout( push_constant ) uniform ParticleSystemPushConstant{
 	uint count;     // index into particle system buffer
     uint material_index;  // index into global materials buffer

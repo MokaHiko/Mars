@@ -75,5 +75,4 @@ void mrs::HierarchyPanel::DrawNodeRecursive(Entity node)
 
 		ImGui::TreePop();
 	}
-
 }

@@ -5,6 +5,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <Math/Math.h>
 #include <Renderer/RenderPipelineLayers/IRenderPipelineLayer.h>
@@ -25,14 +26,12 @@ void CBRenderPipeline::Init()
 {
     using namespace mrs;
 
-    // TODO: Put in Space sim layer
+    // TODO: Maybe put in Space sim layer
     // Connect to RigidBody2D Component signals
     Scene* scene = Application::Instance().GetScene();
     scene->Registry()->on_construct<CelestialBody>().connect<&CBRenderPipeline::OnCelestialBodyCreated>(this);
     scene->Registry()->on_destroy<CelestialBody>().connect<&CBRenderPipeline::OnCelestialBodyDestroyed>(this);
-
-    // Grab handle to and init descriptors used in shaders
-    InitDescriptors();
+    scene->Registry()->on_update<CelestialBody>().connect<&CBRenderPipeline::OnCelestialBodyUpdated>(this);
 
     // Reflection based descriptor set/layout creation
     Ref<Shader> celestial_vertex_shader = VulkanAssetManager::Instance().LoadShader("Assets/Shaders/cb_shader.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
@@ -51,20 +50,23 @@ void CBRenderPipeline::Init()
     _render_pass = _renderer->_offscreen_render_pass;
 
     // Configure pipeline settings
-     _render_pipeline_settings.polygon_mode = VK_POLYGON_MODE_LINE;
-    // _render_pipeline_settings.polygon_mode = VK_POLYGON_MODE_FILL;
+    // _render_pipeline_settings.polygon_mode = VK_POLYGON_MODE_LINE;
+    _render_pipeline_settings.polygon_mode = VK_POLYGON_MODE_FILL;
     _render_pipeline_settings.primitive_topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
     _render_pipeline_settings.tesselation_control_points = 4;
 
     // Push constants
-    VkPushConstantRange cb_push_constant;
+    VkPushConstantRange cb_push_constant = {};
     cb_push_constant.offset = 0;
-    cb_push_constant.size = sizeof(CelstialBodyData);
+    cb_push_constant.size = sizeof(CelestialBodyData);
     cb_push_constant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
     _render_pipeline_settings.push_constants.push_back(cb_push_constant);
 
     // Build Render Pipeline
     BuildPipeline();
+
+    // Grab handle to and init descriptors used in shaders
+    InitDescriptors();
 
     // Init Indirect drawing
     InitIndirectCommands();
@@ -74,40 +76,65 @@ void CBRenderPipeline::InitDescriptors()
 {
     using namespace mrs;
 
-    VkDescriptorBufferInfo global_buffer_info = {};
-    global_buffer_info.buffer = _renderer->GlobalBuffer().buffer;
-    global_buffer_info.offset = 0;
-    global_buffer_info.range = VK_WHOLE_SIZE;
-
-    vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
-        .BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-        .Build(&_global_data_set, &_global_data_set_layout);
-
-    _object_sets.resize(frame_overlaps);
-    _dir_light_sets.resize(frame_overlaps);
-
-    _celestial_body_buffers.resize(frame_overlaps);
-    _celestial_body_sets.resize(frame_overlaps);
-
-    for (uint32_t i = 0; i < frame_overlaps; i++)
+	// TODO: Put in by default
     {
-        VkDescriptorBufferInfo object_buffer_info = {};
-        object_buffer_info.buffer = _renderer->ObjectBuffers()[i].buffer;
-        object_buffer_info.offset = 0;
-        object_buffer_info.range = VK_WHOLE_SIZE;
+		VkDescriptorBufferInfo global_buffer_info = {};
+		global_buffer_info.buffer = _renderer->GlobalBuffer().buffer;
+		global_buffer_info.offset = 0;
+		global_buffer_info.range = VK_WHOLE_SIZE;
 
-        vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
-            .BindBuffer(0, &object_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
-            .Build(&_object_sets[i], &_object_set_layout);
+		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+			.BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+			.Build(&_global_data_set, &_global_data_set_layout);
 
-        VkDescriptorBufferInfo dir_light_buffer_info = {};
-        dir_light_buffer_info.buffer = _renderer->DirLightBuffers()[i].buffer;
-        dir_light_buffer_info.offset = 0;
-        dir_light_buffer_info.range = VK_WHOLE_SIZE;
+		_object_sets.resize(frame_overlaps);
+		_dir_light_sets.resize(frame_overlaps);
 
-        vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
-            .BindBuffer(0, &dir_light_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-            .Build(&_dir_light_sets[i], &_dir_light_layout);
+		for (uint32_t i = 0; i < frame_overlaps; i++)
+		{
+			VkDescriptorBufferInfo object_buffer_info = {};
+			object_buffer_info.buffer = _renderer->ObjectBuffers()[i].buffer;
+			object_buffer_info.offset = 0;
+			object_buffer_info.range = VK_WHOLE_SIZE;
+
+			vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+				.BindBuffer(0, &object_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+				.Build(&_object_sets[i], &_object_set_layout);
+
+			VkDescriptorBufferInfo dir_light_buffer_info = {};
+			dir_light_buffer_info.buffer = _renderer->DirLightBuffers()[i].buffer;
+			dir_light_buffer_info.offset = 0;
+			dir_light_buffer_info.range = VK_WHOLE_SIZE;
+
+			vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+				.BindBuffer(0, &dir_light_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+				.Build(&_dir_light_sets[i], &_dir_light_layout);
+		}
+    }
+
+    // CB Descriptors
+    {
+		_celestial_body_sets.resize(frame_overlaps);
+
+		size_t noise_buffer_size = _renderer->PadToStorageBufferSize(sizeof(NoiseSettings)) * MAX_NOISE_SETTINGS;
+		_noise_settings_buffers.resize(frame_overlaps);
+		for (uint32_t i = 0; i < frame_overlaps; i++)
+		{
+			_noise_settings_buffers[i] = _renderer->CreateBuffer(noise_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+
+			VkDescriptorBufferInfo noise_settings_buffer_info = {};
+			noise_settings_buffer_info.buffer = _noise_settings_buffers[i].buffer;
+			noise_settings_buffer_info.offset = 0;
+			noise_settings_buffer_info.range = VK_WHOLE_SIZE;
+
+			vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+				.BindBuffer(0, &noise_settings_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+				.Build(&_celestial_body_sets[i], &_celestial_body_layout);
+			
+			_renderer->DeletionQueue().Push([=]() {
+				vmaDestroyBuffer(_renderer->Allocator(), _noise_settings_buffers[i].buffer, _noise_settings_buffers[i].allocation);
+			});
+		}
     }
 }
 
@@ -118,12 +145,14 @@ void CBRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, mrs::R
         return;
     }
 
-    // TODO: Add on CB properties change
+    // TODO: Add on CB properties change or new celestial body
     _rerecord = true;
+
     if (_rerecord)
     {
         BuildBatches(cmd, batch);
         RecordIndirectcommands(cmd, batch);
+        UpdateDescriptors(current_frame);
 
         _rerecord = false;
     }
@@ -133,7 +162,6 @@ void CBRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, mrs::R
 
 void CBRenderPipeline::End(VkCommandBuffer cmd)
 {
-
 }
 
 void CBRenderPipeline::OnMaterialsUpdate()
@@ -156,10 +184,9 @@ void CBRenderPipeline::OnCelestialBodyCreated(entt::basic_registry<entt::entity>
     using namespace mrs;
 
     Entity e{ entity, Application::Instance().GetScene() };
-
     auto& cb = e.GetComponent<CelestialBody>();
-    //GenerateCBVertices(e.GetComponent<CelestialBody>());
 
+    // Create and upload terrain mesh
     Vector3 directions[6] =
     {
         {0,1,0},
@@ -178,32 +205,81 @@ void CBRenderPipeline::OnCelestialBodyCreated(entt::basic_registry<entt::entity>
         _renderer->UploadMesh(cb.terrain_faces[i].Mesh());
     }
 
+    RegisterCelestialBody(cb);
     _rerecord = true;
+}
+
+void CBRenderPipeline::OnCelestialBodyUpdated(entt::basic_registry<entt::entity> &, entt::entity entity) 
+{
+    using namespace mrs;
+
+    Entity e{ entity, Application::Instance().GetScene() };
+    auto& cb = e.GetComponent<CelestialBody>();
+    RegisterCelestialBody(cb);
 }
 
 void CBRenderPipeline::OnCelestialBodyDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity)
 {
+    // TODO: Cache or Destroy Nosie Settings in storage
+
     // TODO: cache premade mesh data
     _rerecord = true;
 }
 
-std::vector<mrs::IndirectBatch> CBRenderPipeline::GetRenderablesAsBatches(mrs::RenderableBatch* batch)
+void CBRenderPipeline::UpdateDescriptors(uint32_t frame_index)
+{
+    // Copy settings to noise settings storage buffer
+    char* noise_data = nullptr;
+    vmaMapMemory(_renderer->Allocator(), _noise_settings_buffers[frame_index].allocation, (void**)&noise_data);
+    for(int i = 0; i < _noise_settings.size(); i++)
+    {
+        static size_t padded_noise_settings_size = _renderer->PadToStorageBufferSize(sizeof(NoiseSettings));
+        memcpy(noise_data, &_noise_settings[i], sizeof(NoiseSettings));
+        noise_data += padded_noise_settings_size;
+    }
+    vmaUnmapMemory(_renderer->Allocator(), _noise_settings_buffers[frame_index].allocation);
+}
+
+void CBRenderPipeline::RegisterCelestialBody(CelestialBody& cb)
+{
+    MRS_ASSERT(cb.noise_filters.size() <= MAX_NOISE_LAYERS, "[CBRenderPipeline]: Max noise filters exceeded!");
+
+    // Find index of noise filter settings
+    for (int i = 0; i < cb.noise_filters.size(); i++)
+    {
+        auto it = std::find_if(_noise_settings.begin(), _noise_settings.end(), [&](const NoiseSettings& settings) {
+            return cb.noise_filters[i].noise_settings == settings;
+        });
+
+        if (it != _noise_settings.end())
+        {
+            cb.noise_filters[i].noise_filters_index = static_cast<int>(std::distance(_noise_settings.begin(), it));
+        }
+        else
+        {
+            _noise_settings.push_back(cb.noise_filters[i].noise_settings);
+            cb.noise_filters[i].noise_filters_index = static_cast<int>(_noise_settings.size()) - 1;
+        }
+    }
+}
+
+std::vector<CBRenderPipeline::CBIndirectBatch> CBRenderPipeline::GetRenderablesAsBatches(mrs::RenderableBatch* batch)
 {
     using namespace mrs;
 
-    std::vector<IndirectBatch> batches = {};
+    std::vector<CBIndirectBatch> batches = {};
 
     Material* last_material = nullptr;
     Mesh* last_mesh = nullptr;
 
     int batch_first = 0;
 
-    // TODO: Change to caching cb properties
-    _celestial_bodies.clear();
-
     for (auto e : batch->entities)
     {
         auto& cb = e.GetComponent<CelestialBody>();
+
+		// TODO: Check if the same cb settings (Right now drawing each planet unbatched)
+		RegisterCelestialBody(cb);
 
         for (auto& face : cb.terrain_faces)
         {
@@ -213,16 +289,29 @@ std::vector<mrs::IndirectBatch> CBRenderPipeline::GetRenderablesAsBatches(mrs::R
 
             // Check if new batch
             bool new_batch = renderable.GetMaterial().get() != last_material || renderable.GetMesh().get() != last_mesh;
+
+            new_batch = true;
+
             if (new_batch)
             {
-                // TODO: Check if new celestial body
-                _celestial_bodies.push_back(cb);
-
-                IndirectBatch batch = {};
-
+                CBIndirectBatch batch = {};
                 batch.count = 1;
                 batch.material = renderable.GetMaterial().get();
                 batch.mesh = renderable.GetMesh().get();
+
+                batch.cb_data.mask = 1;
+                batch.cb_data.type = static_cast<uint32_t>(cb.type);
+                batch.cb_data.n_filters = static_cast<int>(cb.noise_filters.size());
+
+                for(uint32_t i = 0; i < cb.noise_filters.size(); i++)
+                {
+                    glm::value_ptr(batch.cb_data.noise_filters_indices)[i] = static_cast<int>(cb.noise_filters[i].noise_filters_index);
+                }
+
+                batch.cb_data.color_1 = cb.color_1;
+                batch.cb_data.color_2 = cb.color_2;
+                batch.cb_data.color_3 = cb.color_3;
+                batch.cb_data.color_4 = cb.color_4;
 
                 // Increment batch first by entiteis in last batch
                 if (!batches.empty())
@@ -246,8 +335,7 @@ std::vector<mrs::IndirectBatch> CBRenderPipeline::GetRenderablesAsBatches(mrs::R
     return batches;
 }
 
-void CBRenderPipeline::InitIndirectCommands()
-{
+void CBRenderPipeline::InitIndirectCommands() {
     using namespace mrs;
 
     size_t max_indirect_commands = 1000;
@@ -256,24 +344,24 @@ void CBRenderPipeline::InitIndirectCommands()
     _indirect_buffers.resize(frame_overlaps);
     for (int i = 0; i < frame_overlaps; i++)
     {
-        _indirect_buffers[i] =
-            _renderer->CreateBuffer(_renderer->PadToStorageBufferSize(
-                _renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand))) *
-                max_indirect_commands,
-                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
-                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                VMA_MEMORY_USAGE_CPU_TO_GPU, 0);
+        _indirect_buffers[i] = _renderer->CreateBuffer(
+            _renderer->PadToStorageBufferSize(_renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand))) * max_indirect_commands,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+            VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU, 0);
 
-        _renderer->DeletionQueue().Push([=]()
-            {
-                vmaDestroyBuffer(_renderer->Allocator(), _indirect_buffers[i].buffer, _indirect_buffers[i].allocation);
+        _renderer->DeletionQueue().Push([=]() {
+            vmaDestroyBuffer(_renderer->Allocator(), _indirect_buffers[i].buffer,
+            _indirect_buffers[i].allocation);
             });
     }
 }
 
 void CBRenderPipeline::BuildBatches(VkCommandBuffer cmd, mrs::RenderableBatch* batch)
 {
+    _noise_settings.clear();
+    _batches.clear();
     _batches = GetRenderablesAsBatches(batch);
 }
 
@@ -293,7 +381,7 @@ void CBRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, mrs::Renderab
             const auto& cb = e.GetComponent<CelestialBody>();
 
             // 6 faces of cube
-            for(auto& face : cb.terrain_faces)
+            for (auto& face : cb.terrain_faces)
             {
                 VkDrawIndirectCommand draw_command = {};
                 draw_command.instanceCount = 1;
@@ -324,20 +412,13 @@ void CBRenderPipeline::DrawObjects(VkCommandBuffer cmd, mrs::RenderableBatch* ba
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_set, 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[n_frame], 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 3, 1, &_dir_light_sets[n_frame], 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 4, 1, &_celestial_body_sets[n_frame], 0, nullptr);
 
-    int ctr = 0;
     for (auto& batch : _batches)
     {
-        // Bind celstial body push constants
-        CBRenderPipeline::CelstialBodyData cb_data = {};
-        cb_data.strength = _celestial_bodies[ctr]._strength;
-        cb_data.resolution = _celestial_bodies[ctr]._min_resolution;
-        cb_data.radius = _celestial_bodies[ctr]._radius;
-        cb_data.roughness = _celestial_bodies[ctr]._roughness;
-        cb_data.center = _celestial_bodies[ctr++].center;
-        cb_data.dt = Time::DeltaTime();
-
-        vkCmdPushConstants(cmd, _pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 0, sizeof(CBRenderPipeline::CelstialBodyData), &cb_data);
+        // Update cb data
+        batch.cb_data.dt = Time::DeltaTime();
+        vkCmdPushConstants(cmd, _pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 0, sizeof(CBRenderPipeline::CelestialBodyData), &batch.cb_data);
 
         // Bind material buffer and material texures
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 2, 1, &batch.material->DescriptorSet(), 0, nullptr);
@@ -377,8 +458,8 @@ void TerrainFace::ConstructMesh()
     float width = static_cast<float>(1);
     float height = static_cast<float>(1);
 
-    for (uint32_t i = 0; i < _resolution; i++) {
-        for (uint32_t j = 0; j < _resolution; j++) {
+    for (int i = 0; i < _resolution; i++) {
+        for (int j = 0; j < _resolution; j++) {
             Vertex vertex = {};
             vertex.normal = _local_up;
 
@@ -428,5 +509,11 @@ void TerrainFace::ConstructMesh()
         }
     }
 
-   _mesh->_vertex_count = static_cast<uint32_t>(_mesh->_vertices.size());
+    _mesh->_vertex_count = static_cast<uint32_t>(_mesh->_vertices.size());
 }
+
+void CelestialBody::PushFilter(const NoiseFilter& filter)
+{
+    noise_filters.push_back(filter);
+}
+    

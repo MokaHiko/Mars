@@ -18,7 +18,6 @@ public:
 
     virtual void OnImGuiRender() override;
     virtual void OnEvent(mrs::Event& event) override;
-
 private:
     void RegisterScripts();
 };

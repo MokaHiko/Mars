@@ -49,6 +49,8 @@ namespace mrs
             return _scene->GetScript<T>(_id);
         }
 
+        bool IsAlive() const;
+
         // Returns entity handle
         const uint32_t Id() const { return static_cast<uint32_t>(_id); }
 

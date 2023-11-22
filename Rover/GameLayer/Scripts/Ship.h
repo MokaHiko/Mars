@@ -6,21 +6,25 @@
 #include <ECS/ScriptableEntity.h>
 #include <ECS/Components/Components.h>
 
+struct ShipResources
+{
+    uint32_t scrap_metal = 0;
+    uint32_t credit = 0;
+};
+
 class Ship : public mrs::ScriptableEntity
 {
 public:
     virtual void OnCreate() override;
-    virtual void OnStart() override;
     virtual void OnUpdate(float dt) override;
 
     virtual void OnCollisionEnter2D(mrs::Entity other) override;
-private:
-    float Lerp(float a, float b, float t)
-    {
-        return (a * (1 - t)) + (b * t);
-    }
 
-    void FireProjectile();
+public:
+    void TakeDamage(float damage);
+    void Die();
+public:
+    float _health = 100.0f;
 };
 
 #endif

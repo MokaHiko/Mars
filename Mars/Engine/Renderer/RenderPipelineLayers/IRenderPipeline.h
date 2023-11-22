@@ -30,7 +30,7 @@ namespace mrs
     {
         uint32_t set = -1;
         std::unordered_map<uint32_t, VkDescriptorType> bindings;
-        VkShaderStageFlagBits shader_stage;
+        VkShaderStageFlagBits shader_stage = (VkShaderStageFlagBits)(0);
         VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
 
         void AddBinding(uint32_t binding, VkDescriptorType type, VkShaderStageFlagBits stage)

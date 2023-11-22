@@ -17,7 +17,7 @@
 #include "Renderer/RenderPipelineLayers/IRenderPipelineLayer.h"
 
 mrs::ParticleRenderPipeline::ParticleRenderPipeline(uint32_t max_particles)
-	: IRenderPipeline("Particle Render Pipeline"), _max_particles(max_particles) {}
+	: IRenderPipeline("ParticleRenderPipeline"), _max_particles(max_particles) {}
 
 mrs::ParticleRenderPipeline::~ParticleRenderPipeline() {}
 
@@ -289,7 +289,7 @@ void mrs::ParticleRenderPipeline::FillParticleArray(const ParticleSystem &partic
 			float x = r * cos(theta);
 			float y = r * sin(theta);
 			particles[i].position = glm::vec2(x, y);
-			particles[i].velocity = particles[i].position * (_random_generator.Next() * particle_system.velocity);
+			particles[i].velocity = particles[i].position + (_random_generator.Next() * particle_system.velocity);
 			particles[i].color = particle_system.color_1;
 		}
 	}
@@ -302,7 +302,7 @@ void mrs::ParticleRenderPipeline::FillParticleArray(const ParticleSystem &partic
 			float x = r * cos(theta);
 			float y = r * sin(theta);
 			particles[i].position = glm::vec2(x, y);
-			particles[i].velocity = particles[i].position * particle_system.velocity;
+			particles[i].velocity = particles[i].position * (1.0f + (_random_generator.Next() * particle_system.velocity));
 			particles[i].color = particle_system.color_1;
 		}
 	}
@@ -310,6 +310,38 @@ void mrs::ParticleRenderPipeline::FillParticleArray(const ParticleSystem &partic
 
 void mrs::ParticleRenderPipeline::InitGraphicsDescriptors()
 {
+    VkDescriptorBufferInfo global_buffer_info = {};
+    global_buffer_info.buffer = _renderer->GlobalBuffer().buffer;
+    global_buffer_info.offset = 0;
+    global_buffer_info.range = VK_WHOLE_SIZE;
+
+    vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+        .BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+        .Build(&_global_data_set, &_global_data_set_layout);
+
+    _object_sets.resize(frame_overlaps);
+    _dir_light_sets.resize(frame_overlaps);
+    for(uint32_t i = 0; i < frame_overlaps; i++)
+    {
+        VkDescriptorBufferInfo global_buffer_info = {};
+        global_buffer_info.buffer = _renderer->ObjectBuffers()[i].buffer;
+        global_buffer_info.offset = 0;
+        global_buffer_info.range = VK_WHOLE_SIZE;
+
+        vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+            .BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+            .Build(&_object_sets[i], &_object_set_layout);
+
+        VkDescriptorBufferInfo dir_light_buffer_info = {};
+        dir_light_buffer_info.buffer = _renderer->DirLightBuffers()[i].buffer;
+        dir_light_buffer_info.offset = 0;
+        dir_light_buffer_info.range = VK_WHOLE_SIZE;
+
+        vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+            .BindBuffer(0, &dir_light_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .Build(&_dir_light_sets[i], &_dir_light_layout);
+    }
+
 	// Graphics descriptor
 	_graphics_descriptor_sets.resize(frame_overlaps);
 	for (int i = 0; i < frame_overlaps; i++)
@@ -332,85 +364,85 @@ void mrs::ParticleRenderPipeline::InitGraphicsDescriptors()
 }
 
 void mrs::ParticleRenderPipeline::InitGraphicsPipeline() {
-	// vkutil::PipelineBuilder builder;
+	vkutil::PipelineBuilder builder;
 
-	// // Viewport & scissor
-	// builder._scissor.extent = { _window->GetWidth(), _window->GetHeight() };
-	// builder._scissor.offset = { 0, 0 };
+	// Viewport & scissor
+	builder._scissor.extent = { _window->GetWidth(), _window->GetHeight() };
+	builder._scissor.offset = { 0, 0 };
 
-	// builder._viewport.x = 0.0f;
-	// builder._viewport.y = 0.0f;
-	// builder._viewport.width = static_cast<float>(_window->GetWidth());
-	// builder._viewport.height = static_cast<float>(_window->GetHeight());
-	// builder._viewport.minDepth = 0.0f;
-	// builder._viewport.maxDepth = 1.0f;
+	builder._viewport.x = 0.0f;
+	builder._viewport.y = 0.0f;
+	builder._viewport.width = static_cast<float>(_window->GetWidth());
+	builder._viewport.height = static_cast<float>(_window->GetHeight());
+	builder._viewport.minDepth = 0.0f;
+	builder._viewport.maxDepth = 1.0f;
 
-	// // Shader
-	// VkShaderModule vertex_shader;
-	// VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/particle_graphics_shader.vert.spv", &vertex_shader);
-	// VkShaderModule fragment_shader;
-	// VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/particle_graphics_shader.frag.spv", &fragment_shader);
+	// Shader
+	VkShaderModule vertex_shader;
+	VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/particle_graphics_shader.vert.spv", &vertex_shader);
+	VkShaderModule fragment_shader;
+	VulkanAssetManager::Instance().LoadShaderModule("assets/shaders/particle_graphics_shader.frag.spv", &fragment_shader);
 
-	// builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader));
-	// builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader));
+	builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader));
+	builder._shader_stages.push_back(vkinit::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader));
 
-	// // Vertex Input
-	// VertexInputDescription vertex_desc = Vertex::GetDescription();
-	// auto bindings = vertex_desc.bindings;
-	// auto attributes = vertex_desc.attributes;
+	// Vertex Input
+	VertexInputDescription vertex_desc = Vertex::GetDescription();
+	auto bindings = vertex_desc.bindings;
+	auto attributes = vertex_desc.attributes;
 
-	// builder._vertex_input_info = vkinit::PipelineVertexInputStateCreateInfo();
-	// builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(bindings.size());
-	// builder._vertex_input_info.pVertexBindingDescriptions = bindings.data();
-	// builder._vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes.size());
-	// builder._vertex_input_info.pVertexAttributeDescriptions = attributes.data();
-	// builder._input_assembly = vkinit::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	builder._vertex_input_info = vkinit::PipelineVertexInputStateCreateInfo();
+	builder._vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(bindings.size());
+	builder._vertex_input_info.pVertexBindingDescriptions = bindings.data();
+	builder._vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributes.size());
+	builder._vertex_input_info.pVertexAttributeDescriptions = attributes.data();
+	builder._input_assembly = vkinit::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
-	// // Graphics Settings
-	// builder._rasterizer = vkinit::PipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL);
-	// builder._multisampling = vkinit::PipelineMultisampleStateCreateInfo();
-	// builder._color_blend_attachment = vkinit::PipelineColorBlendAttachmentState(
-	// 	VK_TRUE,
-	// 	VK_BLEND_FACTOR_SRC_ALPHA,
-	// 	VK_BLEND_FACTOR_ONE,
-	// 	VK_BLEND_OP_ADD,
-	// 	VK_BLEND_FACTOR_ONE,
-	// 	VK_BLEND_FACTOR_ONE,
-	// 	VK_BLEND_OP_ADD);
-	// builder._depth_stencil = vkinit::PipelineDepthStencilStateCreateInfo(false, false, VK_COMPARE_OP_ALWAYS);
+	// Graphics Settings
+	builder._rasterizer = vkinit::PipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL);
+	builder._multisampling = vkinit::PipelineMultisampleStateCreateInfo();
+	builder._color_blend_attachment = vkinit::PipelineColorBlendAttachmentState(
+		VK_TRUE,
+		VK_BLEND_FACTOR_SRC_ALPHA,
+		VK_BLEND_FACTOR_ONE,
+		VK_BLEND_OP_ADD,
+		VK_BLEND_FACTOR_ONE,
+		VK_BLEND_FACTOR_ONE,
+		VK_BLEND_OP_ADD);
+	builder._depth_stencil = vkinit::PipelineDepthStencilStateCreateInfo(false, false, VK_COMPARE_OP_ALWAYS);
 
-	// // Pipeline layouts
-	// VkPipelineLayoutCreateInfo layout_info = vkinit::PipelineLayoutCreateInfo();
-	// std::vector<VkDescriptorSetLayout> set_layouts = { _global_descriptor_set_layout, _object_descriptor_set_layout, VulkanAssetManager::Instance().MaterialDescriptorSetLayout(), _graphics_descriptor_set_layout};
+	// Pipeline layouts
+	VkPipelineLayoutCreateInfo layout_info = vkinit::PipelineLayoutCreateInfo();
+	std::vector<VkDescriptorSetLayout> set_layouts = {_global_data_set_layout, _object_set_layout, VulkanAssetManager::Instance().MaterialDescriptorSetLayout(), _graphics_descriptor_set_layout};
 
-	// layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
-	// layout_info.pSetLayouts = set_layouts.data();
+	layout_info.setLayoutCount = static_cast<uint32_t>(set_layouts.size());
+	layout_info.pSetLayouts = set_layouts.data();
 
-	// VkPushConstantRange push_constant = {};
-	// push_constant.offset = 0;
-	// push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-	// push_constant.size = sizeof(ParticleSystemPushConstant);
+	VkPushConstantRange push_constant = {};
+	push_constant.offset = 0;
+	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+	push_constant.size = sizeof(ParticleSystemPushConstant);
 
-	// layout_info.pPushConstantRanges = &push_constant;
-	// layout_info.pushConstantRangeCount = 1;
-	// VK_CHECK(vkCreatePipelineLayout(_renderer->Device().device, &layout_info, nullptr, &_graphics_pipeline_layout));
+	layout_info.pPushConstantRanges = &push_constant;
+	layout_info.pushConstantRangeCount = 1;
+	VK_CHECK(vkCreatePipelineLayout(_renderer->Device().device, &layout_info, nullptr, &_graphics_pipeline_layout));
 
-	// builder._pipeline_layout = _graphics_pipeline_layout;
+	builder._pipeline_layout = _graphics_pipeline_layout;
 
-	// _graphics_pipeline = builder.Build(_renderer->Device().device, _renderer->_offscreen_render_pass);
+	_graphics_pipeline = builder.Build(_renderer->Device().device, _renderer->_offscreen_render_pass);
 
-	// if (_graphics_pipeline == VK_NULL_HANDLE)
-	// {
-	// 	VK_CHECK(VK_ERROR_UNKNOWN);
-	// }
+	if (_graphics_pipeline == VK_NULL_HANDLE)
+	{
+		VK_CHECK(VK_ERROR_UNKNOWN);
+	}
 
-	// // Clean up
-	// vkDestroyShaderModule(_renderer->Device().device, vertex_shader, nullptr);
-	// vkDestroyShaderModule(_renderer->Device().device, fragment_shader, nullptr);
-	// _renderer->DeletionQueue().Push([&]() {
-	// 	vkDestroyPipeline(_renderer->Device().device, _graphics_pipeline, nullptr);
-	// 	vkDestroyPipelineLayout(_renderer->Device().device, _graphics_pipeline_layout, nullptr);
-	// 	});
+	// Clean up
+	vkDestroyShaderModule(_renderer->Device().device, vertex_shader, nullptr);
+	vkDestroyShaderModule(_renderer->Device().device, fragment_shader, nullptr);
+	_renderer->DeletionQueue().Push([&]() {
+		vkDestroyPipeline(_renderer->Device().device, _graphics_pipeline, nullptr);
+		vkDestroyPipelineLayout(_renderer->Device().device, _graphics_pipeline_layout, nullptr);
+		});
 }
 
 void mrs::ParticleRenderPipeline::Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt, RenderableBatch* compute_batch)
@@ -440,48 +472,46 @@ void mrs::ParticleRenderPipeline::Compute(VkCommandBuffer cmd, uint32_t current_
 
 void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
 {
-	// static Ref<Mesh> quad_mesh = Mesh::Get("quad");
+	static Ref<Mesh> quad_mesh = Mesh::Get("quad");
 
-	// VkDescriptorSet _frame_object_set = _renderer->GetCurrentGlobalObjectDescriptorSet();
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 0, 1, &_global_data_set, 0, 0);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 1, 1, &_object_sets[current_frame], 0, 0);
 
-	// vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline);
-	// vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 0, 1, &_global_descriptor_set, 0, 0);
-	// vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 1, 1, &_frame_object_set, 0, 0);
+	// Bind particle parameters and particles
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 3, 1, &_graphics_descriptor_sets[current_frame], 0, 0);
 
-	// // Bind particle parameters and particles
-	// vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 3, 1, &_graphics_descriptor_sets[current_frame], 0, 0);
+	// Bind quad meshs
+	VkDeviceSize offset = 0;
+	vkCmdBindVertexBuffers(cmd, 0, 1, &quad_mesh->_buffer.buffer, &offset);
+	vkCmdBindIndexBuffer(cmd, quad_mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-	// // Bind quad meshs
-	// VkDeviceSize offset = 0;
-	// vkCmdBindVertexBuffers(cmd, 0, 1, &quad_mesh->_buffer.buffer, &offset);
-	// vkCmdBindIndexBuffer(cmd, quad_mesh->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+	int ctr = 0;
 
-	// int ctr = 0;
+	for (auto e : batch->entities)
+	{
+		auto &particle_system = e.GetComponent<ParticleSystem>();
 
-	// // Bind global materials buffer
-	// for (auto e : batch->entities)
-	// {
-	// 	auto &particle_system = e.GetComponent<ParticleSystem>();
+		if (!particle_system.running)
+		{
+			continue;
+		}
 
-	// 	if (!particle_system.running)
-	// 	{
-	// 		continue;
-	// 	}
+		auto &material = particle_system.material;
 
-	// 	auto &material = particle_system.material;
+		// Bind particle system properties and material index
+		ParticleSystemPushConstant pc;
+		pc.count = ctr++;
 
-	// 	// Bind particle system properties and material index
-	// 	ParticleSystemPushConstant pc;
-	// 	pc.count = ctr++;
-	// 	//pc.material_index = particle_system.material->MaterialIndex();
-	// 	vkCmdPushConstants(cmd, _graphics_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
+		//pc.material_index = particle_system.material->MaterialIndex();
+		vkCmdPushConstants(cmd, _graphics_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
 
-	// 	// Bind material textures
-	// 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 2, 1, &material->DescriptorSet(), 0, 0);
+		// Bind material textures
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphics_pipeline_layout, 2, 1, &material->DescriptorSet(), 0, 0);
 
-	// 	// Draw using instancing
-	// 	vkCmdDrawIndexed(cmd, quad_mesh->_index_count, particle_system.live_particles, 0, 0, e.Id());
-	// }
+		// Draw using instancing
+		vkCmdDrawIndexed(cmd, quad_mesh->_index_count, particle_system.live_particles, 0, 0, e.Id());
+	}
 }
 
 void mrs::ParticleRenderPipeline::End(VkCommandBuffer cmd) {}
@@ -586,6 +616,8 @@ void mrs::ParticleRenderPipeline::CacheParticleSystemType(ParticleSystem &partic
 
 void mrs::ParticleRenderPipeline::OnRenderableDestroyed(Entity e)
 {
+	// TODO: This is not being called because particles no longer have mesh component. Causing the overflow of particles
+
 	// Cache particle system on destruction
 	if (e.HasComponent<ParticleSystem>())
 	{

@@ -21,7 +21,7 @@ public:
     mrs::Camera* _camera = nullptr;
     mrs::Transform* _camera_transform = nullptr;
 
-    float _zoom_distance = 10.0f;
+    float _zoom_distance = 25.0f;
     float _zoom_duration = 0.5f;
 
     float _mouse_sensitivity = 0.15f;

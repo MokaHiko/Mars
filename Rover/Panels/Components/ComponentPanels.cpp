@@ -9,8 +9,6 @@
 #include <Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.h>
 #include <Core/Application.h>
 
-#include "GameLayer/RenderPipelines/CBRenderPipeline.h"
-
 namespace mrs
 {
 	template<>
@@ -71,18 +69,18 @@ namespace mrs
 	template<>
 	void DrawComponent<MeshRenderer>(Entity entity)
 	{
-		DrawComponentUI<MeshRenderer>("Mesh Renderer", entity, [](MeshRenderer& renderable) 
-		{
-			ImGui::Text("Mesh: %s", renderable.GetMesh()->_mesh_name.c_str());
-			ImGui::Text("Vertices: %d", renderable.GetMesh()->_vertex_count);
-			ImGui::Text("Indices: %d", renderable.GetMesh()->_index_count);
-			ImVec2 region_size = ImGui::GetContentRegionAvail();
+		DrawComponentUI<MeshRenderer>("Mesh Renderer", entity, [](MeshRenderer& renderable)
+			{
+				ImGui::Text("Mesh: %s", renderable.GetMesh()->_mesh_name.c_str());
+				ImGui::Text("Vertices: %d", renderable.GetMesh()->_vertex_count);
+				ImGui::Text("Indices: %d", renderable.GetMesh()->_index_count);
+				ImVec2 region_size = ImGui::GetContentRegionAvail();
 
-			Ref<Material> material = renderable.GetMaterial();
-			ImGui::Text("material: %s", material->Name().c_str());
-			ImGui::Text("diffuse: %s", material->GetTexture(mrs::MaterialTextureType::DiffuseTexture)->_name.c_str());
-			ImGui::Text("specular: %s", material->GetTexture(mrs::MaterialTextureType::SpecularTexture)->_name.c_str());
-		});
+				Ref<Material> material = renderable.GetMaterial();
+				ImGui::Text("material: %s", material->Name().c_str());
+				ImGui::Text("diffuse: %s", material->GetTexture(mrs::MaterialTextureType::DiffuseTexture)->_name.c_str());
+				ImGui::Text("specular: %s", material->GetTexture(mrs::MaterialTextureType::SpecularTexture)->_name.c_str());
+			});
 	}
 
 	template<>
@@ -157,17 +155,17 @@ namespace mrs
 	void DrawComponent<RigidBody2D>(Entity entity)
 	{
 		static char* body_types[] = { "UNKNOWN", "STATIC", "DYNAMIC" };
-		DrawComponentUI<RigidBody2D>("RigidBody2D", entity, [](RigidBody2D& rb) 
-		{
-			ImGui::Checkbox("Use Gravity", &rb.use_gravity);
-			ImGui::Text("Body Type: %s", body_types[(int)rb.type]);
-		});
+		DrawComponentUI<RigidBody2D>("RigidBody2D", entity, [](RigidBody2D& rb)
+			{
+				ImGui::Checkbox("Use Gravity", &rb.use_gravity);
+				ImGui::Text("Body Type: %s", body_types[(int)rb.type]);
+			});
 	}
 
 	template<>
 	void DrawComponent<MeshCollider>(Entity entity)
 	{
-		static char* collider_types[] = 
+		static char* collider_types[] =
 		{
 			"UKNOWN",
 			"SPHERE_COLLIDER",
@@ -177,68 +175,52 @@ namespace mrs
 		DrawComponentUI<MeshCollider>("Mesh Collider", entity, [](MeshCollider& col) {
 			uint8_t type_index = static_cast<uint8_t>(col.type);
 			ImGui::Text("Type: %s", collider_types[type_index]);
-		});
+			});
 	}
 
 	template<>
 	void DrawComponent<ParticleSystem>(Entity entity)
 	{
-		DrawComponentUI<ParticleSystem>("Particle System", entity, [](ParticleSystem& particles) 
-		{
-			// Emission properties
-			ImGui::InputInt("Max Particles: ", (int*)(&particles.max_particles));
-			ImGui::DragInt("Live Particles", (int*)(&particles.live_particles));
-			ImGui::DragFloat("Emission Rate: ", (&particles.emission_rate), 0.5f, 0.1f, 512.0f);
-
-			ImGui::Checkbox("Repeating", &particles.repeating);
-			ImGui::Checkbox("Running", &particles.running);
-
-			if (ButtonCentered("Reset"))
+		DrawComponentUI<ParticleSystem>("Particle System", entity, [](ParticleSystem& particles)
 			{
-				particles.Reset();
-			}
+				// Emission properties
+				ImGui::InputInt("Max Particles: ", (int*)(&particles.max_particles));
+				ImGui::DragInt("Live Particles", (int*)(&particles.live_particles));
+				ImGui::DragFloat("Emission Rate: ", (&particles.emission_rate), 0.5f, 0.1f, 512.0f);
 
-			// Particle properties
-			if (ImGui::TreeNode("Particle Properties"))
-			{
-				ImGui::DragFloat("Lifetime", &particles.life_time, 0.1f, 0.0f, std::numeric_limits<float>::max());
-				ImGui::DragFloat("Scale", &particles.particle_size, 0.5f, 0.0f, std::numeric_limits<float>::max());
+				ImGui::Checkbox("Repeating", &particles.repeating);
+				ImGui::Checkbox("Running", &particles.running);
 
-				ImGui::Text("Color Gradient");
-				ImGui::ColorEdit4("color 1", glm::value_ptr(particles.color_1));
-				ImGui::ColorEdit4("color 2", glm::value_ptr(particles.color_2));
+				if (ButtonCentered("Reset"))
+				{
+					particles.Reset();
+				}
 
-				ImGui::DragFloat2("Starting Velocity", glm::value_ptr(particles.velocity), 0.5f, 0.0f, 10000.0f);
+				// Particle properties
+				if (ImGui::TreeNode("Particle Properties"))
+				{
+					ImGui::DragFloat("Lifetime", &particles.life_time, 0.1f, 0.0f, std::numeric_limits<float>::max());
+					ImGui::DragFloat("Scale", &particles.particle_size, 0.5f, 0.0f, std::numeric_limits<float>::max());
 
-				ImGui::TreePop();
-			}
+					ImGui::Text("Color Gradient");
+					ImGui::ColorEdit4("color 1", glm::value_ptr(particles.color_1));
+					ImGui::ColorEdit4("color 2", glm::value_ptr(particles.color_2));
 
-			// Shape
-			if (ImGui::TreeNode("Shape"))
-			{
-				const char* items[] = { "None", "Circle", "Cone" };
-				int item_current = static_cast<int>(particles.emission_shape);
-				ImGui::Combo("Emission Shape", &item_current, items, IM_ARRAYSIZE(items));
-				ImGui::SameLine();
+					ImGui::DragFloat2("Starting Velocity", glm::value_ptr(particles.velocity), 0.5f, 0.0f, 10000.0f);
 
-				ImGui::TreePop();
-			}
-		});
-	}
+					ImGui::TreePop();
+				}
 
-	template<>
-	void DrawComponent<CelestialBody>(Entity entity)
-	{
-		DrawComponentUI<CelestialBody>("Celestial Body", entity, [](CelestialBody& col) {
-			ImGui::DragInt("Radius", &col._radius, 0.1f, 0.0f, 1000.0f);
-			ImGui::DragFloat("Strength", &col._strength, 0.01f, 0.0f, 1000.0f);
-			ImGui::DragFloat("Rougness", &col._roughness, 0.01f, 0.0f, 1000.0f);
+				// Shape
+				if (ImGui::TreeNode("Shape"))
+				{
+					const char* items[] = { "None", "Circle", "Cone" };
+					int item_current = static_cast<int>(particles.emission_shape);
+					ImGui::Combo("Emission Shape", &item_current, items, IM_ARRAYSIZE(items));
+					ImGui::SameLine();
 
-			int min_resolution = col._min_resolution;
-			ImGui::DragInt("Resolution", &min_resolution, 0.5f, 0.0f, 128.0f);
-			col._min_resolution = min_resolution;
-
-			ImGui::DragFloat4("Center", glm::value_ptr(col.center), 0.1f, 0.0f, 1000.0f);
-		});
+					ImGui::TreePop();
+				}
+			});
 	}
 };

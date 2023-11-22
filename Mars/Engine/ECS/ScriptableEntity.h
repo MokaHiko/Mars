@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Entity.h"
+#include "Math/Math.h"
 
 namespace mrs
 {
@@ -35,7 +36,7 @@ namespace mrs
         }
 
         // Insantiates new entity
-        Entity Instantiate(const std::string &name = "");
+        Entity Instantiate(const std::string &name = "", Vector3 position = {0,0,0});
 
         // Queues attached entity for destruction
         void QueueDestroy()
@@ -64,6 +65,25 @@ namespace mrs
             }
 
             return {};
+        }
+
+        template<typename ScriptType>
+        std::vector<Entity> FindEntitiesWithScript()
+        {
+            std::vector<Entity> entities;
+
+            for(auto e: _game_object._scene->Registry()->view<Transform, Script>())
+            {
+                Entity entity{e, _game_object._scene};
+                auto& script_component = entity.GetComponent<Script>();
+
+                if(script_component.binding == typeid(ScriptType).name())
+                {
+                    entities.push_back(entity);
+                }
+            }
+
+            return entities;
         }
 
         void StartProcess(Ref<Process> process);

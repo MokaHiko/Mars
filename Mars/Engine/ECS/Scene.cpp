@@ -78,6 +78,7 @@ namespace mrs
 		// Transform component
 		auto& transform = e.AddComponent<Transform>();
 		transform.self = e;
+		transform.position = position;
 
 		// Add to root if not provided 
 		Entity root = { _root, this };

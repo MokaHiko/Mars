@@ -5,6 +5,7 @@
 #include "Scripting/ProcessLayer.h"
 
 #include "Core/Log.h"
+#include "Math/Math.h"
 
 namespace mrs 
 {
@@ -18,9 +19,9 @@ namespace mrs
 
 	}
 
-	Entity ScriptableEntity::Instantiate(const std::string& name)
+	Entity ScriptableEntity::Instantiate(const std::string& name, Vector3 position)
 	{
-		auto e = _game_object._scene->Instantiate(name);
+		auto e = _game_object._scene->Instantiate(name, position);
 
 		// Components created at runtime via scripts are not serialized
 		e.GetComponent<Serializer>().serialize = false;

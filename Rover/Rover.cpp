@@ -180,6 +180,12 @@ void mrs::EditorLayer::LoadEditorResources()
 	container_material->SetTexture(MaterialTextureType::SpecularTexture, container_specular);
 
 	Material::Create(default_lit, green_texture, "green");
+	
+	// TODO: Move to Particle Render Pipelie Init
+	std::vector<ShaderEffect*> default_particle_effects;
+	default_particle_effects.push_back(_render_pipeline_layer->FindPipeline("ParticleRenderPipeline")->Effect().get());
+	Ref<EffectTemplate> default_particle = VulkanAssetManager::Instance().CreateEffectTemplate(default_particle_effects, "default_particle");
+	Material::Create(default_particle, default_texture, "default_particle");
 
 	Mesh::LoadFromAsset("Assets/Models/cube.boop_obj", "cube");
 	Mesh::LoadFromAsset("Assets/Models/cone.boop_obj", "cone");
@@ -207,6 +213,10 @@ void mrs::EditorLayer::LoadEditorResources()
 		// Ships
 		Model::LoadFromAsset("Assets/Models/ships/Zenith.bp", true, "zenith");
 		Model::LoadFromAsset("Assets/Models/ships/Striker.bp", true, "striker");
+
+		// Default materials
+		Ref<Texture> coin_texture = Texture::LoadFromAsset("Assets/Textures/coin.bp", "coin");
+		Material::Create(default_lit, coin_texture , "coin");
 
 		// Create Planet Material
 		std::vector<mrs::ShaderEffect*> cb_effects;
@@ -258,18 +268,6 @@ void mrs::EditorLayer::Play()
 	_editor_camera.GetComponent<Camera>().SetActive(false);
 	Scene* scene = application.GetScene();
 	scene->Destroy(_editor_camera);
-
-	// auto& view = scene->Registry()->view<Transform, Serializer>();
-	// for (auto entity : view)
-	// {
-	// 	Entity e(entity, scene);
-	// 	auto& serializer = e.GetComponent<Serializer>();
-
-	// 	if (!serializer.serialize)
-	// 	{
-	// 		scene->Destroy(e);
-	// 	}
-	// }
 
 	// Enable runtime layers
 	application.EnableLayer("Physics2DLayer");

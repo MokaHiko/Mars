@@ -12,9 +12,10 @@ namespace mrs
 	{
 		_name = "Physics2DLayer";
 		_scene = Application::Instance().GetScene();
-		
+
 		// Connect to RigidBody2D Component signals
 		Scene* scene = Application::Instance().GetScene();
+		scene->Registry()->on_construct<RigidBody2D>().connect<&Physics2DLayer::OnRigidBody2DCreated>(this);
 		scene->Registry()->on_destroy<RigidBody2D>().connect<&Physics2DLayer::OnRigidBody2DDestroyed>(this);
 	}
 
@@ -29,13 +30,16 @@ namespace mrs
 		uint32_t velocity_iterations = 6;
 		uint32_t position_iterations = 2;
 
-		auto view = _scene->Registry()->view<Transform, RigidBody2D>();
 		float timeStep = dt;
 		_physics_world->Step(timeStep, velocity_iterations, position_iterations);
+
+		FlushQueues();
+
+		auto view = _scene->Registry()->view<Transform, RigidBody2D>();
 		for (auto entity : view)
 		{
 			Entity e(entity, _scene);
-			RigidBody2D &rb = e.GetComponent<RigidBody2D>();
+			RigidBody2D& rb = e.GetComponent<RigidBody2D>();
 
 			// Register body if not yet added
 			if (rb.body == nullptr)
@@ -44,7 +48,7 @@ namespace mrs
 				continue;
 			}
 
-			Transform &transform = e.GetComponent<Transform>();
+			Transform& transform = e.GetComponent<Transform>();
 
 			// Get physics transform components
 			b2Vec2 new_pos = rb.body->GetPosition();
@@ -73,8 +77,8 @@ namespace mrs
 
 	void Physics2DLayer::AddBody(Entity entity)
 	{
-		Transform &transform = entity.GetComponent<Transform>();
-		RigidBody2D &rb = entity.GetComponent<RigidBody2D>();
+		Transform& transform = entity.GetComponent<Transform>();
+		RigidBody2D& rb = entity.GetComponent<RigidBody2D>();
 
 		if (rb.type == BodyType::STATIC)
 		{
@@ -84,6 +88,10 @@ namespace mrs
 
 			rb.body = _physics_world->CreateBody(&static_body_def);
 			rb.body->GetUserData().pointer = entity.Id();
+
+			b2MassData mass_data = {};
+			mass_data.mass = rb.mass;
+			rb.body->SetMassData(&mass_data);
 
 			CreateFixture(entity, BodyType::STATIC);
 		}
@@ -97,12 +105,37 @@ namespace mrs
 			rb.body = _physics_world->CreateBody(&dynamic_body_def);
 			rb.body->GetUserData().pointer = entity.Id();
 
+			b2MassData mass_data = {};
+			mass_data.mass = rb.mass;
+			rb.body->SetMassData(&mass_data);
+
 			if (!rb.use_gravity)
 			{
 				rb.body->SetGravityScale(0.0f);
 			}
 
 			CreateFixture(entity, BodyType::DYNAMIC);
+		}
+		else if (rb.type == BodyType::KINEMATIC)
+		{
+			b2BodyDef kinematic_body_def = {};
+			kinematic_body_def.type = b2_kinematicBody;
+			kinematic_body_def.position = b2Vec2(transform.position.x, transform.position.y);
+			kinematic_body_def.angle = glm::radians(transform.rotation.z);
+
+			rb.body = _physics_world->CreateBody(&kinematic_body_def);
+			rb.body->GetUserData().pointer = entity.Id();
+
+			b2MassData mass_data = {};
+			mass_data.mass = rb.mass;
+			rb.body->SetMassData(&mass_data);
+
+			if (!rb.use_gravity)
+			{
+				rb.body->SetGravityScale(0.0f);
+			}
+
+			CreateFixture(entity, BodyType::KINEMATIC);
 		}
 		else
 		{
@@ -112,8 +145,8 @@ namespace mrs
 
 	void Physics2DLayer::CreateFixture(Entity entity, BodyType type)
 	{
-		Transform &transform = entity.GetComponent<Transform>();
-		RigidBody2D &rb = entity.GetComponent<RigidBody2D>();
+		Transform& transform = entity.GetComponent<Transform>();
+		RigidBody2D& rb = entity.GetComponent<RigidBody2D>();
 
 		if (type == BodyType::DYNAMIC)
 		{
@@ -125,6 +158,20 @@ namespace mrs
 			fixture_def.density = 1.0f;
 			fixture_def.friction = rb.friction;
 			fixture_def.restitution = 0.2f;
+
+			rb.body->CreateFixture(&fixture_def);
+		}
+		else if (type == BodyType::KINEMATIC)
+		{
+			b2PolygonShape kinematic_box = {};
+			kinematic_box.SetAsBox(transform.scale.x, transform.scale.y);
+
+			b2FixtureDef fixture_def = {};
+			fixture_def.shape = &kinematic_box;
+			fixture_def.density = 1.0f;
+			fixture_def.friction = rb.friction;
+			fixture_def.restitution = 0.2f;
+			fixture_def.isSensor = true;
 
 			rb.body->CreateFixture(&fixture_def);
 		}
@@ -143,28 +190,21 @@ namespace mrs
 
 	void Physics2DLayer::OnRigidBody2DCreated(entt::basic_registry<entt::entity>&, entt::entity entity)
 	{
-		Entity e{entity, _scene};
-		
-        // Real time addition if layer is active
-		if(_enabled)
-		{
-            AddBody(e);
-		}
+		Entity e{ entity, _scene };
+		_construction_queue.push_back(e);
 	}
 
-void Physics2DLayer::OnRigidBody2DDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity)
+	void Physics2DLayer::OnRigidBody2DDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity)
 	{
-		Entity e{entity, _scene};
+		Entity e{ entity, _scene };
+
+		// We push the the b2body* because the entity along with its RigidBody2D component is destroyed
 		if (e.HasComponent<RigidBody2D>())
 		{
-			auto &rb = e.GetComponent<RigidBody2D>();
+			auto& rb = e.GetComponent<RigidBody2D>();
 
 			MRS_ASSERT(rb.body != nullptr, std::to_string(e.Id()).c_str());
-			
-			if (rb.body)
-			{
-				rb.body->GetWorld()->DestroyBody(rb.body);
-			}
+			_destruction_queue.push_back(rb.body);
 		}
 	}
 
@@ -204,7 +244,29 @@ void Physics2DLayer::OnRigidBody2DDestroyed(entt::basic_registry<entt::entity>&,
 		_physics_world = nullptr;
 	}
 
-	void ContactListener::BeginContact(b2Contact *contact)
+	void Physics2DLayer::FlushQueues()
+	{
+		for (auto& e : _construction_queue)
+		{
+			// Real time addition if layer is active
+			if (_enabled)
+			{
+				AddBody(e);
+			}
+		}
+		_construction_queue.clear();
+
+		for (b2Body* body : _destruction_queue)
+		{
+			if (body)
+			{
+				body->GetWorld()->DestroyBody(body);
+			}
+		}
+		_destruction_queue.clear();
+	}
+
+	void ContactListener::BeginContact(b2Contact* contact)
 	{
 		Entity entity_a = Entity((entt::entity)contact->GetFixtureA()->GetBody()->GetUserData().pointer, _scene);
 		Entity entity_b = Entity((entt::entity)contact->GetFixtureB()->GetBody()->GetUserData().pointer, _scene);
@@ -212,7 +274,7 @@ void Physics2DLayer::OnRigidBody2DDestroyed(entt::basic_registry<entt::entity>&,
 		if (entity_a.HasComponent<Script>()) {
 			ScriptableEntity* script = (entity_a.GetComponent<Script>().script);
 
-			if(script != nullptr)
+			if (script != nullptr)
 			{
 				script->OnCollisionEnter2D(entity_b);
 			}
@@ -227,7 +289,7 @@ void Physics2DLayer::OnRigidBody2DDestroyed(entt::basic_registry<entt::entity>&,
 			}
 		}
 	}
-	void ContactListener::EndContact(b2Contact *contact)
+	void ContactListener::EndContact(b2Contact* contact)
 	{
 	}
 }

@@ -215,6 +215,20 @@ void IRenderPipelineLayer::OnAttach()
 				_renderable_batches[effect->render_pipeline].entities.push_back(e);
 			}
 		}
+
+		// TODO: Replace with Renderable Base Component
+		auto n_renderables = scene->Registry()->view<ParticleSystem>();
+		for (auto entity : n_renderables)
+		{
+			Entity e(entity, scene);
+			auto& renderable = e.GetComponent<ParticleSystem>();
+			Ref<EffectTemplate> base_template = renderable.material->BaseTemplate();
+
+			for(const ShaderEffect* effect : base_template->shader_effects)
+			{
+				_renderable_batches[effect->render_pipeline].entities.push_back(e);
+			}
+		}
 	}
 	void IRenderPipelineLayer::ClearBatches()
 	{

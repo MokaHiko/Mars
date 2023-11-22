@@ -20,7 +20,8 @@ namespace mrs
     {
         UNKNOWN = 0, 
         STATIC,
-        DYNAMIC
+        DYNAMIC,
+        KINEMATIC,
     };
 
     struct RigidBody2D
@@ -34,17 +35,34 @@ namespace mrs
             body->ApplyLinearImpulse({value.x, value.y}, body->GetWorldCenter(), true);
         }
 
-        void SetMass(float mass)
-        {
-            b2MassData mass_data = {};
-            mass_data.mass = mass;
-            body->SetMassData(&mass_data);
-        }
-
         // Sets instantaneous velocity 
         void SetVelocity(const glm::vec2& value)
         {
             body->SetLinearVelocity({value.x, value.y});
+        }
+
+        void SetType(BodyType type)
+        {
+            switch(type)
+            {
+                case BodyType::STATIC:
+                    body->SetType(b2BodyType::b2_staticBody);
+                    break;
+                case BodyType::DYNAMIC:
+                    body->SetType(b2BodyType::b2_dynamicBody);
+                    break;
+                case BodyType::KINEMATIC:
+                    body->SetType(b2BodyType::b2_kinematicBody);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // Set position
+        void SetTransform(const glm::vec2& position, const float angle)
+        {
+            body->SetTransform({position.x, position.y}, angle);
         }
 
         // Sets instantaneous angular velocity in radians/second
@@ -58,11 +76,6 @@ namespace mrs
             body->ApplyAngularImpulse(w, true);
         }
 
-        void SetGravityScale(const float value = 0.0f)
-        {
-            body->SetGravityScale(value);
-        };
-
         void SetFixedRotation(const bool flag)
         {
             body->SetFixedRotation(flag);
@@ -71,6 +84,8 @@ namespace mrs
     public:
         bool use_gravity = true;
         float friction = 0.6f;
+        float mass = 1.0f;
+
         b2Body *body = nullptr;
         BodyType type = BodyType::DYNAMIC;
     };

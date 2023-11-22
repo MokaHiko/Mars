@@ -23,8 +23,8 @@ void mrs::IRenderPipeline::ParseDescriptorSetFromSpirV(const void* spirv_code, s
 
   for (uint32_t i = 0; i < r_descriptor_sets.size(); i++)
   {
-    MRS_INFO("Descriptor Set: %d", i);
     const SpvReflectDescriptorSet& r_descriptor_set = *r_descriptor_sets[i];
+    MRS_INFO("\tSet: %d", r_descriptor_set.set);
 
     // Check if descriptor set already exists
     auto it = std::find_if(_required_descriptors.begin(), _required_descriptors.end(), [&](const VulkanDescriptorSet& ds)
@@ -39,8 +39,8 @@ void mrs::IRenderPipeline::ParseDescriptorSetFromSpirV(const void* spirv_code, s
         const SpvReflectDescriptorBinding& r_descriptor_binding = *r_descriptor_set.bindings[j];
         VkDescriptorType type = static_cast<VkDescriptorType>(r_descriptor_binding.descriptor_type);
 
-        MRS_INFO("binding: %d, descriptor type: %d", r_descriptor_binding.binding, r_descriptor_binding.descriptor_type);
         it->AddBinding(r_descriptor_binding.binding, type, stage);
+        MRS_INFO("\t\tbinding: %d, type: %d, stage: %d", r_descriptor_binding.binding, r_descriptor_binding.descriptor_type, it->shader_stage);
       };
     }
     else
@@ -54,8 +54,8 @@ void mrs::IRenderPipeline::ParseDescriptorSetFromSpirV(const void* spirv_code, s
         const SpvReflectDescriptorBinding& r_descriptor_binding = *r_descriptor_set.bindings[j];
         VkDescriptorType type = static_cast<VkDescriptorType>(r_descriptor_binding.descriptor_type);
 
-        MRS_INFO("binding: %d, descriptor type: %d", r_descriptor_binding.binding, r_descriptor_binding.descriptor_type);
         descriptor_set.AddBinding(r_descriptor_binding.binding, type, stage);
+        MRS_INFO("\t\tNEW binding: %d, type: %d, stage: %d", r_descriptor_binding.binding, r_descriptor_binding.descriptor_type, stage);
       };
 
       _required_descriptors.push_back(descriptor_set);
@@ -101,7 +101,7 @@ void mrs::IRenderPipeline::PushShader(Ref<Shader> shader)
 void mrs::IRenderPipeline::BuildPipeline()
 {
   // Build descriptor set layouts
-  std::vector<VkDescriptorSetLayout> descriptor_layouts;
+  std::vector<VkDescriptorSetLayout> descriptor_layouts(_required_descriptors.size());
   for (VulkanDescriptorSet& descriptor : _required_descriptors)
   {
     // Build descriptor set layouts
@@ -121,7 +121,7 @@ void mrs::IRenderPipeline::BuildPipeline()
     }
 
     builder.Build(nullptr, &descriptor.descriptor_set_layout);
-    descriptor_layouts.push_back(descriptor.descriptor_set_layout);
+    descriptor_layouts[descriptor.set] = (descriptor.descriptor_set_layout);
   }
 
   // Build pipeline layout

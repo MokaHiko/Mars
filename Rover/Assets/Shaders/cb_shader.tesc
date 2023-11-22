@@ -29,14 +29,40 @@ layout(std140, set = 1, binding = 0) readonly buffer ObjectBuffer{
 	ObjectData s_objects[];
 } _object_buffer;
 
-layout(push_constant) uniform CelestialBodyData {
-  uint resolution;
-  float radius;
-  float strength;
-  float roughness;
-  float dt;
+struct NoiseSetting
+{
+    uint n_layers;
+    float persistence;
 
-  vec4 center;
+    float base_roughness;
+    float roughness;
+
+    uint min_resolution; 
+    uint max_resolution; 
+
+    float strength;
+    float min_value;
+
+    vec4 center;
+};
+
+layout(std140, set = 4, binding = 0) readonly buffer NoiseSettingsSSBO{
+  NoiseSetting noise_settings[];
+}; 
+
+layout(push_constant) uniform CelestialBodyData {
+  float dt;
+  float mask;
+  uint n_filters;
+  uint type;
+
+  ivec4 noise_filters_indices; 
+
+  // Gradients
+  vec4 color_1;
+  vec4 color_2;
+  vec4 color_3;
+  vec4 color_4;
 } cb_data;
 
 const int MIN_TESS_LEVEL = 4;
@@ -79,13 +105,15 @@ void main()
 		// gl_TessLevelInner[0] = max(tessLevel0, tessLevel2);
 		// gl_TessLevelInner[1] = max(tessLevel1, tessLevel3);
 
-		gl_TessLevelOuter[0] = cb_data.resolution;	
-		gl_TessLevelOuter[1] = cb_data.resolution;
-		gl_TessLevelOuter[2] = cb_data.resolution;
-		gl_TessLevelOuter[3] = cb_data.resolution;
 
-		gl_TessLevelInner[0] = cb_data.resolution;
-		gl_TessLevelInner[1] = cb_data.resolution;
+		NoiseSetting noise_filter = noise_settings[cb_data.noise_filters_indices[0]];
+		gl_TessLevelOuter[0] = noise_filter.min_resolution;	
+		gl_TessLevelOuter[1] = noise_filter.min_resolution;
+		gl_TessLevelOuter[2] = noise_filter.min_resolution;
+		gl_TessLevelOuter[3] = noise_filter.min_resolution;
+
+		gl_TessLevelInner[0] = noise_filter.min_resolution;
+		gl_TessLevelInner[1] = noise_filter.min_resolution;
 	}
 
 	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;

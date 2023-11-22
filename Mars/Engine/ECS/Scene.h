@@ -84,7 +84,7 @@ namespace mrs
 
             MRS_ERROR("Entity has no such component!");
             throw std::runtime_error("Entity has no such component!");
-    }
+        }
 
         template <typename T>
         T* GetScript(entt::entity id)

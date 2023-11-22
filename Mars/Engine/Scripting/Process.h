@@ -51,8 +51,8 @@ namespace mrs {
     public:
         // Accessors
         ProcessState State() const { return _state; }
-        bool IsAlive() const const { return _state == Running || _state == Paused; }
-        bool IsDead() const const { return _state == Succeeded || _state == Failed || _state == Aborted; }
+        bool IsAlive() const { return _state == Running || _state == Paused; }
+        bool IsDead() const { return _state == Succeeded || _state == Failed || _state == Aborted; }
         bool IsRemoved() const { return _state == Removed; }
         bool IsPaused() const { return _state == Paused; }
     private:

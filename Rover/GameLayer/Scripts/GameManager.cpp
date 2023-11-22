@@ -1,10 +1,13 @@
 #include "GameManager.h"
 
 #include "Planet.h"
+#include "Ship.h"
+#include "PlayerShipController.h"
 #include "Striker.h"
 #include "Moon.h"
 
 #include "GameLayer/RenderPipelines/CBRenderPipeline.h"
+#include "Toolbox/RandomToolBox.h"
 
 GameManager::GameManager()
 {
@@ -29,83 +32,134 @@ void GameManager::OnStart()
 		MRS_ERROR("No game camera script found");
 	}
 
+	tbx::PRNGenerator<float> random(0, 1);
+	tbx::PRNGenerator<float> random_neg(-0.5f, 0.5f);
+
+	int root = 1;
+	float spacing = 100;
+	for (int i = 0; i < root; i++)
 	{
-		auto planet = Instantiate("Planet 0");
-		auto& transform = planet.GetComponent<mrs::Transform>();
-		transform.position = glm::vec3(-10, 0, -50);
-		transform.scale *= 10;
-
-		auto& celestial_body = planet.AddComponent<CelestialBody>();
-		auto& mesh_renderer = planet.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
-
-		planet.AddComponent<mrs::Script>().Bind<Planet>();
-
+		for (int j = 0; j < root; j++)
 		{
-			auto moon = Instantiate("Moon 0");
-			auto& moon_transform = moon.GetComponent<mrs::Transform>();
-			moon_transform.position = glm::vec3(0, 0, -50.0f);
-			moon_transform.scale *= 2.5;
+			auto planet = Instantiate(std::string("Planet") + std::to_string(i + j));
+			auto& transform = planet.GetComponent<mrs::Transform>();
+			transform.position = glm::vec3(-spacing * i, spacing * j, -50);
+			transform.scale *= 10 * (1 + ((0.05f) * random_neg.Next()));
 
-			auto& moon_celestial_body = moon.AddComponent<CelestialBody>();
-			auto& moon_mesh_renderer = moon.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
+			auto& celestial_body = planet.AddComponent<CelestialBody>();
+			NoiseFilter noise_filter = {};
+			noise_filter.noise_settings.n_layers = 4;
+			noise_filter.noise_settings.persistence = 0.5 * (random.Next());
+			noise_filter.noise_settings.base_roughness = 1.2f * (1 + random.Next());
+			noise_filter.noise_settings.roughness = 2.0f * (1 + 0.5f * random_neg.Next());
+			noise_filter.noise_settings.min_value = 1.0f * random.Next();
+			noise_filter.noise_settings.strength = 0.250 * (1 + random.Next());
+			noise_filter.noise_settings.min_value = 0.648 * (1 + random.Next());
+			celestial_body.PushFilter(noise_filter);
+			celestial_body.PushFilter({});
 
-			auto& moon_props = moon.AddComponent<MoonProperties>();
-			moon_props._planet = planet;
-			moon_props.a = 70;
-			moon_props.b = 25;
-			moon.AddComponent<mrs::Script>().Bind<Moon>();
+			auto& mesh_renderer = planet.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
+
+			planet.AddComponent<mrs::Script>().Bind<Planet>();
+
+			{
+				auto moon = Instantiate("Moon 0");
+				auto& moon_transform = moon.GetComponent<mrs::Transform>();
+				moon_transform.position = glm::vec3(0, 0, -50.0f);
+				transform.scale *= 2.5f * (1 + ((0.25f) * random_neg.Next()));
+
+				auto& moon_celestial_body = moon.AddComponent<CelestialBody>();
+				NoiseFilter noise_filter = {};
+				noise_filter.noise_settings.n_layers = 4;
+				noise_filter.noise_settings.persistence = 0.920f * random.Next();
+				noise_filter.noise_settings.base_roughness = 1.2f * (1 + random.Next());
+				noise_filter.noise_settings.roughness = 2.0f * (1 + random_neg.Next());
+				noise_filter.noise_settings.min_value = 1.0f * random.Next();
+				noise_filter.noise_settings.strength = 0.3f * (1 + random.Next());
+				noise_filter.noise_settings.min_value = 1.880 * random.Next();
+				moon_celestial_body.PushFilter(noise_filter);
+				auto& moon_mesh_renderer = moon.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
+
+				auto& moon_props = moon.AddComponent<MoonProperties>();
+				moon_props._planet = planet;
+				moon_props.a = 7 * planet.GetComponent<mrs::Transform>().scale.x;
+				moon_props.a = 2.5f * planet.GetComponent<mrs::Transform>().scale.x;
+				moon.AddComponent<mrs::Script>().Bind<Moon>();
+			}
 		}
 	}
 
-	// {
-	// 	auto star = Instantiate("Planet 1");
-	// 	auto& transform = star.GetComponent<mrs::Transform>();
-	// 	transform.position = glm::vec3(10, 0, -50);
-	// 	transform.scale *= 10;
-
-	// 	auto& celestial_body = star.AddComponent<CelestialBody>();
-	// 	auto& mesh_renderer = star.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
-
-	// 	star.AddComponent<mrs::Script>().Bind<Planet>();
-	// }
-
 	{
-		auto striker = Instantiate("Enemy_Striker");
-		auto& transform = striker.GetComponent<mrs::Transform>();
-		transform.position = glm::vec3(10, 0, 0);
+		auto player = Instantiate("Player");
 
-		auto& mesh_renderer = striker.AddComponent<mrs::ModelRenderer>(mrs::Model::Get("striker"));
+		// Create ship
+		auto& transform = player.GetComponent<mrs::Transform>();
+		transform.position = glm::vec3(0, 0, 0);
+		transform.rotation = {0, 0, 180};
 
-		auto& rb = striker.AddComponent<mrs::RigidBody2D>();
-		striker.AddComponent<mrs::Script>().Bind<Striker>();
+		auto& mesh_renderer = player.AddComponent<mrs::ModelRenderer>(mrs::Model::Get("zenith"));
+
+		auto& rb = player.AddComponent<mrs::RigidBody2D>();
+		rb.mass = 100;
 		rb.use_gravity = false;
+
+		player.AddComponent<mrs::Script>().Bind<Ship>();
+		auto& resources = player.AddComponent<ShipResources>();
+
+		// Ship controller
+		auto player_controller = Instantiate("Player Controller!");
+		player_controller.AddComponent<mrs::Script>().Bind<PlayerShipController>();
+
+		transform.AddChild(player_controller);
+	}
+
+	for(int i = 0; i < 5; i++) {
+		auto enemy = Instantiate("Enemy_Striker");
+		auto& transform = enemy.GetComponent<mrs::Transform>();
+		transform.position = glm::vec3(5 * i, 0, 0);
+
+		auto& mesh_renderer = enemy.AddComponent<mrs::ModelRenderer>(mrs::Model::Get("striker"));
+
+		auto& rb = enemy.AddComponent<mrs::RigidBody2D>();
+		rb.mass = 100;
+		rb.use_gravity = false;
+
+		enemy.AddComponent<mrs::Script>().Bind<Ship>();
+		auto& resources = enemy.AddComponent<ShipResources>();
+		resources.scrap_metal = 10;
+
+		// Enemy controller
+		auto enemy_controller = Instantiate("Enemy Controller!");
+		enemy_controller.AddComponent<mrs::Script>().Bind<Striker>();
+
+		transform.AddChild(enemy_controller);
 	}
 }
 
 void GameManager::OnUpdate(float dt)
 {
-	static glm::vec2 sector_coords;
+	// static glm::vec2 sector_coords;
 
-	static glm::vec2 last_sector_coords = sector_coords;
+	// static glm::vec2 last_sector_coords = sector_coords;
 
-	const int sector_radius = 8;
-	static std::vector<mrs::Entity> current_stars(sector_radius * sector_radius);
+	// const int sector_radius = 8;
+	// static std::vector<mrs::Entity> current_stars(sector_radius * sector_radius);
 
-	const static std::string star_materials[4]
-	{
-		"default",
-		"red",
-		"green",
-		"blue",
-	};
+	// const static std::string star_materials[4]
+	// {
+	// 	"default",
+	// 	"red",
+	// 	"green",
+	// 	"blue",
+	// };
 
-	const auto& position = _camera->GetComponent<mrs::Transform>().position;
+	// const auto& position = _camera->GetComponent<mrs::Transform>().position;
 
-	int x = (int)(floor(position.x));
-	int y = (int)(floor(position.y));
+	// int x = (int)(floor(position.x));
+	// int y = (int)(floor(position.y));
 
-	int region_size = 64;
-	sector_coords = { x - (x % region_size), y - (y % region_size) };
+	// int region_size = 64;
+	// sector_coords = { x - (x % region_size), y - (y % region_size) };
 
 	// TODO: Refresh only when beyond refresh radius
 	// if (sector_coords != last_sector_coords)

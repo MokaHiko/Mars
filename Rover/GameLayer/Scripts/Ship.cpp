@@ -4,94 +4,83 @@
 #include <Physics/Physics.h>
 
 #include "Projectile.h"
+#include "ShipCombat.h"
 
-void Ship::OnCreate() {}
+#include "Scrap.h"
 
-void Ship::OnStart() 
+void Ship::OnCreate()
 {
+	// TODO: add required components
 
+	// Initialize ship systems
+	auto& combat = Instantiate("Combat");
+	combat.AddComponent<mrs::Script>().Bind<ShipCombat>();
+
+	auto& transform = GetComponent<mrs::Transform>();
+	transform.AddChild(combat);
 }
-
 
 void Ship::OnUpdate(float dt)
 {
-	// TODO: Move to Ship Controller
-	mrs::Transform& transform = GetComponent<mrs::Transform>();
-	mrs::RigidBody2D& rb = GetComponent<mrs::RigidBody2D>();
-
-	static float ms = 50.0f;
-	static float total_time = 0;
-	static float rotation_duration = 1.0f;
-	static float target_rotation = 45.0f;
-
-	glm::vec2 velocity = {0, 0};
-
-	if (mrs::Input::IsKeyDown(SDLK_SPACE))
-	{
-		FireProjectile();
-	}
-
-	else if (mrs::Input::IsKeyPressed(SDLK_q))
-	{
-	}
-
-	if (mrs::Input::IsKeyPressed(SDLK_w))
-	{
-		velocity += glm::vec2{0, ms};
-	}
-	else if (mrs::Input::IsKeyPressed(SDLK_s))
-	{
-		velocity += glm::vec2{0, -ms};
-	}
-
-	if (mrs::Input::IsKeyPressed(SDLK_d))
-	{
-		velocity += glm::vec2{ms, 0};
-
-		total_time += dt;
-		transform.rotation.y = Lerp(transform.rotation.y, target_rotation, total_time / rotation_duration);
-		if(target_rotation - transform.rotation.y < 0.01f)
-		{
-			total_time = 0;
-		}
-	}
-	else if (mrs::Input::IsKeyPressed(SDLK_a))
-	{
-		velocity += glm::vec2{-ms, 0};
-
-		total_time += dt;
-		transform.rotation.y = Lerp(transform.rotation.y, -target_rotation, total_time / rotation_duration);
-
-		if(-target_rotation - transform.rotation.y < 0.01f)
-		{
-			total_time = 0;
-		}
-	}
-
-	rb.SetVelocity(velocity);
 }
 
-void Ship::OnCollisionEnter2D(mrs::Entity other) {}
-
-void Ship::FireProjectile() 
+void Ship::OnCollisionEnter2D(mrs::Entity other)
 {
-	// Create projectile
-	auto projectile = Instantiate("projectile!");
-	auto& transform = projectile.GetComponent<mrs::Transform>();
+	// Check if resource
+	if (other.HasComponent<Resource>())
+	{
+		const Resource& resource = other.GetComponent<Resource>();
+		auto& ship_resources = GetComponent<ShipResources>();
 
-	// TODO: Change to fire point
-	transform.position = GetComponent<mrs::Transform>().position + mrs::Vector3(0, 5, 0);
+		switch (resource.type)
+		{
+			case(ResourceType::CREDIT):
+			{
+				ship_resources.credit += resource.amount;
+			}break;
+			case(ResourceType::SCRAP_METAL):
+			{
+				ship_resources.scrap_metal += resource.amount;
+			}break;
+			default:
+				break;
+		}
+	}
+}
 
-	// TODO: Change to transform.up
-	auto& props = projectile.AddComponent<ProjectileProperties>();
-	props.direction = mrs::Vector2(0,1);
-	props.life_span = 5.0f;
-	props.speed = 100.0f;
-	props.damage = 100.0f;
+void Ship::Die()
+{
+	ShipResources& resources = GetComponent<ShipResources>();
+	mrs::Vector3 position = GetComponent<mrs::Transform>().position;
 
-	projectile.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("sphere"), mrs::Material::Get("default"));
-	auto& rb = projectile.AddComponent<mrs::RigidBody2D>();
-	rb.use_gravity = false;
+	for (uint32_t i = 0; i < resources.scrap_metal; i++)
+	{
+		auto e = Instantiate("scrap_metal", position);
 
-	projectile.AddComponent<mrs::Script>().Bind<Projectile>();
+		auto& resource = e.AddComponent<Resource>();
+		resource.type = ResourceType::SCRAP_METAL;
+		resource.amount = 5.0f;
+
+		e.GetComponent<mrs::Transform>().scale *= 0.25f;
+		e.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("default"));
+
+		auto& rb = e.AddComponent<mrs::RigidBody2D>();
+		rb.mass = 50.0f;
+		rb.use_gravity = false;
+		rb.type = mrs::BodyType::KINEMATIC;
+
+		e.AddComponent<mrs::Script>().Bind<Scrap>();
+	}
+
+	QueueDestroy();
+}
+
+void Ship::TakeDamage(float damage)
+{
+	_health -= damage;
+
+	if (_health <= 0)
+	{
+		Die();
+	}
 }
