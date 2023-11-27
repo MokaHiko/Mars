@@ -66,6 +66,7 @@ void mrs::Viewport::Draw()
 	auto cam = _editor_layer->EditorCamera();
 	if(cam && cam.HasComponent<Camera>() && cam.GetComponent<Camera>().IsActive())
 	{
+		// TODO: Check if selected is Screen or World Space Entity
 		auto e = _editor_layer->SelectedEntity();
 		if(e)
 		{

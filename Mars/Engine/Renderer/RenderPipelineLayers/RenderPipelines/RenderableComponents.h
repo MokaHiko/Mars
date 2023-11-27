@@ -9,20 +9,27 @@
 #include "Renderer/Vulkan/VulkanMaterial.h"
 #include "Renderer/Camera.h"
 #include "Renderer/Model.h"
+#include "Renderer/Textures/Sprite.h"
+#include "Math/Math.h"
 
 namespace mrs
 {
-    struct ModelRenderer
+    // Base renderer class component that makes an object appear on the screen. Inherited by all rendererable types.
+    struct Renderable
     {
-        ModelRenderer(Ref<Model> m)
+        Renderable()
         {
-            model = m;
+            material = Material::Get("default");
         }
 
-        Ref<Model> model;
+        Renderable(Ref<Material> material_)
+        {
+            material = material_;
+        }
+
+        Ref<Material> material = nullptr;
     };
 
-    // Base renderer class component that makes an object appear on the screen. Inherited by all rendererable types.
     struct MeshRenderer
     {
         MeshRenderer()
@@ -54,6 +61,23 @@ namespace mrs
     private:
         Ref<Mesh> mesh = nullptr;
         Ref<Material> material = nullptr;
+    };
+
+    struct ModelRenderer
+    {
+        ModelRenderer(Ref<Model> m)
+        {
+            model = m;
+        }
+
+        Ref<Model> model;
+    };
+
+    class SpriteRenderer
+    {
+        Ref<Sprite> sprite; 
+        Vector4 color;
+        uint32_t sorting_layer = 0;
     };
 
     struct PointLight

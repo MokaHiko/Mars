@@ -28,9 +28,9 @@ void mrs::IRenderPipeline::ParseDescriptorSetFromSpirV(const void* spirv_code, s
 
     // Check if descriptor set already exists
     auto it = std::find_if(_required_descriptors.begin(), _required_descriptors.end(), [&](const VulkanDescriptorSet& ds)
-    {
-      return ds.set == r_descriptor_set.set;
-    });
+      {
+        return ds.set == r_descriptor_set.set;
+      });
 
     if (it != _required_descriptors.end())
     {
@@ -39,7 +39,7 @@ void mrs::IRenderPipeline::ParseDescriptorSetFromSpirV(const void* spirv_code, s
         const SpvReflectDescriptorBinding& r_descriptor_binding = *r_descriptor_set.bindings[j];
         VkDescriptorType type = static_cast<VkDescriptorType>(r_descriptor_binding.descriptor_type);
 
-        it->AddBinding(r_descriptor_binding.binding, type, stage);
+        it->AddBinding(r_descriptor_binding.binding, r_descriptor_binding.name, type, stage);
         MRS_INFO("\t\tbinding: %d, type: %d, stage: %d", r_descriptor_binding.binding, r_descriptor_binding.descriptor_type, it->shader_stage);
       };
     }
@@ -54,7 +54,7 @@ void mrs::IRenderPipeline::ParseDescriptorSetFromSpirV(const void* spirv_code, s
         const SpvReflectDescriptorBinding& r_descriptor_binding = *r_descriptor_set.bindings[j];
         VkDescriptorType type = static_cast<VkDescriptorType>(r_descriptor_binding.descriptor_type);
 
-        descriptor_set.AddBinding(r_descriptor_binding.binding, type, stage);
+        descriptor_set.AddBinding(r_descriptor_binding.binding, r_descriptor_binding.name, type, stage);
         MRS_INFO("\t\tNEW binding: %d, type: %d, stage: %d", r_descriptor_binding.binding, r_descriptor_binding.descriptor_type, stage);
       };
 
@@ -84,6 +84,7 @@ Ref<mrs::ShaderEffect> mrs::IRenderPipeline::Effect()
   {
     _shader_effect = CreateRef<ShaderEffect>();
     _shader_effect->render_pipeline = this;
+    _shader_effect->descriptor_sets = _required_descriptors;
   }
 
   return _shader_effect;
@@ -168,11 +169,20 @@ void mrs::IRenderPipeline::BuildPipeline()
 
   // Graphics Settings
   pipeline_builder._rasterizer = vkinit::PipelineRasterizationStateCreateInfo(_render_pipeline_settings.polygon_mode);
-  pipeline_builder._multisampling = vkinit::PipelineMultisampleStateCreateInfo();
-  pipeline_builder._color_blend_attachment = vkinit::PipelineColorBlendAttachmentState();
-  pipeline_builder._depth_stencil = vkinit::PipelineDepthStencilStateCreateInfo(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
-  if(_render_pipeline_settings.tesselation_control_points > 0)
+  pipeline_builder._color_blend_attachment = vkinit::PipelineColorBlendAttachmentState(
+    _render_pipeline_settings.blend_enable,
+    _render_pipeline_settings.srcColorBlendFactor,
+    _render_pipeline_settings.dstColorBlendFactor,
+    _render_pipeline_settings.colorBlendOp,
+    _render_pipeline_settings.srcAlphaBlendFactor,
+    _render_pipeline_settings.dstAlphaBlendFactor,
+    _render_pipeline_settings.alphaBlendOp
+  );
+  pipeline_builder._depth_stencil = vkinit::PipelineDepthStencilStateCreateInfo(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+  pipeline_builder._multisampling = vkinit::PipelineMultisampleStateCreateInfo();
+
+  if (_render_pipeline_settings.tesselation_control_points > 0)
   {
     pipeline_builder._tesselation_state = vkinit::PipelineTesselationStateCreateInfo(_render_pipeline_settings.tesselation_control_points);
   }
@@ -183,14 +193,14 @@ void mrs::IRenderPipeline::BuildPipeline()
 
   if (_pipeline == VK_NULL_HANDLE)
   {
-    printf("Failed to create pipeline!");
+    MRS_ERROR("Failed to create pipeline!");
   }
 
   // Clean Up
   _renderer->DeletionQueue().Push([=]()
-  {
-    vkDestroyPipelineLayout(_device->device, _pipeline_layout, nullptr);
-    vkDestroyPipeline(_device->device, _pipeline, nullptr);
-  });
+    {
+      vkDestroyPipelineLayout(_device->device, _pipeline_layout, nullptr);
+      vkDestroyPipeline(_device->device, _pipeline, nullptr);
+    });
 }
 

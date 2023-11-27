@@ -61,7 +61,7 @@ void Ship::Die()
 		resource.type = ResourceType::SCRAP_METAL;
 		resource.amount = 5.0f;
 
-		e.GetComponent<mrs::Transform>().scale *= 0.25f;
+		e.GetComponent<mrs::Transform>().scale *= 0.50f;
 		e.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("default"));
 
 		auto& rb = e.AddComponent<mrs::RigidBody2D>();
@@ -77,9 +77,10 @@ void Ship::Die()
 
 void Ship::TakeDamage(float damage)
 {
-	_health -= damage;
+	ShipResources& resources = GetComponent<ShipResources>();
+	resources.health -= damage;
 
-	if (_health <= 0)
+	if (resources.health <= 0)
 	{
 		Die();
 	}

@@ -87,10 +87,11 @@ mrs::Vector2 mrs::Lerp(const Vector2& start, const Vector2& end, float percent)
 mrs::Vector2 mrs::Slerp(const Vector2& start, const Vector2& end, float percent, bool mirror)
 {
 	Vector2 mid_point = start + ((end - start) / 2.0f);
-
 	float r = glm::length(start - end) / 2.0f;
 
-	float theta = (-glm::pi<float>() /2.0f) + (glm::pi<float>() * percent);
+	Vector2 diff = end - start;
+	float theta = (glm::pi<float>() * 3.0f/2.0f) - atan2(diff.x, diff.y);
+	theta -= (glm::pi<float>() * percent); // relative 180 to 0 : p1 to p2
 
 	if(mirror)
 	{

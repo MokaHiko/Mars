@@ -152,62 +152,6 @@ void mrs::EditorLayer::Stop()
 
 void mrs::EditorLayer::LoadEditorResources()
 {
-	// Default effect templates
-	std::vector<ShaderEffect*> default_lit_effects;
-	default_lit_effects.push_back(_render_pipeline_layer->FindPipeline("MeshRenderPipeline")->Effect().get());
-	Ref<EffectTemplate> default_lit = VulkanAssetManager::Instance().CreateEffectTemplate(default_lit_effects, "default_lit");
-
-	Ref<Texture> default_texture = Texture::LoadFromAsset("Assets/Models/white.boop_png", "default");
-
-	Ref<Texture> container_texture = Texture::LoadFromAsset("Assets/Models/textures_container/Container_DiffuseMap.boop_jpg", "container");
-	Ref<Texture> container_specular = Texture::LoadFromAsset("Assets/Textures/Container_SpecularMap.bp", "container_specular");
-
-	Ref<Texture> green_texture = Texture::LoadFromAsset("Assets/Textures/green.boop_png", "green");
-
-	Ref<Texture> checkered_texture = Texture::LoadFromAsset("Assets/Textures/checkered.bp", "checkered");
-	Ref<Texture> space_texture = Texture::LoadFromAsset("Assets/Textures/space.bp", "space");
-
-	Material::Create(default_lit, default_texture, "default");
-
-	Material::Create(default_lit, default_texture, "red")->DiffuseColor() = glm::vec4(1, 0, 0, 1);
-	Material::Create(default_lit, default_texture, "green")->DiffuseColor() = glm::vec4(0, 1, 0, 1);
-	Material::Create(default_lit, default_texture, "blue")->DiffuseColor() = glm::vec4(0, 0, 1, 1);
-
-	Material::Create(default_lit, checkered_texture, "checkered");
-	Material::Create(default_lit, space_texture, "space");
-
-	Ref<Material> container_material = Material::Create(default_lit, container_texture, "container");
-	container_material->SetTexture(MaterialTextureType::SpecularTexture, container_specular);
-
-	Material::Create(default_lit, green_texture, "green");
-	
-	// TODO: Move to Particle Render Pipelie Init
-	std::vector<ShaderEffect*> default_particle_effects;
-	default_particle_effects.push_back(_render_pipeline_layer->FindPipeline("ParticleRenderPipeline")->Effect().get());
-	Ref<EffectTemplate> default_particle = VulkanAssetManager::Instance().CreateEffectTemplate(default_particle_effects, "default_particle");
-	Material::Create(default_particle, default_texture, "default_particle");
-
-	Mesh::LoadFromAsset("Assets/Models/cube.boop_obj", "cube");
-	Mesh::LoadFromAsset("Assets/Models/cone.boop_obj", "cone");
-	Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj", "monkey");
-	Mesh::LoadFromAsset("Assets/Models/quad.boop_obj", "quad");
-	Mesh::LoadFromAsset("Assets/Models/plane.boop_obj", "plane");
-	Mesh::LoadFromAsset("Assets/Models/sphere.boop_obj", "sphere");
-
-	Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
-	Mesh::LoadFromAsset("Assets/Models/soldier.boop_obj", "soldier");
-
-	// Manually built meshes
-	auto screen_quad = Mesh::Create("screen_quad");
-	screen_quad->_vertices.push_back({ { -1.0f, -1.0f, 0.0f }, {}, {}, {} });
-	screen_quad->_vertices.push_back({ { -1.0f, 1.0f, 0.0f }, {}, {}, {} });
-	screen_quad->_vertices.push_back({ { 1.0f, -1.0f, 0.0f }, {}, {}, {} });
-	screen_quad->_vertices.push_back({ { 1.0f,  1.0f, 0.0f }, {}, {}, {} });
-	screen_quad->_vertex_count = 4;
-
-	screen_quad->_indices = { 0,2,1,1,2,3 };
-	screen_quad->_index_count = 6;
-
 	// ~ Escape Velocity
 	{
 		// Ships
@@ -216,14 +160,17 @@ void mrs::EditorLayer::LoadEditorResources()
 
 		// Default materials
 		Ref<Texture> coin_texture = Texture::LoadFromAsset("Assets/Textures/coin.bp", "coin");
-		Material::Create(default_lit, coin_texture , "coin");
+		Material::Create(VulkanAssetManager::Instance().FindEffectTemplate("default_lit"), coin_texture , "coin");
 
 		// Create Planet Material
 		std::vector<mrs::ShaderEffect*> cb_effects;
 		cb_effects.push_back(_render_pipeline_layer->FindPipeline("CBRenderPipeline")->Effect().get());
 		Ref<mrs::EffectTemplate> cb_effect = VulkanAssetManager::Instance().CreateEffectTemplate(cb_effects, "celestial_body_effect");
 
-		Material::Create(cb_effect, default_texture, "celestial_body");
+		Ref<Texture> smoke_texture = Texture::LoadFromAsset("Assets/Textures/smoke.bp", "smoke");
+		Material::Create(VulkanAssetManager::Instance().FindEffectTemplate("default_particle"),  smoke_texture, "smoke");
+
+		Material::Create(cb_effect, Texture::Get("default"), "celestial_body");
 	}
 
 	// Upload resources to runtime

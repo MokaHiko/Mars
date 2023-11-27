@@ -80,7 +80,7 @@ namespace mrs
 		transform.self = e;
 		transform.position = position;
 
-		// Add to root if not provided 
+		// TODO: Add to root if not provided 
 		Entity root = { _root, this };
 		root.GetComponent<Transform>().AddChild(e);
 

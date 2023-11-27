@@ -74,6 +74,36 @@ void mrs::MeshRenderPipeline::Init() {
 
     // Indirect drawing
     InitIndirectCommands();
+
+    // Define Effect Template
+	std::vector<ShaderEffect*> default_lit_effects;
+	default_lit_effects.push_back(Effect().get());
+	Ref<EffectTemplate> default_lit = VulkanAssetManager::Instance().CreateEffectTemplate(default_lit_effects, "default_lit");
+
+    // Default Mesh Materials
+	Ref<Texture> default_texture = Texture::Get("default");
+	Material::Create(default_lit, default_texture, "default");
+
+	Mesh::LoadFromAsset("Assets/Models/cube.boop_obj", "cube");
+	Mesh::LoadFromAsset("Assets/Models/cone.boop_obj", "cone");
+	Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj", "monkey");
+	Mesh::LoadFromAsset("Assets/Models/quad.boop_obj", "quad");
+	Mesh::LoadFromAsset("Assets/Models/plane.boop_obj", "plane");
+	Mesh::LoadFromAsset("Assets/Models/sphere.boop_obj", "sphere");
+
+	Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
+	Mesh::LoadFromAsset("Assets/Models/soldier.boop_obj", "soldier");
+
+	// Manually built meshes
+	auto screen_quad = Mesh::Create("screen_quad");
+	screen_quad->_vertices.push_back({ { -1.0f, -1.0f, 0.0f }, {}, {}, {} });
+	screen_quad->_vertices.push_back({ { -1.0f, 1.0f, 0.0f }, {}, {}, {} });
+	screen_quad->_vertices.push_back({ { 1.0f, -1.0f, 0.0f }, {}, {}, {} });
+	screen_quad->_vertices.push_back({ { 1.0f,  1.0f, 0.0f }, {}, {}, {} });
+	screen_quad->_vertex_count = 4;
+
+	screen_quad->_indices = { 0,2,1,1,2,3 };
+	screen_quad->_index_count = 6;
 }
 
 void mrs::MeshRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
@@ -316,7 +346,7 @@ void mrs::MeshRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, Render
 
             VkDrawIndexedIndirectCommand draw_command = {};
             draw_command.vertexOffset = 0;
-           draw_command.indexCount = renderable.GetMesh()->_index_count;
+            draw_command.indexCount = renderable.GetMesh()->_index_count;
             draw_command.instanceCount = 1;
             draw_command.firstInstance = e.Id();
 

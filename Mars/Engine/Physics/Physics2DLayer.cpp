@@ -14,9 +14,9 @@ namespace mrs
 		_scene = Application::Instance().GetScene();
 
 		// Connect to RigidBody2D Component signals
-		Scene* scene = Application::Instance().GetScene();
-		scene->Registry()->on_construct<RigidBody2D>().connect<&Physics2DLayer::OnRigidBody2DCreated>(this);
-		scene->Registry()->on_destroy<RigidBody2D>().connect<&Physics2DLayer::OnRigidBody2DDestroyed>(this);
+		_scene = Application::Instance().GetScene();
+		_scene->Registry()->on_construct<RigidBody2D>().connect<&Physics2DLayer::OnRigidBody2DCreated>(this);
+		_scene->Registry()->on_destroy<RigidBody2D>().connect<&Physics2DLayer::OnRigidBody2DDestroyed>(this);
 	}
 
 	void Physics2DLayer::OnDetatch()

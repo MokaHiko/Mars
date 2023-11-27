@@ -20,7 +20,7 @@ namespace mrs {
     {
         DrawComponentUI<ShipResources>("Ship Resources", entity, [](ShipResources& resources) 
 		{
-			//ImGui::DragFloat("Health", &ship._health);
+			ImGui::DragFloat("Health", &resources.health);
 
 			ImGui::DragInt("Credits", (int*)&resources.credit);
 			ImGui::DragInt("Scrap", (int*)&resources.scrap_metal);

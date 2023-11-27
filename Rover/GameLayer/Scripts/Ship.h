@@ -8,8 +8,11 @@
 
 struct ShipResources
 {
+    // Resources
     uint32_t scrap_metal = 0;
     uint32_t credit = 0;
+
+    float health = 100.0f;
 };
 
 class Ship : public mrs::ScriptableEntity
@@ -23,8 +26,6 @@ public:
 public:
     void TakeDamage(float damage);
     void Die();
-public:
-    float _health = 100.0f;
 };
 
 #endif

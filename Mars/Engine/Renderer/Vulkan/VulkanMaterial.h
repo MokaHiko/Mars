@@ -5,7 +5,8 @@
 
 #include "VulkanStructures.h"
 #include "Core/ResourceManager.h"
-#include <glm/glm.hpp>
+
+#include "Math/Math.h"
 
 namespace mrs {
 	class IRenderPipeline;
@@ -30,7 +31,7 @@ namespace mrs {
 	struct ShaderEffect
 	{
 		IRenderPipeline* render_pipeline;
-		std::vector<VkDescriptorSet> descriptor_sets;
+		std::vector<VulkanDescriptorSet> descriptor_sets;
 	};
 
 	// Base effect a material is built from
@@ -44,7 +45,7 @@ namespace mrs {
 	struct MaterialData
 	{
 		// Albedo
-		glm::vec4 diffuse_color{1.0f}; 
+		Vector4 diffuse_color{1.0f}; 
 
 		// Metallic
 		float metallic = 0.5f;
@@ -65,8 +66,8 @@ namespace mrs {
 
 		void SetTexture(MaterialTextureType type, Ref<Texture> texture);
 
-		glm::vec4& DiffuseColor();
-		const glm::vec4& DiffuseColor() const;
+		Vector4& DiffuseColor();
+		const Vector4& DiffuseColor() const;
 
 		static Ref<Material> Create(Ref<EffectTemplate> base_template, Ref<Texture> texture, const std::string& alias = "");
 		static Ref<Material> Create(Ref<EffectTemplate> base_template, const std::string& texture_name = "default_texture", const std::string& alias = "");
@@ -85,7 +86,6 @@ namespace mrs {
 		MaterialData& Data() { return _data; }
 		const MaterialData& Data() const { return _data; }
 	private:
-
 		friend class VulkanAssetManager;
 		friend class ResourceManager;
 

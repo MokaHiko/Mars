@@ -14,7 +14,6 @@ namespace mrs {
         ~Texture();
 
         static Ref<Texture> LoadFromAsset(const std::string& path, const std::string& alias = "");
-
         static Ref<Texture> Get(const std::string& path);
 
         AllocatedImage _image = {};

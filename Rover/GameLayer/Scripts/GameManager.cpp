@@ -9,6 +9,8 @@
 #include "GameLayer/RenderPipelines/CBRenderPipeline.h"
 #include "Toolbox/RandomToolBox.h"
 
+#include "Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/UI.h"
+
 GameManager::GameManager()
 {
 }
@@ -43,30 +45,36 @@ void GameManager::OnStart()
 		{
 			auto planet = Instantiate(std::string("Planet") + std::to_string(i + j));
 			auto& transform = planet.GetComponent<mrs::Transform>();
-			transform.position = glm::vec3(-spacing * i, spacing * j, -50);
-			transform.scale *= 10 * (1 + ((0.05f) * random_neg.Next()));
+			transform.position = glm::vec3(-spacing * i, spacing * j, -750);
+			transform.scale *= 500 * (1 + (0.05f) * random_neg.Next());
 
 			auto& celestial_body = planet.AddComponent<CelestialBody>();
 			NoiseFilter noise_filter = {};
 			noise_filter.noise_settings.n_layers = 4;
-			noise_filter.noise_settings.persistence = 0.5 * (random.Next());
-			noise_filter.noise_settings.base_roughness = 1.2f * (1 + random.Next());
-			noise_filter.noise_settings.roughness = 2.0f * (1 + 0.5f * random_neg.Next());
-			noise_filter.noise_settings.min_value = 1.0f * random.Next();
-			noise_filter.noise_settings.strength = 0.250 * (1 + random.Next());
-			noise_filter.noise_settings.min_value = 0.648 * (1 + random.Next());
+			noise_filter.noise_settings.persistence = 0.5;
+			noise_filter.noise_settings.base_roughness = 1.2f;
+			noise_filter.noise_settings.roughness = 2.0f;
+			noise_filter.noise_settings.strength = 0.250;
+			noise_filter.noise_settings.min_value = 0.648;
+			noise_filter.noise_settings.min_resolution = 32;
 			celestial_body.PushFilter(noise_filter);
-			celestial_body.PushFilter({});
+
+			noise_filter.noise_settings.n_layers = 2;
+			celestial_body.PushFilter({noise_filter});
 
 			auto& mesh_renderer = planet.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
+
+			auto& planet_props = planet.AddComponent<PlanetProperties>();
+			planet_props.axis_of_rotation = mrs::Vector3(0.5, 0.25, 0.8);
+			planet_props.rotation_rate = 5.0f;
 
 			planet.AddComponent<mrs::Script>().Bind<Planet>();
 
 			{
 				auto moon = Instantiate("Moon 0");
 				auto& moon_transform = moon.GetComponent<mrs::Transform>();
-				moon_transform.position = glm::vec3(0, 0, -50.0f);
-				transform.scale *= 2.5f * (1 + ((0.25f) * random_neg.Next()));
+				moon_transform.position = planet.GetComponent<mrs::Transform>().position;
+				moon_transform.scale = planet.GetComponent<mrs::Transform>().scale * 0.25f;
 
 				auto& moon_celestial_body = moon.AddComponent<CelestialBody>();
 				NoiseFilter noise_filter = {};
@@ -83,21 +91,17 @@ void GameManager::OnStart()
 				auto& moon_props = moon.AddComponent<MoonProperties>();
 				moon_props._planet = planet;
 				moon_props.a = 7 * planet.GetComponent<mrs::Transform>().scale.x;
-				moon_props.a = 2.5f * planet.GetComponent<mrs::Transform>().scale.x;
+				moon_props.b = 2.5f * planet.GetComponent<mrs::Transform>().scale.x;
 				moon.AddComponent<mrs::Script>().Bind<Moon>();
 			}
 		}
 	}
 
 	{
+		// Ship Entity
 		auto player = Instantiate("Player");
-
-		// Create ship
 		auto& transform = player.GetComponent<mrs::Transform>();
 		transform.position = glm::vec3(0, 0, 0);
-		transform.rotation = {0, 0, 180};
-
-		auto& mesh_renderer = player.AddComponent<mrs::ModelRenderer>(mrs::Model::Get("zenith"));
 
 		auto& rb = player.AddComponent<mrs::RigidBody2D>();
 		rb.mass = 100;
@@ -106,14 +110,37 @@ void GameManager::OnStart()
 		player.AddComponent<mrs::Script>().Bind<Ship>();
 		auto& resources = player.AddComponent<ShipResources>();
 
-		// Ship controller
-		auto player_controller = Instantiate("Player Controller!");
-		player_controller.AddComponent<mrs::Script>().Bind<PlayerShipController>();
+		// Ship model
+		auto ship_model = Instantiate("Player Ship Model!");
+		ship_model.GetComponent<mrs::Transform>().rotation = { 0, 0, 180 };
+		ship_model.AddComponent<mrs::ModelRenderer>(mrs::Model::Get("zenith"));
 
-		transform.AddChild(player_controller);
+		auto& thrusters_effect = Instantiate("thrusters_effect");
+		auto& particles = thrusters_effect.AddComponent<mrs::ParticleSystem>();
+		particles.emission_rate = 32;
+		particles.max_particles = 128;
+		particles.particle_size = 1.0f;
+		particles.spread_angle = 25.0f;
+		particles.velocity = {75,50};
+		particles.color_1 = {0.883, 0.490, 0.000, 1.000};
+		particles.color_2 = {0.114, 0.054, 0.006, 0.000};
+		particles.life_time = 1.33f;
+		particles.repeating = true;
+
+		ship_model.GetComponent<mrs::Transform>().AddChild(thrusters_effect);
+		thrusters_effect.GetComponent<mrs::Transform>().position.y = 3.0f;
+
+		// Ship controller
+		auto ship_controller = Instantiate("Player Controller!");
+		ship_controller.AddComponent<mrs::Script>().Bind<PlayerShipController>();
+
+		// Parent
+		transform.AddChild(ship_model);
+		transform.AddChild(ship_controller);
 	}
 
-	for(int i = 0; i < 5; i++) {
+	for (int i = 1; i < 5; i++) 
+	{
 		auto enemy = Instantiate("Enemy_Striker");
 		auto& transform = enemy.GetComponent<mrs::Transform>();
 		transform.position = glm::vec3(5 * i, 0, 0);
@@ -133,6 +160,16 @@ void GameManager::OnStart()
 		enemy_controller.AddComponent<mrs::Script>().Bind<Striker>();
 
 		transform.AddChild(enemy_controller);
+	}
+
+	// Ui 
+	{
+		// Sprites
+		// auto health_bar = Instantiate("health_bar");
+		// health_bar.AddComponent<mrs::SpriteRenderer>();
+		// health_bar.AddComponent<mrs::Renderable>().material = mrs::Material::Get("default_ui");
+
+		// 
 	}
 }
 

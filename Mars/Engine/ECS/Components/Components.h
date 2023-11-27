@@ -34,11 +34,18 @@ namespace mrs
     public:
         static const int MAX_CHILDREN = 500;
 
-        glm::vec3 position{0.0f};
-        glm::vec3 rotation{0.0f};
-        glm::vec3 scale{1.0f};
+        Vector3 position{0.0f};
+        Vector3 rotation{0.0f};
+        Vector3 scale{1.0f};
 
-        glm::mat4 model_matrix{1.0f};
+        Matrix4x4 model_matrix{1.0f};
+
+        Vector3 forward = {0, 0, 1};
+        Vector3 back = {0, 0, -1};
+        Vector3 up = {0, 1, 0};
+        Vector3 down = {0, -1, 0};
+        Vector3 right = {1, 0, 0};
+        Vector3 left = {-1, 0, 0};
 
         Entity self = {};
         Entity parent = {};
@@ -49,7 +56,7 @@ namespace mrs
         void RemoveChild(Entity e);
 
         void UpdateModelMatrix();
-        glm::mat4 LocalModelMatrix() const;
+        Matrix4x4 LocalModelMatrix();
     private:
         friend class SceneGraphLayer;
         bool dirty_flag = false;

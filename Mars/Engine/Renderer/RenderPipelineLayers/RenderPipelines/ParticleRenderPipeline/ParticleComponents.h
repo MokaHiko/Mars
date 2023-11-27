@@ -28,8 +28,8 @@ namespace mrs
         Ref<Material> material; 
 
         // Color Gradient
-        glm::vec4 color_1 = glm::vec4(1.0f);
-        glm::vec4 color_2 = glm::vec4(1.0f);
+        glm::vec4 color_1 = glm::vec4(1.0f, 1, 1, 1);
+        glm::vec4 color_2 = glm::vec4(1.0f, 1, 1, 0.0f);
 
         // Shape
         EmissionShape emission_shape = EmissionShape::Cone;
@@ -37,11 +37,11 @@ namespace mrs
         float spread_angle = 45.0f;
 
         // Emission properties
-        uint32_t max_particles = 48;
+        uint32_t max_particles = 16;
         uint32_t live_particles = 0;
-        float life_time = 1.0f;
-        float emission_rate = 10.0f;
-        glm::vec2 velocity{ 10.0f, 25.0f };
+        float life_time = 2.0f;
+        float emission_rate = 3.0f;
+        glm::vec2 velocity{ 1.0f, 1.0f };
 
         // State
         bool running = true;

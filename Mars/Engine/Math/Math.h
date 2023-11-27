@@ -14,6 +14,18 @@ namespace mrs {
     using Vector3Int = glm::ivec3;
     using Vector4Int = glm::ivec4;
 
+    const Vector3 Vector3Up = { 0,1, 0 };
+    const Vector3 Vector3Down = { 0,-1, 0 };
+    const Vector3 Vector3Right = { 1, 0, 0 };
+    const Vector3 Vector3Left = { -1, 0, 0 };
+    const Vector3 Vector3Forward = { 0, 0, 1 };
+    const Vector3 Vector3Back = { 0, 0, -1 };
+
+    const Vector2 Vector2Up = { 0,1 };
+    const Vector2 Vector2Down = { 0,-1};
+    const Vector2 Vector2Right = { 1, 0 };
+    const Vector2 Vector2Left = { -1, 0};
+
     using Matrix4x4 = glm::mat4;
 
     bool DecomposeTransform(const Matrix4x4& transform, Vector3& translation, Vector3& rotation, Vector3& scale);

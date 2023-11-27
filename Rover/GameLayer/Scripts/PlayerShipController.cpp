@@ -15,50 +15,52 @@ void PlayerShipController::OnCreate()
 }
 
 void PlayerShipController::OnUpdate(float dt) {
+
   mrs::Transform& transform = _ship.GetComponent<mrs::Transform>();
   mrs::RigidBody2D& rb = _ship.GetComponent<mrs::RigidBody2D>();
 
-  static float ms = 50.0f;
+  static float ms = 5.0f;
+  static float turn_speed = 120.0f;
   static float total_time = 0;
   static float rotation_duration = 1.0f;
   static float target_rotation = 45.0f;
 
-  glm::vec2 velocity = { 0, 0 };
-
-  if (mrs::Input::IsKeyPressed(SDLK_q)) {
-  }
-
+  glm::vec2 input = { 0, 0 };
   if (mrs::Input::IsKeyPressed(SDLK_w))
   {
-    velocity += glm::vec2{ 0, ms };
+    input += mrs::Vector2Up;
   }
   else if (mrs::Input::IsKeyPressed(SDLK_s))
   {
-    velocity += glm::vec2{ 0, -ms };
+    input += mrs::Vector2Down;
   }
 
   if (mrs::Input::IsKeyPressed(SDLK_d))
   {
-    velocity += glm::vec2{ ms, 0 };
+    input += mrs::Vector2Right;
 
-    total_time += dt;
-    transform.rotation.y = mrs::Lerp(transform.rotation.y, target_rotation, total_time / rotation_duration);
-    if (target_rotation - transform.rotation.y < 0.01f)
-    {
-      total_time = 0;
-    }
+    // total_time += dt;
+    // transform.rotation.y = mrs::Lerp(transform.rotation.y, target_rotation, total_time / rotation_duration);
+    // if (target_rotation - transform.rotation.y < 0.01f)
+    // {
+    //   total_time = 0;
+    // }
   }
   else if (mrs::Input::IsKeyPressed(SDLK_a)) 
   {
-    velocity += glm::vec2{ -ms, 0 };
+    input += mrs::Vector2Left;
+    // total_time += dt;
+    // transform.rotation.y = mrs::Lerp(transform.rotation.y, -target_rotation, total_time / rotation_duration);
 
-    total_time += dt;
-    transform.rotation.y = mrs::Lerp(transform.rotation.y, -target_rotation, total_time / rotation_duration);
-
-    if (-target_rotation - transform.rotation.y < 0.01f) {
-      total_time = 0;
-    }
+    // if (-target_rotation - transform.rotation.y < 0.01f)
+    // {
+    //   total_time = 0;
+    // }
   }
 
-  rb.SetVelocity(velocity);
+  float w = -glm::radians(input.x * turn_speed);
+  rb.SetAngularVelocity(w);
+
+  mrs::Vector2 velocity =  transform.up * input.y * ms;
+  rb.AddImpulse(velocity);
 }

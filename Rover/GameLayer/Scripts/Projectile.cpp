@@ -5,67 +5,67 @@
 #include "Striker.h"
 #include "Effect.h"
 
-void Projectile::OnStart() 
+void Projectile::OnStart()
 {
 	// Require components
 	auto& rb = GetComponent<mrs::RigidBody2D>();
 	auto& props = GetComponent<ProjectileProperties>();
 
-	auto& pos = GetComponent<mrs::Transform>().position;
-	_start_pos = mrs::Vector2(pos.x, pos.y);
+	_start_pos = mrs::Vector2(GetComponent<mrs::Transform>().position);
 
 	// For non tracking projectiles
 	//_target_pos = _start_pos + (props.direction * 10.0f);
 }
 
-void Projectile::OnUpdate(float dt) 
+void Projectile::OnUpdate(float dt)
 {
 	auto& props = GetComponent<ProjectileProperties>();
 	props.life_span -= dt;
 
-	if(props.life_span <= 0)
+	if (props.life_span <= 0)
 	{
 		Die();
 	}
 
-	if(_time_alive >= _duration)
+	// Check and clear target if not alive or not target
+	if (!props.target || !props.target.HasComponent<Target>())
 	{
-		// Check andd clear target if not alive
-		if(!props.target.IsAlive())
-		{
-			props.target = {};
-			return;
-		}
+		props.target = {};
 
+		const mrs::Transform& transform = GetComponent<mrs::Transform>();
+		GetComponent<mrs::RigidBody2D>().SetVelocity(transform.up * props.speed);
+		return;
+	}
+
+	float launch_animation_time = 0.33f; 
+	if(_time_alive <= launch_animation_time)
+	{
 		mrs::Transform& transform = GetComponent<mrs::Transform>();
-		mrs::Vector2 pos = mrs::Vector2(transform.position.x, transform.position.y);
+		mrs::Vector2 pos = mrs::Vector2(transform.position);
 
-		mrs::Vector3 target_pos = props.target.GetComponent<mrs::Transform>().position;
-		mrs::Vector2 dir = glm::normalize(mrs::Vector2{target_pos.x, target_pos.y} - pos);
+		mrs::Vector2 target_pos = _start_pos + (mrs::Vector2(transform.up) * 5.0f);
+		mrs::Vector2 next_pos = mrs::Slerp(_start_pos, target_pos, _time_alive / launch_animation_time, props.side > 0);
 
-		// TODO: Check if projectile tick time is reached to change directions
+		GetComponent<mrs::RigidBody2D>().SetTransform(next_pos, 0);
+	}
+	else 
+	{
+		mrs::Transform& transform = GetComponent<mrs::Transform>();
+		mrs::Vector2 pos = mrs::Vector2(transform.position);
+
+		mrs::Vector2 target_pos = mrs::Vector2(props.target.GetComponent<mrs::Transform>().position);
+		mrs::Vector2 dir = glm::normalize(target_pos - pos);
+
 		GetComponent<mrs::RigidBody2D>().SetVelocity(dir * props.speed);
 	}
-	else
-	{
-		// TODO: Change to launch animation coroutine
-		mrs::Transform& transform = GetComponent<mrs::Transform>();
-		mrs::Vector2 pos = mrs::Vector2(transform.position.x, transform.position.y);
 
-		// Change to fixed launch point
-		mrs::Vector2 target_pos = pos + mrs::Vector2(0, 10);
-		mrs::Vector2 next_pos = mrs::Slerp(_start_pos, target_pos, _time_alive / _duration, props.side);
-
-		mrs::Vector2 dir = next_pos - pos;
-		GetComponent<mrs::RigidBody2D>().SetVelocity(dir);
-	}
 
 	_time_alive += dt;
 }
 
-void Projectile::OnCollisionEnter2D(mrs::Entity other) 
+void Projectile::OnCollisionEnter2D(mrs::Entity other)
 {
-	if(Ship* ship = other.GetScript<Ship>())
+	if (Ship* ship = other.GetScript<Ship>())
 	{
 		ship->TakeDamage(GetComponent<ProjectileProperties>().damage);
 	}
@@ -73,22 +73,22 @@ void Projectile::OnCollisionEnter2D(mrs::Entity other)
 	Die();
 }
 
-void Projectile::Die() 
+void Projectile::Die()
 {
 	auto e = Instantiate("Explosion", GetComponent<mrs::Transform>().position);
 
 	auto& particles = e.AddComponent<mrs::ParticleSystem>();
 	particles.emission_shape = mrs::EmissionShape::Circle;
-	particles.emission_rate *= 15;
-	particles.max_particles = 32;
-	particles.velocity = mrs::Vector2{1, -50.0f};
+	particles.emission_rate = 32;
+	particles.max_particles = 64;
+	particles.velocity = mrs::Vector2{ 100.0f, 100.0f };
 	particles.color_1 = mrs::Vector4(0.91, 0.33, 0.1f, 1.0f);
 	particles.color_2 = mrs::Vector4(0.91, 0.33, 0.1f, 1.0f) * 0.15f;
-	particles.particle_size *= 5.0f;
-	particles.life_time = 0.5f;
+	particles.particle_size = 0.75f;
+	particles.life_time = 0.85f;
 	particles.repeating = false;
 
-	e.AddComponent<EffectProperties>().duration = 1.0f;
+	e.AddComponent<EffectProperties>().duration = particles.life_time * 1.5f;
 	e.AddComponent<mrs::Script>().Bind<Effect>();
 
 	QueueDestroy();

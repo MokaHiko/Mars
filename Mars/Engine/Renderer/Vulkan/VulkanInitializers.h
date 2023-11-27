@@ -38,6 +38,8 @@ namespace vkinit {
 	VkImageViewCreateInfo ImageViewCreateInfo(VkImage image, VkFormat format, VkImageAspectFlags aspect);
 
 	VkSamplerCreateInfo SamplerCreateInfo(VkFilter filter, VkSamplerAddressMode sampler_address_mode);
+
+	VkBufferMemoryBarrier BufferMemoryBarrier(VkBuffer buffer, VkDeviceSize buffer_size, VkAccessFlagBits src_access, VkAccessFlagBits dst_access, uint32_t src_queue_index = 0, uint32_t dst_queue_index = 0);
 }
 
 

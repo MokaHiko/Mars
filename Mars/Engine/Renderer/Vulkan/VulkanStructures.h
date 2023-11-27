@@ -12,7 +12,7 @@ struct VulkanDevice
 	VkPhysicalDevice physical_device;
 };
 
-struct VulkanQueueFamilyIndices 
+struct VulkanQueueFamilyIndices
 {
 	uint32_t graphics;
 	uint32_t present;
@@ -66,6 +66,28 @@ struct VulkanFrameContext
 
 	VkCommandPool compute_command_pool;
 	VkCommandBuffer compute_command_buffer;
+};
+
+struct VulkanDescriptorSet
+{
+	uint32_t set = -1;
+	std::unordered_map<uint32_t, VkDescriptorType> bindings;
+	std::unordered_map<uint32_t, std::string> binding_names;
+	VkShaderStageFlagBits shader_stage = (VkShaderStageFlagBits)(0);
+	VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
+
+	void AddBinding(uint32_t binding, const std::string& name, VkDescriptorType type, VkShaderStageFlagBits stage)
+	{
+		bindings[binding] = type;
+		binding_names[binding] = name;
+
+		shader_stage = static_cast<VkShaderStageFlagBits>(shader_stage | stage);
+	}
+
+	const std::string& BindingName(uint32_t binding) const
+	{
+		return binding_names.at(binding);
+	}
 };
 
 #endif

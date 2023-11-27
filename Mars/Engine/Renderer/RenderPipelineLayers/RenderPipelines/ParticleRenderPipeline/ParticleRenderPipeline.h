@@ -47,8 +47,7 @@ namespace mrs
 
     struct ParticleSystemPushConstant
     {
-        uint32_t count;
-        uint32_t material_index;
+        uint32_t index;
     };
 
     class ParticleRenderPipeline : public IRenderPipeline
@@ -68,7 +67,8 @@ namespace mrs
         void RegisterParticleSystem(ParticleSystem &particle_system);
         void CacheParticleSystemType(ParticleSystem &particle_system);
 
-        virtual void OnRenderableDestroyed(Entity e) override;
+        void OnParticleSystemCreated(entt::basic_registry<entt::entity>&, entt::entity entity);
+        void OnParticleSystemDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
     public:
         // Particle system type
         struct ParticleSystemType
@@ -145,9 +145,6 @@ namespace mrs
         void InitGraphicsPipeline();
 
         // Particle Graphics Pipeline
-        VkPipeline _graphics_pipeline;
-        VkPipelineLayout _graphics_pipeline_layout;
-
         std::vector<VkDescriptorSet> _graphics_descriptor_sets;
         VkDescriptorSetLayout _graphics_descriptor_set_layout;
 

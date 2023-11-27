@@ -36,7 +36,7 @@ VkCommandBufferBeginInfo vkinit::CommandBufferBeginInfo(VkCommandBufferUsageFlag
 	return begin;
 }
 
-VkRenderPassBeginInfo vkinit::RenderPassBeginInfo(VkFramebuffer frame_buffer, VkRenderPass render_pass, VkRect2D &render_area, VkClearValue *clear_value, uint32_t clear_value_count)
+VkRenderPassBeginInfo vkinit::RenderPassBeginInfo(VkFramebuffer frame_buffer, VkRenderPass render_pass, VkRect2D& render_area, VkClearValue* clear_value, uint32_t clear_value_count)
 {
 	VkRenderPassBeginInfo begin = {};
 	begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -52,7 +52,7 @@ VkRenderPassBeginInfo vkinit::RenderPassBeginInfo(VkFramebuffer frame_buffer, Vk
 	return begin;
 }
 
-VkPipelineShaderStageCreateInfo vkinit::PipelineShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char *entrypoint)
+VkPipelineShaderStageCreateInfo vkinit::PipelineShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shaderModule, const char* entrypoint)
 {
 	VkPipelineShaderStageCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -244,4 +244,26 @@ VkSamplerCreateInfo vkinit::SamplerCreateInfo(VkFilter filter, VkSamplerAddressM
 	info.addressModeW = sampler_address_mode;
 
 	return info;
+}
+
+
+VkBufferMemoryBarrier vkinit::BufferMemoryBarrier(VkBuffer buffer, VkDeviceSize buffer_size, VkAccessFlagBits src_access, VkAccessFlagBits dst_access, uint32_t src_queue_index, uint32_t dst_queue_index)
+{
+	VkBufferMemoryBarrier barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+	barrier.pNext = nullptr;
+	barrier.srcAccessMask = src_access;
+	barrier.dstAccessMask = dst_access;
+
+	if(src_queue_index != dst_queue_index)
+	{
+		barrier.srcQueueFamilyIndex = src_queue_index;
+		barrier.dstQueueFamilyIndex = dst_queue_index;
+	}
+
+	barrier.buffer = buffer;
+	barrier.offset = 0;
+	barrier.size = buffer_size;
+
+	return barrier;
 }

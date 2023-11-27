@@ -63,6 +63,8 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/Model.cpp
 			Engine/Renderer/Camera.h
 			Engine/Renderer/Camera.cpp
+			Engine/Renderer/Textures/Sprite.h
+			Engine/Renderer/Textures/Sprite.cpp
 			Engine/Renderer/Textures/HeightMap.h
 			Engine/Renderer/Textures/HeightMap.cpp
 			Engine/Renderer/Vulkan/VulkanMesh.h
@@ -91,6 +93,12 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/RenderableComponents.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/UI.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/UI.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/Font.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/Font.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/UIRenderPipeline.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/UIRenderPipeline.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleRenderPipeline.h

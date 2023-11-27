@@ -7,8 +7,6 @@ void Planet::OnStart()
 
 void Planet::OnUpdate(float dt) 
 {
-	float rate = 15;
-	GetComponent<mrs::Transform>().rotation.y += rate * dt;
-	GetComponent<mrs::Transform>().rotation.x += rate * dt;
-	GetComponent<mrs::Transform>().rotation.z += rate * dt;
+	const auto& props = GetComponent<PlanetProperties>();
+	GetComponent<mrs::Transform>().rotation += props.axis_of_rotation * props.rotation_rate * dt;
 }

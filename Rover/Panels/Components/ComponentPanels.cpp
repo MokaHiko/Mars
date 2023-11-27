@@ -187,6 +187,7 @@ namespace mrs
 				ImGui::InputInt("Max Particles: ", (int*)(&particles.max_particles));
 				ImGui::DragInt("Live Particles", (int*)(&particles.live_particles));
 				ImGui::DragFloat("Emission Rate: ", (&particles.emission_rate), 0.5f, 0.1f, 512.0f);
+				ImGui::DragFloat2("Velocity: ", glm::value_ptr(particles.velocity), 0.01, 0.0f, 1000.0f);
 
 				ImGui::Checkbox("Repeating", &particles.repeating);
 				ImGui::Checkbox("Running", &particles.running);
@@ -217,8 +218,6 @@ namespace mrs
 					const char* items[] = { "None", "Circle", "Cone" };
 					int item_current = static_cast<int>(particles.emission_shape);
 					ImGui::Combo("Emission Shape", &item_current, items, IM_ARRAYSIZE(items));
-					ImGui::SameLine();
-
 					ImGui::TreePop();
 				}
 			});

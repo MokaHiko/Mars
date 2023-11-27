@@ -7,6 +7,11 @@
 #include <ECS/Components/Components.h>
 #include <Math/Math.h>
 
+struct Target
+{
+    int maker;
+};
+
 struct ProjectileProperties
 {
     float damage = 10.0f;
@@ -30,11 +35,10 @@ public:
     virtual void Die();
 private:
     mrs::Vector2 _start_pos = {};
+    mrs::Vector2 _target_pos = {};
 
     bool _tracking = true;
-
     float _time_alive = 0;
-    float _duration = 0.5f;
 };
 
 #endif

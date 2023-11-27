@@ -12,27 +12,21 @@ layout(set = 2, binding = 0) uniform Material {
 	// Metallic
 	float metallic;
 	float specular;
-	int texture_channel;
+	int texture_channel;	
 
 	bool receive_shadows;
 } _material;
 layout(set = 2, binding = 1) uniform sampler2D _diffuse_texture;
 layout(set = 2, binding = 2) uniform sampler2D _specular_texture;
 
-// TODO: Remove material_index
-layout( push_constant ) uniform ParticleSystemPushConstant{
-	uint count;     // index into particle system buffer
-    uint material_index;  // index into global materials buffer
-} _particle_push_constant;
-
 void main()
 {
     vec4 diffuse = texture(_diffuse_texture, v_uv);
 
-    if(diffuse.a <= 0.1f)  
-    {
-        discard;
-    }
+    // if(diffuse.a <= 0.01f)  
+    // {
+    //     discard;
+    // }
 
     frag_color = diffuse * v_color;
 }

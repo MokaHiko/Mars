@@ -10,7 +10,7 @@
 struct PlanetProperties
 {
     mrs::Vector3 axis_of_rotation;
-    mrs::Vector3 rotation_rate;
+    float rotation_rate;
 
     uint32_t population = 0;
 };

@@ -64,6 +64,9 @@ void IRenderPipelineLayer::OnAttach()
 		// Initialize runtime asset manager
 		VulkanAssetManager::Instance().Init(_renderer.get());
 
+		// Load built in resources
+		Ref<Texture> default_texture = Texture::LoadFromAsset("Assets/Models/white.boop_png", "default");
+
 		// Initialize render pipelines
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
@@ -216,17 +219,34 @@ void IRenderPipelineLayer::OnAttach()
 			}
 		}
 
-		// TODO: Replace with Renderable Base Component
-		auto n_renderables = scene->Registry()->view<ParticleSystem>();
-		for (auto entity : n_renderables)
 		{
-			Entity e(entity, scene);
-			auto& renderable = e.GetComponent<ParticleSystem>();
-			Ref<EffectTemplate> base_template = renderable.material->BaseTemplate();
-
-			for(const ShaderEffect* effect : base_template->shader_effects)
+			// TODO: Replace with Renderable Base Component
+			auto n_renderables = scene->Registry()->view<ParticleSystem>();
+			for (auto entity : n_renderables)
 			{
-				_renderable_batches[effect->render_pipeline].entities.push_back(e);
+				Entity e(entity, scene);
+				auto& renderable = e.GetComponent<ParticleSystem>();
+				Ref<EffectTemplate> base_template = renderable.material->BaseTemplate();
+
+				for(const ShaderEffect* effect : base_template->shader_effects)
+				{
+					_renderable_batches[effect->render_pipeline].entities.push_back(e);
+				}
+			}
+		}
+
+		{
+			auto n_renderables = scene->Registry()->view<Renderable>();
+			for (auto entity : n_renderables)
+			{
+				Entity e(entity, scene);
+				auto& renderable = e.GetComponent<Renderable>();
+				Ref<EffectTemplate> base_template = renderable.material->BaseTemplate();
+
+				for(const ShaderEffect* effect : base_template->shader_effects)
+				{
+					_renderable_batches[effect->render_pipeline].entities.push_back(e);
+				}
 			}
 		}
 	}

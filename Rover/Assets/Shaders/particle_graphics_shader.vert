@@ -64,15 +64,14 @@ layout(std140, set = 3, binding = 1) readonly buffer Particles{
 } _particles;
 
 layout( push_constant ) uniform ParticleSystemPushConstant{
-	uint count;
-    uint material_index; 
+	uint index;
 } _particle_push_constant;
 
 void main()
 {
     const mat4 view_proj = _global_buffer.view_proj;
 
-    ParticleParameters particle_parameters = _particle_parameters_array.parameters[_particle_push_constant.count];
+    ParticleParameters particle_parameters = _particle_parameters_array.parameters[_particle_push_constant.index];
     uint global_particle_index = (gl_InstanceIndex - gl_BaseInstance) + particle_parameters.buffer_index;
 
     mat4 model_matrix = _object_buffer.s_objects[gl_BaseInstance].model_matrix;
@@ -81,6 +80,7 @@ void main()
     v_color = particle.color;
     v_uv = _uv;
 
-    vec4 pos = vec4((_position *particle_parameters.scale) + vec3(particle.position, 0.0f), 1.0f);
+    //vec4 pos = vec4((_position *particle_parameters.scale) + vec3(particle.position, 0.0f), 1.0f);
+    vec4 pos = vec4((_position *particle_parameters.scale) + vec3(particle.position, float(gl_InstanceIndex) / 100.0f), 1.0f);
     gl_Position = view_proj * model_matrix * pos;
 }

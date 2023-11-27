@@ -82,10 +82,10 @@ public:
     std::vector<NoiseFilter> noise_filters = {}; // Maximuim of 4 noise filters for now
     std::vector<TerrainFace> terrain_faces = {};
 
-    mrs::Vector4 color_1{0,0,1,0.0};
-    mrs::Vector4 color_2{0.588f,0.299f,0,0.33};
-    mrs::Vector4 color_3{0,1, 0, 0.66};
-    mrs::Vector4 color_4{1, 1, 1, 1};
+    mrs::Vector4 color_1{0,0.250,1.0, 0.0f};
+    mrs::Vector4 color_2{0.488f,0.299f,0.120,0.1};
+    mrs::Vector4 color_3{0,0.410, 0, 0.16};
+    mrs::Vector4 color_4{0.75, 0.75,0.75, 0.35};
 };
 
 // Render Pipeline for procedurally generating and rendering celestial bodies i.e Planets, Moons, Stars
