@@ -11,6 +11,7 @@
 namespace mrs {
 	class NativeScriptingLayer;
 	class IRenderPipelineLayer;
+	class InputLayer;
 	class IPanel;
 	class EditorLayer : public Layer
 	{
@@ -34,6 +35,7 @@ namespace mrs {
 		Ref<IPanel> FindPanel(const std::string& name);
 
 		void FocusEntity(Entity entity);
+		void ToggleInput(bool enable);
 
 		virtual void OnAttach() override;
 		virtual void OnDetatch() override;
@@ -62,6 +64,7 @@ namespace mrs {
 
 		NativeScriptingLayer* _native_scripting_layer = nullptr;
 		IRenderPipelineLayer* _render_pipeline_layer = nullptr;
+		InputLayer* _input_layer = nullptr;
 
 		std::vector<Ref<IPanel>> _panels;
 	};

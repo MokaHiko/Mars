@@ -47,6 +47,9 @@ namespace mrs
         // Creates VkImage and VkImageView from data stored in texture 
         void UploadTexture(Ref<Texture> texture);
 
+        // Uploads Sprites
+        void UploadSprite(Ref<Sprite> sprite);
+
 		// Returns whether or not shader module was created succesefully
 		bool LoadShaderModule(const char *path, VkShaderModule *module);
 
@@ -55,6 +58,7 @@ namespace mrs
         const VkSampler LinearImageSampler() const {return _linear_image_sampler;}
         const VkSampler NearestImageSampler() const {return _nearest_image_sampler;}
 
+        // TODO: Remove as each material will have custom descriptor sets descriptor sets
         // Returns the storage that contains vulkan materials
 		const VkDescriptorSetLayout MaterialDescriptorSetLayout() const {return _material_descriptor_set_layout;}
     private:

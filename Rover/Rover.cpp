@@ -28,6 +28,8 @@
 #include "Panels/HierarchyPanel.h"
 #include "Panels/Viewport.h"
 
+#include "UI/UI.h"
+
 mrs::Application* mrs::CreateApplication()
 {
 	return MRS_NEW Rover();
@@ -48,6 +50,12 @@ Ref<mrs::IPanel> mrs::EditorLayer::FindPanel(const std::string& name)
 
 void mrs::EditorLayer::FocusEntity(Entity entity)
 {
+	if(!entity.IsAlive())
+	{
+		MRS_INFO("Cannot focus on invalid entity!");
+		return;
+	}
+
 	_selected_entity = entity;
 
 	if (!_editor_camera.HasComponent<Script>())
@@ -59,6 +67,20 @@ void mrs::EditorLayer::FocusEntity(Entity entity)
 	if (camera_controller != nullptr)
 	{
 		camera_controller->_focused = entity;
+	}
+}
+
+void mrs::EditorLayer::ToggleInput(bool enable) 
+{
+	auto& application = Application::Instance();
+
+	if(enable)
+	{
+		application.EnableLayer("InputLayer");
+	}
+	else
+	{
+		application.DisableLayer("InputLayer");
 	}
 }
 
@@ -87,10 +109,10 @@ void mrs::EditorLayer::OnEnable()
 	_render_pipeline_layer = (IRenderPipelineLayer*)(void*)Application::Instance().FindLayer("IRenderPipelineLayer");
 
 	// Push Panels
-	_panels.push_back(CreateRef<MainMenu>(this, "MainMenu", scene));
-	_panels.push_back(CreateRef<HierarchyPanel>(this, "Hierarchy", scene));
-	_panels.push_back(CreateRef<Viewport>(this, "ViewPort", _render_pipeline_layer));
-	_panels.push_back(CreateRef<PerformancePanel>(this, "Performance Panel", _render_pipeline_layer));
+	_panels.push_back(CreateRef<MainMenu>(*this, "MainMenu", scene));
+	_panels.push_back(CreateRef<HierarchyPanel>(*this, "Hierarchy", scene));
+	_panels.push_back(CreateRef<Viewport>(*this, "ViewPort", _render_pipeline_layer));
+	_panels.push_back(CreateRef<PerformancePanel>(*this, "Performance Panel", _render_pipeline_layer));
 
 	LoadEditorResources();
 }
@@ -138,6 +160,7 @@ void mrs::EditorLayer::Stop()
 	}
 
 	// Disable play time layers
+	application.DisableLayer("InputLayer");
 	application.DisableLayer("Physics2DLayer");
 	_native_scripting_layer->DisableScripts(_editor_camera);
 
@@ -161,6 +184,21 @@ void mrs::EditorLayer::LoadEditorResources()
 		// Default materials
 		Ref<Texture> coin_texture = Texture::LoadFromAsset("Assets/Textures/coin.bp", "coin");
 		Material::Create(VulkanAssetManager::Instance().FindEffectTemplate("default_lit"), coin_texture , "coin");
+
+		Ref<Texture> stars_texture = Texture::LoadFromAsset("Assets/Textures/stars.bp", "stars");
+		stars_texture->SetSamplerType(mrs::Texture::SamplerType::Nearest);
+		Material::Create(VulkanAssetManager::Instance().FindEffectTemplate("default_lit"), stars_texture , "stars");
+
+		// Sprites
+		mrs::Texture::LoadFromAsset("Assets/Textures/Sprites/target_sheet.bp", "target_sprite_sheet");
+		Sprite::Create(mrs::Texture::Get("target_sprite_sheet"), "Assets/Textures/Sprites/target_sheet.yaml", "target_sprite_sheet");
+		Sprite::Create(mrs::Texture::Get("KenPixel"));
+		
+		mrs::Texture::LoadFromAsset("Assets/Textures/target_lock.bp", "target_lock");
+		Sprite::Create(mrs::Texture::Get("target_lock"));
+
+		// TODO: Implement Font Renders
+		// Font::LoadFromYaml(mrs::Texture::Get("KenPixel"), "Assets/Fonts/KenneyPixel.yaml");
 
 		// Create Planet Material
 		std::vector<mrs::ShaderEffect*> cb_effects;
@@ -193,7 +231,7 @@ void mrs::EditorLayer::LoadEditorScene()
 
 	auto& camera_component = _editor_camera.AddComponent<Camera>(CameraType::Perspective, window->GetWidth(), window->GetHeight());
 
-	_editor_camera.AddComponent<Script>().Bind<CameraController>();
+	_editor_camera.AddScript<CameraController>();
 	_editor_camera.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, 50.0f);
 
 	_render_pipeline_layer->SetCamera(&camera_component);
@@ -218,6 +256,7 @@ void mrs::EditorLayer::Play()
 
 	// Enable runtime layers
 	application.EnableLayer("Physics2DLayer");
+	application.EnableLayer("InputLayer");
 	_native_scripting_layer->EnableScripts();
 
 	_state = EditorState::Playing;
@@ -234,13 +273,13 @@ mrs::Rover::Rover()
 	// Default layers
 	PushLayer(MRS_NEW InputLayer());
 
-	// Custom render pipeline
-	PushLayer(MRS_NEW EVRenderPipelineLayer());
-
 	PushLayer(MRS_NEW Physics2DLayer());
 	PushLayer(MRS_NEW NativeScriptingLayer());
 	PushLayer(MRS_NEW ProcessLayer());
 	PushLayer(MRS_NEW SceneGraphLayer());
+
+	// Custom render pipeline
+	PushLayer(MRS_NEW EVRenderPipelineLayer());
 
 	// Client layers
 	PushLayer(MRS_NEW EditorLayer());

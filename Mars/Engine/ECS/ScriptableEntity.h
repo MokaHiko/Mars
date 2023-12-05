@@ -28,6 +28,13 @@ namespace mrs
             return _game_object.GetComponent<T>();
         }
 
+        // Gets reference to attached entity's component 
+        template <typename T, typename... Args>
+        T &AddComponent(Args &&...args)
+        {
+            return _game_object.AddComponent<T>(args...);
+        }
+
         // Finds first entity with the component type
         template<typename T>
         Entity FindEntityWithComponent()
@@ -39,16 +46,7 @@ namespace mrs
         Entity Instantiate(const std::string &name = "", Vector3 position = {0,0,0});
 
         // Queues attached entity for destruction
-        void QueueDestroy()
-        {
-            if(_queued_destroy)
-            {
-                return;
-            }
-
-            _queued_destroy = true;
-            _game_object._scene->QueueDestroy(_game_object);
-        }
+        void QueueDestroy();
         
         template<typename ScriptType>
         Entity FindEntityWithScript()
@@ -88,9 +86,17 @@ namespace mrs
 
         void StartProcess(Ref<Process> process);
 
+        void Reset();
+
         Entity _game_object = {};
     private:
+        friend class NativeScriptingLayer;
+        bool _on_start_called = false;
+        bool _on_create_called = false;
+
         bool _queued_destroy = false;
+
+        std::vector<Ref<Process>> _processes;
     };
 }
 

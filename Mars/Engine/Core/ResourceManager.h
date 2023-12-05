@@ -12,9 +12,12 @@ namespace mrs {
 	class Mesh;
 	class Texture;
 	class Material;
+	class Sprite;
+	class Font;
 
 	class Model;
 
+	// Responsible for managing runtime resources
 	class ResourceManager
 	{
 	public:
@@ -36,6 +39,9 @@ namespace mrs {
 		std::unordered_map<std::string, Ref<Texture>> _textures;
 		std::unordered_map<std::string, Ref<Material>> _materials;
 		std::unordered_map<std::string, Ref<Model>> _models;
+
+		std::unordered_map<std::string, Ref<Font>> _fonts;
+		std::unordered_map<std::string, Ref<Sprite>> _sprites;
 	};
 }
 

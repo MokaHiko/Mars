@@ -4,15 +4,15 @@
 #include "Renderer/Model.h"
 #include "ECS/Entity.h "
 
-mrs::SceneGraphLayer::SceneGraphLayer(){}
+mrs::SceneGraphLayer::SceneGraphLayer() {}
 
-mrs::SceneGraphLayer::~SceneGraphLayer(){}
+mrs::SceneGraphLayer::~SceneGraphLayer() {}
 
 void mrs::SceneGraphLayer::OnAttach() {}
 
 void mrs::SceneGraphLayer::OnDetatch() {}
 
-void mrs::SceneGraphLayer::OnEnable() 
+void mrs::SceneGraphLayer::OnEnable()
 {
 	_scene = Application::Instance().GetScene();
 	_scene->Registry()->on_construct<ModelRenderer>().connect<&SceneGraphLayer::OnModelRendererCreated>(this);
@@ -21,11 +21,11 @@ void mrs::SceneGraphLayer::OnEnable()
 	_scene->Registry()->on_destroy<Transform>().connect<&SceneGraphLayer::OnTransformDestroyed>(this);
 }
 
-void mrs::SceneGraphLayer::OnDisable() 
+void mrs::SceneGraphLayer::OnDisable()
 {
 }
 
-void mrs::SceneGraphLayer::OnUpdate(float dt) 
+void mrs::SceneGraphLayer::OnUpdate(float dt)
 {
 	Transform& node = _scene->Root().GetComponent<Transform>();
 
@@ -51,10 +51,6 @@ void mrs::SceneGraphLayer::OnTransformDestroyed(entt::basic_registry<entt::entit
 		{
 			transform.parent.GetComponent<Transform>().RemoveChild(e);
 		}
-		else
-		{
-			transform.parent = _scene->Root();
-		}
 	}
 
 	// Destroy children
@@ -67,7 +63,7 @@ void mrs::SceneGraphLayer::OnTransformDestroyed(entt::basic_registry<entt::entit
 void mrs::SceneGraphLayer::RecursiveUpdate(Transform& node)
 {
 	// TODO: Dirty Check
-	for(uint32_t i = 0; i < node.children_count; i++)
+	for (uint32_t i = 0; i < node.children_count; i++)
 	{
 		Transform& transform = node.children[i].GetComponent<Transform>();
 		transform.UpdateModelMatrix();
@@ -76,7 +72,7 @@ void mrs::SceneGraphLayer::RecursiveUpdate(Transform& node)
 	}
 }
 
-void mrs::SceneGraphLayer::OnModelRendererCreated(entt::basic_registry<entt::entity> &, entt::entity entity) 
+void mrs::SceneGraphLayer::OnModelRendererCreated(entt::basic_registry<entt::entity>&, entt::entity entity)
 {
 	Entity model_entity(entity, _scene);
 	Transform& model_transform = model_entity.GetComponent<Transform>();

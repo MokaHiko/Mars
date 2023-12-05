@@ -47,6 +47,8 @@ layout(std140, set = 4, binding = 0) readonly buffer DirLights{
     DirectionalLight dir_lights[];
 };
 
+const int toon_levels = 8;
+const float toon_scale_factor = 1.0f / toon_levels;
 float CalculateShadowFactor()
 {
 	// ~ Shadow shadow
@@ -71,6 +73,11 @@ float CalculateShadowFactor()
 vec3 CalculateDirLight(DirectionalLight light, vec3 normal, vec3 view_dir)
 {
 	float diffuse_factor = max(dot(normal, -light.Direction.xyz), 0.0);
+
+	if(diffuse_factor > 0.0f)
+	{
+		diffuse_factor = ceil(diffuse_factor * toon_levels) * toon_scale_factor;
+	}
 
 	vec3 reflect_dir = reflect(-light.Direction.xyz, normal);
 	float specular_factor = pow(max(dot(view_dir, reflect_dir), 0.0f), 32);

@@ -4,7 +4,7 @@
 #include <imgui.h>
 #include <Core/Time.h>
 
-mrs::PerformancePanel::PerformancePanel(EditorLayer* editor_layer, const std::string& name, IRenderPipelineLayer* render_pipeline_layer)
+mrs::PerformancePanel::PerformancePanel(EditorLayer& editor_layer, const std::string& name, IRenderPipelineLayer* render_pipeline_layer)
 	: IPanel(editor_layer, name), _render_pipeline_layer(render_pipeline_layer)
 {
 	_renderer = _render_pipeline_layer->GetRenderer();
@@ -43,6 +43,7 @@ void mrs::PerformancePanel::Draw()
 		}
 	}
 
-	ImGui::Text("Frame Time ms : %0.4f", Time::DeltaTime() * 1000.0f);
+	ImGui::Text("Frame Time ms : %0.6f", Time::DeltaTime() * 1000.0f);
+	ImGui::Text("Fixed Delta Time ms : %0.6f", Time::FixedDeltaTime() * 1000.0f);
 	ImGui::End();
 }

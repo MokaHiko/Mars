@@ -26,6 +26,7 @@ namespace mrs {
 		static int x_rel; // relative mouse motion x 
 		static int y_rel; // relative mouse motion y
 
+		static void Input::Clear();
 		static void Input::Reset();
 	public:
 		// Returns true if key(key_code) is pressed

@@ -49,32 +49,15 @@ namespace mrs
         float duration = 2.0f; // Duration of particle system if not repeating
         float time = 0.0f;  // Time particle simulation has been running
 
-        void Play()
-        {
-            if(running)
-            {
-                return;
-            }
+        bool world_space = false;
 
-            running = true;
-            time = 0.0f;
-        }
+        void Play();
 
-        void Stop()
-        {
-            stop = true;
-        }
+        void Stop();
 
-        void Pause()
-        {
-            running = false;
-            live_particles = 0;
-        }
+        void Pause();
 
-        void Reset() 
-        {
-            reset = true;
-        };
+        void Reset();
 
     public:
         friend class ParticleRenderPipeline;

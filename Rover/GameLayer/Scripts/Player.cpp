@@ -84,34 +84,36 @@ void Player::Select(mrs::Entity unit)
 
 std::vector<glm::vec2> Player::GenerateBoxPositions(const glm::vec2& position, uint32_t n_positions)
 {
-	// TODO: Do not assume each unit is the same radius
-	float unit_radius = 2.0f;
+	//// TODO: Do not assume each unit is the same radius
+	//float unit_radius = 2.0f;
 
-	std::vector<glm::vec2> positions(n_positions);
-	int side_length = static_cast<int>(glm::ceil(glm::sqrt(n_positions)) * unit_radius);
+	//std::vector<glm::vec2> positions(n_positions);
+	//int side_length = static_cast<int>(glm::ceil(glm::sqrt(n_positions)) * unit_radius);
 
-	int half_length = static_cast<int>(side_length / 2);
-	int left = position.x - half_length;
-	int right = position.x + half_length;
-	int bottom = position.y - half_length;
-	int top = position.y + half_length;
+	//int half_length = static_cast<int>(side_length / 2);
+	//int left = position.x - half_length;
+	//int right = position.x + half_length;
+	//int bottom = position.y - half_length;
+	//int top = position.y + half_length;
 
-	// Going from top left to bottom right
-	glm::vec2 next_position = glm::vec2(left, top);
-	for (int i = 0; i < n_positions; i++)
-	{
-		next_position.x += unit_radius * 2;
+	//// Going from top left to bottom right
+	//glm::vec2 next_position = glm::vec2(left, top);
+	//for (int i = 0; i < n_positions; i++)
+	//{
+	//	next_position.x += unit_radius * 2;
 
-		if (next_position.x > right)
-		{
-			next_position.x = left;
-			next_position.y -= unit_radius * 2;
-		}
+	//	if (next_position.x > right)
+	//	{
+	//		next_position.x = left;
+	//		next_position.y -= unit_radius * 2;
+	//	}
 
-		positions[i] = next_position;
-	}
+	//	positions[i] = next_position;
+	//}
 
-	return positions;
+	//return positions;
+
+	return {};
 }
 
 void Player::OnCreate()

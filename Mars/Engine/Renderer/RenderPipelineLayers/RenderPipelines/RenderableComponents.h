@@ -28,6 +28,7 @@ namespace mrs
         }
 
         Ref<Material> material = nullptr;
+        bool enabled = true;
     };
 
     struct MeshRenderer
@@ -63,7 +64,7 @@ namespace mrs
         Ref<Material> material = nullptr;
     };
 
-    struct ModelRenderer
+    struct ModelRenderer 
     {
         ModelRenderer(Ref<Model> m)
         {
@@ -73,11 +74,23 @@ namespace mrs
         Ref<Model> model;
     };
 
-    class SpriteRenderer
+    struct SpriteRenderer
     {
-        Ref<Sprite> sprite; 
-        Vector4 color;
+        Ref<Sprite> sprite = nullptr; 
+        int sprite_index = 0;
+        Vector4 color {1.0f};
         uint32_t sorting_layer = 0;
+    };
+
+    struct SpriteAnimator
+    {
+        float fps = 12.0f;
+        float time_elapsed = 0.0f;
+
+        void Play(int frame = -1);
+        void Stop();
+
+        bool playing = true;
     };
 
     struct PointLight

@@ -8,23 +8,19 @@
 #include <ECS/Components/Components.h>
 #include <Scripting/Process.h>
 
-#include "Projectile.h"
 #include "Ship.h"
+#include "Weapon/Weapon.h"
 
-// class Volley: public mrs::Process
-// {
-// public:
-//     Volley(float time);
-//     virtual void OnUpdate(float dt) override;
-// private:
-//     float _time = 0;
-// };
+struct Target
+{
+    int marker;
+};
 
 enum class ShipCombatState
 {
     Idle,
     AutoCombat,
-    Manual
+    ManualCombat
 };
 
 class ShipCombat : public mrs::ScriptableEntity
@@ -33,19 +29,20 @@ public:
     virtual void OnStart() override;
     virtual void OnUpdate(float dt) override;
 
-    void ProcessInput();
+    void SwitchCombatMode();
+    void EquipWeapon(Weapon* weapon);
 public:
-    void FireProjectile(mrs::Entity target);
     void ScanTargets();
 
-    // Weapon
-    float _fire_rate = 0.15f;
-    int _cannon_side = 1;
+    // Manual combat
+    void ManualFire();
 
     std::vector<mrs::Entity> _targets;
-private:
-    ShipCombatState _state = ShipCombatState::Idle;
     Ship* _ship = nullptr;
+private:
+    Weapon* _current_weapon = nullptr;
+
+    ShipCombatState _state = ShipCombatState::Idle;
     mrs::Entity _ship_entity;
 };
 

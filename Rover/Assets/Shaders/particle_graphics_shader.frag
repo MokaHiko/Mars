@@ -23,10 +23,10 @@ void main()
 {
     vec4 diffuse = texture(_diffuse_texture, v_uv);
 
-    // if(diffuse.a <= 0.01f)  
-    // {
-    //     discard;
-    // }
+    if(diffuse.a <= 0.01f)  
+    {
+        discard;
+    }
 
     frag_color = diffuse * v_color;
 }

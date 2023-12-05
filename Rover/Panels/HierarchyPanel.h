@@ -11,7 +11,7 @@ namespace mrs {
     class HierarchyPanel : public IPanel
     {
     public:
-        HierarchyPanel(EditorLayer* editor_layer, const std::string& name, Scene* scene);
+        HierarchyPanel(EditorLayer& editor_layer, const std::string& name, Scene* scene);
         virtual ~HierarchyPanel();
 
         virtual void Draw() override;

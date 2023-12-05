@@ -22,13 +22,20 @@ namespace mrs {
     const Vector3 Vector3Back = { 0, 0, -1 };
 
     const Vector2 Vector2Up = { 0,1 };
-    const Vector2 Vector2Down = { 0,-1};
+    const Vector2 Vector2Down = { 0,-1 };
     const Vector2 Vector2Right = { 1, 0 };
-    const Vector2 Vector2Left = { -1, 0};
+    const Vector2 Vector2Left = { -1, 0 };
 
     using Matrix4x4 = glm::mat4;
 
     bool DecomposeTransform(const Matrix4x4& transform, Vector3& translation, Vector3& rotation, Vector3& scale);
+
+    // Implements signum (-1, 0, or 1)
+    template <typename T> 
+    int SignOf(T val) 
+    {
+        return (T(0) < val) - (val < T(0));
+    }
 
     template<typename T>
     float Cos(T value_radians)

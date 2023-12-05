@@ -5,6 +5,13 @@
 
 #include <imgui/imgui.h>
 
+mrs::InputLayer::InputLayer()
+	:Layer("InputLayer")
+{
+}
+
+mrs::InputLayer::~InputLayer() {}
+
 void mrs::InputLayer::OnAttach()
 {
 	Window* w = Application::Instance().GetWindow().get();
@@ -15,8 +22,12 @@ void mrs::InputLayer::OnAttach()
 
 void mrs::InputLayer::OnEvent(Event& event)
 {
-	int32_t key = -1;
+	if(!IsEnabled())
+	{
+		return;
+	}
 
+	int32_t key = -1;
 	switch (event._event.type)
 	{
 	case SDL_WINDOWEVENT_SHOWN:
@@ -54,6 +65,13 @@ void mrs::InputLayer::OnEvent(Event& event)
 
 void mrs::InputLayer::OnEnable()
 {
+	MRS_INFO("[Input Layer] Enabled!");
+}
+
+void mrs::InputLayer::OnDisable() 
+{
+	MRS_INFO("[Input Layer] Disabled!");
+	Input::Clear();
 }
 
 void mrs::InputLayer::OnImGuiRender()

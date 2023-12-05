@@ -36,7 +36,7 @@ struct ParticleParameters
     float dt; // delta time this frame in seconds
     float emission_rate;
     uint live_particles;
-    uint reset; // set to 1 if reset
+    uint repeating; // set to 1 if repeating
 
     // Buffer offsets
     uint buffer_offset; // Offset into global particle buffer
@@ -80,7 +80,6 @@ void main()
     v_color = particle.color;
     v_uv = _uv;
 
-    //vec4 pos = vec4((_position *particle_parameters.scale) + vec3(particle.position, 0.0f), 1.0f);
     vec4 pos = vec4((_position *particle_parameters.scale) + vec3(particle.position, float(gl_InstanceIndex) / 100.0f), 1.0f);
     gl_Position = view_proj * model_matrix * pos;
 }

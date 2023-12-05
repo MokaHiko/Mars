@@ -7,10 +7,10 @@ uint32_t mrs::Input::window_size_x = 0;
 uint32_t mrs::Input::window_size_y = 0;
 
 // Set keys to unpressed
-bool mrs::Input::LastKeys[322] = {false};
-bool mrs::Input::Keys[322] = {false};
-bool mrs::Input::LastMouseButtons[4] = {false};
-bool mrs::Input::MouseButtons[4] = {false};
+bool mrs::Input::LastKeys[322] = { false };
+bool mrs::Input::Keys[322] = { false };
+bool mrs::Input::LastMouseButtons[4] = { false };
+bool mrs::Input::MouseButtons[4] = { false };
 
 // Mouse
 int mrs::Input::last_x = 0;
@@ -22,10 +22,24 @@ int mrs::Input::y = 0;
 int mrs::Input::x_rel = 0;
 int mrs::Input::y_rel = 0;
 
-void mrs::Input::Reset()
+void mrs::Input::Clear() 
 {
-	x_rel = 0;
-	y_rel = 0;
+	memset(LastKeys, 0, sizeof(LastKeys));
+	memset(Keys, 0, sizeof(Keys));
+	memset(LastMouseButtons, 0, sizeof(LastMouseButtons));
+	memset(MouseButtons, 0, sizeof(MouseButtons));
+
+	last_x = 0;
+	last_y = 0;
+
+	x = 0;
+	y = 0;
+}
+
+void mrs::Input::Reset() 
+{
+  x_rel = 0;
+  y_rel = 0;
 }
 
 bool mrs::Input::IsKeyPressed(int key_code)
@@ -72,12 +86,12 @@ bool mrs::Input::IsMouseButtonDown(int key_code)
 
 float mrs::Input::GetAxis(const char axis)
 {
-	if(axis == 'x' || axis == 'X')
+	if (axis == 'x' || axis == 'X')
 	{
 		return x_rel;
 	}
 
-	if(axis == 'y' || axis == 'Y')
+	if (axis == 'y' || axis == 'Y')
 	{
 		return y_rel;
 	}
@@ -92,5 +106,5 @@ glm::vec2 mrs::Input::GetMousePosition()
 	 //static float half_height = ((float)Input::window_size_y / 2.0f);
 	 //return { x - half_width, (-y) + half_height};
 
-	return {x, y};
+	return { x, y };
 }

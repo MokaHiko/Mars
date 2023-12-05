@@ -7,6 +7,7 @@
 #include "Toolbox/FileToolBox.h"
 
 #include "Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.h"
+#include "Renderer/Textures/Sprite.h"
 
 namespace mrs
 {
@@ -102,12 +103,41 @@ namespace mrs
 		material_buffer_info.range = sizeof(MaterialData);
 
 		VkDescriptorImageInfo diffuse_image_info = {};
-		diffuse_image_info.sampler = _linear_image_sampler;
+		switch(material->MainTexture()->_sampler_type)
+		{
+			case(Texture::SamplerType::Linear):
+			{
+				diffuse_image_info.sampler = _linear_image_sampler;
+			}break;
+			case(Texture::SamplerType::Nearest):
+			{
+				diffuse_image_info.sampler = _nearest_image_sampler;
+			}break;
+			default:
+			{
+				diffuse_image_info.sampler = _linear_image_sampler;
+			}break;
+		}
+
 		diffuse_image_info.imageView = material->MainTexture()->_image_view;
 		diffuse_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		VkDescriptorImageInfo specular_image_info = {};
-		specular_image_info.sampler = _linear_image_sampler;
+		switch(material->GetTexture(MaterialTextureType::SpecularTexture)->_sampler_type)
+		{
+			case(Texture::SamplerType::Linear):
+			{
+				specular_image_info.sampler = _linear_image_sampler;
+			}break;
+			case(Texture::SamplerType::Nearest):
+			{
+				specular_image_info.sampler = _nearest_image_sampler;
+			}break;
+			default:
+			{
+				specular_image_info.sampler = _nearest_image_sampler;
+			}break;
+		}
 		specular_image_info.imageView = material->GetTexture(MaterialTextureType::SpecularTexture)->_image_view;
 		specular_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
@@ -207,6 +237,18 @@ namespace mrs
 			vkDestroyImageView(_renderer->Device().device, texture->_image_view, nullptr);
 			vmaDestroyImage(_renderer->Allocator(), texture->_image.image, texture->_image.allocation);
 		});
+	}
+
+	void VulkanAssetManager::UploadSprite(Ref<Sprite> sprite)
+	{
+		VkDescriptorImageInfo sprite_atlas_info = {};
+		sprite_atlas_info.sampler = _nearest_image_sampler;
+		sprite_atlas_info.imageView = sprite->Atlas()->_image_view;
+		sprite_atlas_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+			.BindImage(0, &sprite_atlas_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+			.Build(&sprite->DescriptorSet(), &_material_descriptor_set_layout);
 	}
 
 	bool VulkanAssetManager::LoadShaderModule(const char* path, VkShaderModule* module)

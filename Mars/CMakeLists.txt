@@ -36,6 +36,13 @@ add_library(${PROJECT_NAME}
 			Engine/Events/Events.h
 			Engine/Events/Events.cpp
 
+			Engine/UI/UILayer.h
+			Engine/UI/UILayer.cpp
+			Engine/UI/UI.h
+			Engine/UI/UI.cpp
+			Engine/UI/Font.h
+			Engine/UI/Font.cpp
+
 			Engine/ECS/Scene.h
 			Engine/ECS/Scene.cpp
 			Engine/ECS/SceneSerializer.h
@@ -93,12 +100,8 @@ add_library(${PROJECT_NAME}
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/RenderableComponents.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/MeshRenderPipeline.cpp
-			Engine/Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/UI.h
-			Engine/Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/UI.cpp
-			Engine/Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/Font.h
-			Engine/Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/Font.cpp
-			Engine/Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/UIRenderPipeline.h
-			Engine/Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/UIRenderPipeline.cpp
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/SpriteRenderPipeline/SpriteRenderPipeline.h
+			Engine/Renderer/RenderPipelineLayers/RenderPipelines/SpriteRenderPipeline/SpriteRenderPipeline.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.h
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleComponents.cpp
 			Engine/Renderer/RenderPipelineLayers/RenderPipelines/ParticleRenderPipeline/ParticleRenderPipeline.h

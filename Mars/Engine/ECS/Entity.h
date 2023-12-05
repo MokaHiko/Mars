@@ -42,6 +42,13 @@ namespace mrs
            return _scene->GetComponent<T>(_id);
         }
 
+        // Adds component <T> to entity if has not and returns component
+        template <typename ScriptType>
+        ScriptType &AddScript()
+        {
+            return _scene->AddScript<ScriptType>(_id);
+        }
+
         // Returns component of type <T>
         template <typename T>
         T* GetScript()

@@ -74,6 +74,18 @@ namespace mrs {
         std::function<void(void)> _callback = nullptr;
     };
 
+    // Invokes callback after a set using fixed delta time
+    class FixedDelayProcess : public Process
+    {
+    public:
+        FixedDelayProcess(float time, std::function<void(void)> callback = nullptr);
+
+        virtual void OnUpdate(float dt) override;
+    private:
+        float _time = 0;
+        std::function<void(void)> _callback = nullptr;
+    };
+
     class FloatLerpProcess : public Process
     {
     public:

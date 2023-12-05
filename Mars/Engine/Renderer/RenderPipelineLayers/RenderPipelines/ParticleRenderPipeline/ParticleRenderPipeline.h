@@ -38,7 +38,7 @@ namespace mrs
         float dt; // delta time this frame in seconds
         float emission_rate;
         uint32_t live_particles;
-        uint32_t reset; // set to 1 if reset
+        uint32_t repeating; // set to 1 if repeating
 
         // Buffer offsets
         uint32_t buffer_offset; // Offset into global particle buffer

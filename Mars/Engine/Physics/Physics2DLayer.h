@@ -35,6 +35,7 @@ namespace mrs
         virtual void OnDetatch() override;
 
         virtual void OnUpdate(float dt) override;
+        virtual void OnFixedUpdate(float fixed_dt) override;
         virtual void OnImGuiRender() override;
 
         virtual void OnEnable() override;

@@ -3,28 +3,27 @@
 #include <Core/Input.h>
 #include <Math/Math.h>
 
-void PlayerShipController::OnCreate()
+#include "ShipMovement.h"
+#include "ShipCombat.h"
+
+void PlayerShipController::OnStart()
 {
-  _ship = GetComponent<mrs::Transform>().parent;
+  auto& parent = GetComponent<mrs::Transform>().parent;
+  _ship = parent.GetScript<Ship>();
 
   if (!_ship)
   {
-    // TODO: Disable script
     MRS_INFO("Required ship as direct parent!");
   }
 }
 
-void PlayerShipController::OnUpdate(float dt) {
+void PlayerShipController::OnCreate() 
+{
+}
 
-  mrs::Transform& transform = _ship.GetComponent<mrs::Transform>();
-  mrs::RigidBody2D& rb = _ship.GetComponent<mrs::RigidBody2D>();
-
-  static float ms = 5.0f;
-  static float turn_speed = 120.0f;
-  static float total_time = 0;
-  static float rotation_duration = 1.0f;
-  static float target_rotation = 45.0f;
-
+void PlayerShipController::OnUpdate(float dt)
+{
+  // Movement Controls
   glm::vec2 input = { 0, 0 };
   if (mrs::Input::IsKeyPressed(SDLK_w))
   {
@@ -38,29 +37,22 @@ void PlayerShipController::OnUpdate(float dt) {
   if (mrs::Input::IsKeyPressed(SDLK_d))
   {
     input += mrs::Vector2Right;
-
-    // total_time += dt;
-    // transform.rotation.y = mrs::Lerp(transform.rotation.y, target_rotation, total_time / rotation_duration);
-    // if (target_rotation - transform.rotation.y < 0.01f)
-    // {
-    //   total_time = 0;
-    // }
   }
-  else if (mrs::Input::IsKeyPressed(SDLK_a)) 
+  else if (mrs::Input::IsKeyPressed(SDLK_a))
   {
     input += mrs::Vector2Left;
-    // total_time += dt;
-    // transform.rotation.y = mrs::Lerp(transform.rotation.y, -target_rotation, total_time / rotation_duration);
-
-    // if (-target_rotation - transform.rotation.y < 0.01f)
-    // {
-    //   total_time = 0;
-    // }
   }
 
-  float w = -glm::radians(input.x * turn_speed);
-  rb.SetAngularVelocity(w);
+  _ship->Movement().MoveTowards(input);
 
-  mrs::Vector2 velocity =  transform.up * input.y * ms;
-  rb.AddImpulse(velocity);
+  // Combat Controls
+  if (mrs::Input::IsKeyDown(SDLK_SPACE))
+  {
+    _ship->Combat().SwitchCombatMode();
+  }
+
+  if(mrs::Input::IsMouseButtonDown(SDL_BUTTON_LEFT))
+  {
+    _ship->Combat().ManualFire();
+  }
 }

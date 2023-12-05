@@ -19,7 +19,11 @@ void GameCamera::OnStart()
 	_camera = &GetComponent<mrs::Camera>();
 	_camera_transform = &GetComponent<mrs::Transform>();
 
-	_follow = FindEntityWithScript<PlayerShipController>().GetComponent<mrs::Transform>().parent;
+	auto player = FindEntityWithScript<PlayerShipController>();
+	if(player)
+	{
+		_follow = player.GetComponent<mrs::Transform>().parent;
+	}
 
 	auto wait_process = CreateRef<mrs::DelayProcess>(1);
 	auto zoom_process = CreateRef<mrs::FloatLerpProcess>(&_distance, _distance, _zoom_distance, _zoom_duration);

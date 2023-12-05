@@ -245,7 +245,7 @@ bool mrs::SceneSerializer::DeserializeText(const std::string &scene_path)
 		if (script_node)
 		{
 			auto &script = new_entity.AddComponent<Script>();
-			script.Bind(script_node["Binding"].as<std::string>());
+			script.Bind(script_node["Binding"].as<std::string>(), new_entity);
 			script.enabled = false;
 		}
 
@@ -284,12 +284,18 @@ bool mrs::SceneSerializer::DeserializeText(const std::string &scene_path)
 		{
 			auto &particles = new_entity.AddComponent<ParticleSystem>();
 			particles.max_particles = particles_node["MaxParticles"].as<uint32_t>();
+
 			particles.particle_size = particles_node["ParticleSize"].as<float>();
+			particles.emission_shape = static_cast<EmissionShape>(particles_node["EmissionShape"].as<int>());
 			particles.spread_angle = particles_node["SpreadAngle"].as<float>();
+
 			particles.life_time = particles_node["LifeTime"].as<float>();
 			particles.emission_rate = particles_node["EmissionRate"].as<float>();
 			particles.velocity = particles_node["Velocity"].as<glm::vec2>();
 			particles.running = particles_node["Running"].as<bool>();
+			particles.repeating = particles_node["Repeating"].as<bool>();
+			particles.duration = particles_node["Duration"].as<float>();
+
 			particles.color_1 = particles_node["Color1"].as<glm::vec4>();
 			particles.color_2 = particles_node["Color2"].as<glm::vec4>();
 
@@ -452,10 +458,13 @@ void mrs::SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::Key << "MaxParticles" << YAML::Value << particles.max_particles;
 		out << YAML::Key << "ParticleSize" << YAML::Value << particles.particle_size;
 		out << YAML::Key << "SpreadAngle" << YAML::Value << particles.spread_angle;
+		out << YAML::Key << "EmissionShape" << YAML::Value << static_cast<int>(particles.emission_shape);
 		out << YAML::Key << "LifeTime" << YAML::Value << particles.life_time;
 		out << YAML::Key << "EmissionRate" << YAML::Value << particles.emission_rate;
 		out << YAML::Key << "Velocity" << YAML::Value << particles.velocity;
 		out << YAML::Key << "Running" << YAML::Value << particles.running;
+		out << YAML::Key << "Repeating" << YAML::Value << particles.repeating;
+		out << YAML::Key << "Duration" << YAML::Value << particles.duration;
 		out << YAML::Key << "Color1" << YAML::Value << particles.color_1;
 		out << YAML::Key << "Color2" << YAML::Value << particles.color_2;
 		out << YAML::Key << "Material" << YAML::Value << particles.material->Name();

@@ -14,4 +14,18 @@ namespace mrs
 		}
 	}
 
+	void SpriteAnimator::Play(int frame)
+	{
+		if(frame < 0)
+		{
+		}
+
+		playing = true;
+	}
+
+	void SpriteAnimator::Stop()
+	{
+		playing = false;
+	}
+
 }

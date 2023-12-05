@@ -6,7 +6,7 @@
 #include "UIHelpers.h"
 #include "Rover.h"
 
-mrs::MainMenu::MainMenu(EditorLayer *editor_layer, const std::string &name,Scene *scene)
+mrs::MainMenu::MainMenu(EditorLayer& editor_layer, const std::string &name,Scene *scene)
 	: IPanel(editor_layer, name), _scene(scene) {}
 
 mrs::MainMenu::~MainMenu() {}
@@ -46,23 +46,23 @@ void mrs::MainMenu::Draw() {
       ImGui::EndMenu();
     }
 
-	std::string state = _editor_layer->State() == EditorLayer::EditorState::Playing ? "Pause" : "Play";
+	std::string state = _editor_layer.State() == EditorLayer::EditorState::Playing ? "Pause" : "Play";
 	if (ImGui::Button(state.c_str()))
 	{
-		if (_editor_layer->State() == EditorLayer::EditorState::Playing)
+		if (_editor_layer.State() == EditorLayer::EditorState::Playing)
 		{
-			_editor_layer->Pause();
+			_editor_layer.Pause();
 		}
 		else
 		{
-			_editor_layer->Play();
+			_editor_layer.Play();
 		}
 	}
 
 	ImGui::SameLine();
 	if (ImGui::Button("Stop"))
 	{
-		_editor_layer->Stop();
+		_editor_layer.Stop();
 	}
 
     ImGui::EndMainMenuBar();

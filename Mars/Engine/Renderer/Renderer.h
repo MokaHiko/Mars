@@ -14,8 +14,7 @@
 #include "Camera.h"
 #include "ECS/Scene.h"
 
-namespace mrs
-{
+namespace mrs {
 	// Time out for render commands and fences 
 	static const uint64_t time_out = std::numeric_limits<uint64_t>::max();
 
@@ -32,7 +31,7 @@ namespace mrs
 	{
 		Ref<Window> window;
 		GraphicsSettings graphics_settings = {};
-		uint32_t max_objects = 1000;
+		uint32_t max_objects = 10000;
 		uint32_t max_materials = 100;
 		
 		uint32_t max_dir_lights = 10;
@@ -94,6 +93,7 @@ namespace mrs
 		// Ends the command buffer recording and submits to queue
 		void End();
 
+		// TODO: Remove and move to render pipeline layer
 		// Uploads resources stored in resource manager
 		void UploadResources();
 

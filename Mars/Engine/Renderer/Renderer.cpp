@@ -131,6 +131,11 @@ namespace mrs
 		{
 			VulkanAssetManager::Instance().UploadMaterial(it.second);
 		}
+
+		for (auto &it : ResourceManager::Get()._sprites)
+		{
+			VulkanAssetManager::Instance().UploadSprite(it.second);
+		}
 	}
 
 	void Renderer::ImmediateSubmit(std::function<void(VkCommandBuffer)> &&fn)
@@ -189,6 +194,7 @@ namespace mrs
 			.request_validation_layers(true)
 			.require_api_version(1, 2, 0)
 			.use_default_debug_messenger()
+			.set_debug_messenger_severity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
 			.build();
 
 		vkb::Instance vkb_instance = intance_result.value();
@@ -270,7 +276,7 @@ namespace mrs
 		VkSurfaceFormatKHR surface_format = {};
 		surface_format.format = VK_FORMAT_B8G8R8A8_UNORM;
 		vkb::Swapchain vkb_swapchain = builder.use_default_format_selection()
-			.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+			.set_desired_present_mode(VK_PRESENT_MODE_MAILBOX_KHR)
 			.set_desired_extent(_window->GetWidth(), _window->GetHeight())
 			.set_desired_format(surface_format)
 			.build()

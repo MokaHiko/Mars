@@ -1,4 +1,5 @@
 #include "Process.h"
+#include "Core/Time.h"
 
 mrs::Process::Process() {}
 
@@ -40,3 +41,23 @@ void mrs::DelayProcess::OnUpdate(float dt)
 		Succeed();
 	}
 };
+
+mrs::FixedDelayProcess::FixedDelayProcess(float time, std::function<void(void)> callback)
+{
+	_time = time;
+	_callback = callback;
+}
+
+void mrs::FixedDelayProcess::OnUpdate(float dt)
+{
+	_time -= Time::FixedDeltaTime();
+	if (_time <= 0)
+	{
+		if (_callback)
+		{
+			_callback();
+		}
+		Succeed();
+	}
+};
+

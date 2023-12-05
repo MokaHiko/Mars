@@ -4,6 +4,7 @@
 #pragma once
 
 #include "ECS/ScriptableEntity.h"
+#include "Core/Application.h"
 
 namespace mrs
 {
@@ -18,11 +19,13 @@ namespace mrs
         std::function<ScriptableEntity *()> InstantiateScript = nullptr;
         std::function<void()> DestroyScript = nullptr;
 
-        bool enabled = true;
+        bool enabled = false;
+
+        void OnBind(Entity e);
 
         // Bind scriptable entity
         template <typename T>
-        void Bind()
+        void Bind(Entity e)
         {
             binding = typeid(T).name();
 
@@ -46,10 +49,12 @@ namespace mrs
                 delete script;
                 script = nullptr;
             };
+
+            OnBind(e); // Check for Immediate Instantiation
         };
 
         // Binds script to entity given registered script
-        void Bind(std::string binding_name)
+        void Bind(std::string binding_name, Entity e)
         {
             binding = binding_name;
 
@@ -67,6 +72,8 @@ namespace mrs
                 delete script;
                 script = nullptr;
             };
+
+            OnBind(e); // Check for Immediate Instantiation
         }
 
         // Registers script as valid scriptable entity

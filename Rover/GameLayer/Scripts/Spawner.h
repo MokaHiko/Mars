@@ -16,9 +16,9 @@ private:
     void SpawnUnit();
 
 private:
-    uint32_t _max_units = 10;
+    uint32_t _max_units = 20;
     float _timer = 0.0f;
-    float _spawn_rate  = 0.25f;
+    float _spawn_rate  = 0.5f;
 };
 
 #endif

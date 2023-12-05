@@ -30,7 +30,7 @@ public:
     void Fade();
 private:
     const float _life_span = 60.0f;
-    float _explosion_magnitude = 1.0f;
+    float _explosion_magnitude = 2.0f;
 
     static tbx::PRNGenerator<float> _random_angle;
     static tbx::PRNGenerator<float> _random;

@@ -30,7 +30,7 @@ namespace mrs
 		Entity e = {};
 		if (!_free_queue.empty())
 		{
-			Entity idx = _free_queue.back();
+			auto idx = _free_queue.back();
 			_free_queue.pop_back();
 
 			e = Entity{ _registry.create(idx), this };
@@ -61,7 +61,7 @@ namespace mrs
 		Entity e = {};
 		if (!_free_queue.empty())
 		{
-			Entity idx = _free_queue.back();
+			auto idx = _free_queue.back();
 			_free_queue.pop_back();
 
 			e = Entity{ _registry.create(idx), this };
@@ -122,8 +122,8 @@ namespace mrs
 			// Fire off destroy signal
 			_entity_destroyed(entity);
 
-			// Store last entt
-			_free_queue.push_back(entity);
+			// Store last id
+			_free_queue.push_back(entity._id);
 
 			// Remove all components
 			Registry()->destroy(entity);

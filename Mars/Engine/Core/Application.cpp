@@ -5,7 +5,6 @@
 #include "Core/Time.h"
 #include "Toolbox/TimeToolBox.h"
 
-
 namespace mrs {
 	Application *Application::_instance = nullptr;
 	Application::Application(const std::string &app_name, uint32_t width, uint32_t height)
@@ -39,6 +38,9 @@ namespace mrs {
 			}
 		}
 
+		// Set Fixed Delta time
+		Time::SetFixedDeltaTime(1/144.0f);
+
 		// Main application loop
 		while (_running = PollEvents())
 		{
@@ -47,15 +49,26 @@ namespace mrs {
 				Time::SetDeltaTime(static_cast<float>(timer.delta_));
 			});
 
-			// TODO: Handle inconsistent in separate delta time in a fixed update
-			static float dt = 1.0f/144.0f;
-
 			for (Layer *layer : _layer_stack)
 			{
 				if(layer->IsEnabled())
 				{
-					layer->OnUpdate(dt);
+					layer->OnUpdate(Time::DeltaTime());
 				}
+			}
+
+			static float fixed_elapsed = 0.0f;
+			fixed_elapsed += Time::DeltaTime();
+			if(fixed_elapsed >= Time::FixedDeltaTime())
+			{
+				for (Layer *layer : _layer_stack)
+				{
+					if(layer->IsEnabled())
+					{
+						layer->OnFixedUpdate(Time::FixedDeltaTime());
+					}
+				}
+				fixed_elapsed = 0.0f;
 			}
 
 			_scene->FlushDestructionQueue();

@@ -30,16 +30,33 @@ add_executable(Rover
 	"GameLayer/RenderPipelines/CBRenderPipeline.h"
 	"GameLayer/RenderPipelines/CBRenderPipeline.cpp"
 
-	"GameLayer/Scripts/Effect.h"
-	"GameLayer/Scripts/Effect.cpp"
 	"GameLayer/Scripts/Unit.h"
 	"GameLayer/Scripts/Unit.cpp"
-	"GameLayer/Scripts/Projectile.h"
-	"GameLayer/Scripts/Projectile.cpp"
 	"GameLayer/Scripts/Ship.h"
 	"GameLayer/Scripts/Ship.cpp"
+	"GameLayer/Scripts/ShipMovement.h"
+	"GameLayer/Scripts/ShipMovement.cpp"
 	"GameLayer/Scripts/ShipCombat.h"
 	"GameLayer/Scripts/ShipCombat.cpp"
+
+	"GameLayer/Scripts/Weapon/Weapon.h"
+	"GameLayer/Scripts/Weapon/Weapon.cpp"
+	"GameLayer/Scripts/Weapon/Projectile/Projectile.h"
+	"GameLayer/Scripts/Weapon/Projectile/Projectile.cpp"
+
+	"GameLayer/Scripts/Weapon/ChargeCanon.cpp"
+	"GameLayer/Scripts/Weapon/ChargeCanon.h"
+	"GameLayer/Scripts/Weapon/Projectile/Bullet.h"
+	"GameLayer/Scripts/Weapon/Projectile/Bullet.cpp"
+
+	"GameLayer/Scripts/Weapon/GravGun.h"
+	"GameLayer/Scripts/Weapon/GravGun.cpp"
+
+	"GameLayer/Scripts/Effects/Effect.h"
+	"GameLayer/Scripts/Effects/Effect.cpp"
+	"GameLayer/Scripts/Effects/TargetLockEffect.h"
+	"GameLayer/Scripts/Effects/TargetLockEffect.cpp"
+
 	"GameLayer/Scripts/Scrap.h"
 	"GameLayer/Scripts/Scrap.cpp"
 	"GameLayer/Scripts/PlayerShipController.h"
@@ -61,7 +78,7 @@ add_executable(Rover
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Mars Vendor imgui vulkan-1)
-target_include_directories(${PROJECT_NAME} PUBLIC "../Mars" "./")
+target_include_directories(${PROJECT_NAME} PUBLIC "../Mars" "./" "GameLayer/Scripts")
 
 set(MRS_BUILD_CONFIGURATION "Debug")
 set(MRS_APP_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${MRS_BUILD_CONFIGURATION}")

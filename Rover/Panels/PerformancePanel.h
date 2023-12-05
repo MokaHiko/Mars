@@ -12,7 +12,7 @@ namespace mrs {
     class PerformancePanel : public IPanel
     {
     public:
-        PerformancePanel(EditorLayer* editor_layer, const std::string& name, IRenderPipelineLayer* render_pipeline_layer);
+        PerformancePanel(EditorLayer& editor_layer, const std::string& name, IRenderPipelineLayer* render_pipeline_layer);
         virtual ~PerformancePanel();
 
         virtual void Draw() override;

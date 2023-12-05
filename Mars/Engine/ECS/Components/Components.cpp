@@ -12,14 +12,24 @@ void mrs::Transform::AddChild(Entity e)
   MRS_ASSERT(children_count < MAX_CHILDREN, "Max child count reached!");
 
   // Remove from previous parent if exists
-  Entity previous_parent = e.GetComponent<Transform>().parent;
-  if (previous_parent)
+  Transform& child_transform = e.GetComponent<Transform>();
+
+  if(child_transform.parent == self)
   {
-    previous_parent.GetComponent<Transform>().RemoveChild(e);
+    MRS_INFO("Already parenting this child!");
+    return;
   }
 
+
+  if(child_transform.parent)
+  {
+    child_transform.parent.GetComponent<Transform>().RemoveChild(e);
+  }
+
+  MRS_INFO("Add: %d %s to %d", e.Id(), e.GetComponent<mrs::Tag>().tag.c_str(), self.Id());
+
   // Parent to self
-  e.GetComponent<Transform>().parent = self;
+  child_transform.parent = self;
 
   // Add to child list
   children[children_count++] = e;
@@ -39,7 +49,7 @@ void mrs::Transform::RemoveChild(Entity e)
 
   if (insert_index < 0)
   {
-    MRS_ERROR("Child is not parented by object!");
+    MRS_INFO("%s is not parented by object!", e.GetComponent<mrs::Tag>().tag.c_str());
     return;
   }
 
@@ -55,7 +65,23 @@ void mrs::Transform::RemoveChild(Entity e)
   children_count--;
 
   // Parent child back to root
-  e.GetComponent<Transform>().parent = Application::Instance().GetScene()->Root();
+ /* auto root = Application::Instance().GetScene()->Root();
+  auto& child_transform = e.GetComponent<Transform>();
+
+  if(child_transform.parent != root)
+  {
+    child_transform.parent = {};
+    root.GetComponent<mrs::Transform>().AddChild(e);
+  }
+  else
+  {
+    child_transform.parent = {};
+  }
+  */
+
+  e.GetComponent<Transform>().parent = {};
+
+  MRS_INFO("Remove: %d %s from %d", e.Id(), e.GetComponent<mrs::Tag>().tag.c_str(), self.Id());
 }
 
 void mrs::Transform::UpdateModelMatrix()
@@ -71,7 +97,8 @@ void mrs::Transform::UpdateModelMatrix()
   }
 }
 
-glm::mat4 mrs::Transform::LocalModelMatrix() {
+glm::mat4 mrs::Transform::LocalModelMatrix() 
+{
   glm::mat4 model{ 1.0f };
   model = glm::translate(model, position);
 

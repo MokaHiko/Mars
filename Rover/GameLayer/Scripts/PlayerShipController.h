@@ -6,13 +6,16 @@
 #include <ECS/ScriptableEntity.h>
 #include <ECS/Components/Components.h>
 
+#include "Ship.h"
+
 class PlayerShipController : public mrs::ScriptableEntity
 {
 public:
+    virtual void OnStart() override;
     virtual void OnCreate() override;
     virtual void OnUpdate(float dt) override;
 private:
-    mrs::Entity _ship;
+    Ship* _ship = nullptr;
 };
 
 #endif

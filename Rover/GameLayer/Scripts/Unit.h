@@ -15,17 +15,8 @@ public:
     virtual void OnUpdate(float dt) override;
 
     virtual void OnCollisionEnter2D(mrs::Entity other) override;
-public:
-    void MoveTo(const glm::vec2& position);
-protected:
-    void MoveTowards(const glm::vec2& position);
-    void Die();
-
-    float _health = 100.0f;
-    float _movement_speed = 50.0f;
-    glm::vec2 _target_position = {};
 private:
-    Player* _owner = nullptr;
+    float _duration = 2.0f;
 };
 
 #endif

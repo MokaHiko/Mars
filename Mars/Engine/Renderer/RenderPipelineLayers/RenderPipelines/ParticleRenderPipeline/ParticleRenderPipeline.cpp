@@ -5,6 +5,8 @@
 #include <random>
 #include <vector>
 
+#include "Core/Time.h"
+
 #include "ECS/Scene.h"
 #include "ECS/Entity.h"
 #include "ECS/Components/Components.h"
@@ -195,8 +197,18 @@ void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_f
 
 		if (particle_system.running)
 		{
+			// Check if non repeating particle system duration reached
+			if (particle_system.time > particle_system.duration && !particle_system.repeating)
+			{
+				particle_system.Stop();
+			}
+
+			// Stop emitting particles on stop
+			if (!particle_system.stop)
+			{
+				particle_system.live_particles = glm::min((uint32_t)(particle_system.emission_rate * particle_system.time), particle_system.max_particles);
+			}
 			particle_system.time += dt;
-			particle_system.live_particles = glm::min((uint32_t)(particle_system.emission_rate * particle_system.time), particle_system.max_particles);
 
 			// Copy to parameters buffer
 			ParticleParameters params = {};
@@ -213,37 +225,23 @@ void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_f
 			params.buffer_offset = particle_system.buffer_offset;
 			params.buffer_index = particle_system.buffer_offset / static_cast<uint32_t>(_padded_particle_size);
 
-			// Check if reset
-			if (particle_system.reset || (!particle_system.repeating && particle_system.time > particle_system.duration))
-			{
-				// set and reset gpu and cpu flags
-				params.reset = 1;
-				particle_system.reset = false;
-				particle_system.live_particles = 0;
-				particle_system.time = 0.0f;
-			}
+			params.repeating = particle_system.repeating;
 
-			if (particle_system.stop)
-			{
-				params.reset = 1;
-				particle_system.reset = false;
-			}
+			// TODO: Add/Fix reset 
+			// Check if reset
+			// if (particle_system.reset || (!particle_system.repeating && particle_system.time > particle_system.duration))
+			// {
+				// set and reset gpu and cpu flags
+				// params.reset = 1;
+				// particle_system.reset = false;
+				// particle_system.live_particles = 0;
+				// particle_system.time = 0.0f;
+			// }
 
 			// Particle system parameters are in a proportional location to particle buffer
 			size_t offset = ctr * _padded_particle_parameter_size;
 			ctr++;
-
 			memcpy(data + offset, &params, sizeof(ParticleParameters));
-
-			// Stop is handled after reset
-			if (particle_system.stop)
-			{
-				particle_system.running = false;
-				particle_system.stop = false;
-
-				particle_system.live_particles = 0;
-				particle_system.time = 0.0f;
-			}
 		}
 	}
 	vmaUnmapMemory(_renderer->Allocator(), _particle_parameter_buffers[current_frame].allocation);
@@ -273,14 +271,9 @@ void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cm
 			// Update particles
 			uint32_t x_groups = (particle_system.max_particles / 256) + 1;
 			vkCmdDispatch(cmd, x_groups, 1, 1);
-
-			// Check duration reached
-			if (!particle_system.repeating && particle_system.time > particle_system.duration)
-			{
-				particle_system.Stop();
-			}
 		}
 	}
+
 	{
 		// COMPUTE RELEASE BARRIERS: Particle Systems Storage Buffer Memory Barriers
 		VkBufferMemoryBarrier particle_parameter_barrier = vkinit::BufferMemoryBarrier(
@@ -313,6 +306,9 @@ void mrs::ParticleRenderPipeline::FillParticleArray(const ParticleSystem& partic
 	particles.resize(particle_system.max_particles);
 
 	if (particle_system.emission_shape == EmissionShape::Cone) {
+		if(particle_system.world_space)
+		{
+		}
 		for (uint32_t i = 0; i < particle_system.max_particles; i++)
 		{
 			float r = 0.5f * _random_generator.Next();
@@ -333,7 +329,7 @@ void mrs::ParticleRenderPipeline::FillParticleArray(const ParticleSystem& partic
 			float x = r * cos(theta);
 			float y = r * sin(theta);
 			particles[i].position = glm::vec2(x, y);
-			particles[i].velocity = particles[i].position * (1.0f + (_random_generator.Next() * particle_system.velocity));
+			particles[i].velocity = particles[i].position * particle_system.velocity.x;
 			particles[i].color = particle_system.color_1;
 		}
 	}
@@ -424,7 +420,7 @@ void mrs::ParticleRenderPipeline::Compute(VkCommandBuffer cmd, uint32_t current_
 	VkDevice device = _renderer->Device().device;
 
 	vkWaitForFences(device, 1, &_compute_in_flight_fences[current_frame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-	UpdateComputeDescriptorSets(current_frame, dt, compute_batch);
+	UpdateComputeDescriptorSets(current_frame, Time::FixedDeltaTime(), compute_batch);
 	vkResetFences(device, 1, &_compute_in_flight_fences[current_frame]);
 
 	vkResetCommandBuffer(cmd, 0);

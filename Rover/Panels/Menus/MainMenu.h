@@ -10,7 +10,7 @@ namespace mrs {
     class MainMenu : public IPanel
     {
     public:
-        MainMenu(EditorLayer* editor_layer, const std::string& name, Scene* scene);
+        MainMenu(EditorLayer& editor_layer, const std::string& name, Scene* scene);
         virtual ~MainMenu();
 
         virtual void Draw() override;

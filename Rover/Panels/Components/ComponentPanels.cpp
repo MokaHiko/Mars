@@ -18,7 +18,7 @@ namespace mrs
 			if (ImGui::Checkbox("Serialize", &serializer.serialize))
 			{
 			}
-			});
+		});
 	}
 
 	template<>
@@ -35,7 +35,6 @@ namespace mrs
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("Position: ");
-
 
 			ImGui::TableSetColumnIndex(1);
 			ImGui::PushItemWidth(label_width * 3.0f);
@@ -152,6 +151,30 @@ namespace mrs
 	}
 
 	template<>
+	void DrawComponent<SpriteRenderer>(Entity entity)
+	{
+		DrawComponentUI<SpriteRenderer>("Sprite Renderer", entity, [](SpriteRenderer& sprite_renderer) {
+			auto& sprite = sprite_renderer.sprite;
+			const Ref<Texture>& atlas = sprite->Atlas();
+
+			ImGui::Text("Texture: %s", atlas->_name.c_str());
+			ImGui::Text("texture width: %d", atlas->_width);
+			ImGui::Text("texture height: %d", atlas->_height);
+
+			ImGui::Text("Sprite:");
+			ImGui::DragFloat("Coords X: ", &sprite_renderer.sprite->Rect().x, static_cast<float>(atlas->_width) * 0.01f, 0.0f, static_cast<float>(atlas->_width));
+			ImGui::DragFloat("Coords Y: ", &sprite_renderer.sprite->Rect().y, static_cast<float>(atlas->_height) * 0.01f, 0.0f, static_cast<float>(atlas->_height));
+			ImGui::DragFloat("Width: ", &sprite_renderer.sprite->Rect().width, static_cast<float>(atlas->_width) * 0.01f, 0.0f, static_cast<float>(atlas->_width));
+			ImGui::DragFloat("Height: ", &sprite_renderer.sprite->Rect().height, static_cast<float>(atlas->_height) * 0.01f, 0.0f, static_cast<float>(atlas->_height));
+
+			if(sprite->SpriteMode() == Sprite::Mode::Multiple)
+			{
+				ImGui::DragInt("Sprite Index", &sprite->SpriteIndex(), 1.0f, 0, sprite->SpriteCount() - 1);
+			}
+		});
+	}
+
+	template<>
 	void DrawComponent<RigidBody2D>(Entity entity)
 	{
 		static char* body_types[] = { "UNKNOWN", "STATIC", "DYNAMIC" };
@@ -159,6 +182,10 @@ namespace mrs
 			{
 				ImGui::Checkbox("Use Gravity", &rb.use_gravity);
 				ImGui::Text("Body Type: %s", body_types[(int)rb.type]);
+
+				const Vector2 v = rb.GetVelocity();
+				ImGui::Text("Velocity: %.2f %.2f", v.x, v.y);
+				ImGui::Text("Magnitude: %.2f", glm::length(v));
 			});
 	}
 
@@ -221,5 +248,14 @@ namespace mrs
 					ImGui::TreePop();
 				}
 			});
+	}
+
+	template<>
+	void DrawComponent<SpriteAnimator>(Entity entity)
+	{
+		DrawComponentUI<SpriteAnimator>("Sprite Animator", entity, [](SpriteAnimator&sprite_animator) {
+			ImGui::DragFloat("Fps", &sprite_animator.fps);
+			ImGui::Checkbox("Playing", &sprite_animator.playing);
+		});
 	}
 };

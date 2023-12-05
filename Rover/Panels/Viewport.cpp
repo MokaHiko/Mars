@@ -1,5 +1,6 @@
 #include "Viewport.h"
 #include <Renderer/Vulkan/VulkanUtils.h>
+#include <Renderer/Vulkan/VulkanInitializers.h>
 
 #include <imgui.h>
 #include <imgui_impl_vulkan.h>
@@ -12,7 +13,7 @@
 
 #include <Math/Math.h>
 
-mrs::Viewport::Viewport(EditorLayer* editor_layer, const std::string& name, IRenderPipelineLayer* render_pipeline_layer)
+mrs::Viewport::Viewport(EditorLayer& editor_layer, const std::string& name, IRenderPipelineLayer* render_pipeline_layer)
 	:IPanel(editor_layer, name)
 {
 	_renderer = render_pipeline_layer->GetRenderer();
@@ -20,6 +21,25 @@ mrs::Viewport::Viewport(EditorLayer* editor_layer, const std::string& name, IRen
 	// Create view port sampler
 	VkSamplerCreateInfo sampler_info = vkinit::SamplerCreateInfo(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 	VK_CHECK(vkCreateSampler(_renderer->Device().device, &sampler_info, nullptr, &_viewport_sampler));
+
+
+	// TODO: Create separate image/image_views and render pass for viewport viewing
+	// std::vector<VkImageView> view_port_image_views(_renderer->SwapchainImages().size());
+	// for(int i = 0; i < _renderer->SwapchainImages().size(); i++)
+	// {
+	// 	VkImageCreateInfo view_port_image_info = vkinit::ImageCreateInfo(
+	// 	);
+	// }
+	// for(int i = 0; i < _renderer->SwapchainImages().size(); i++)
+	// {
+	// 	VkImageViewCreateInfo view_port_image_view_info = vkinit::ImageViewCreateInfo(
+	// 		_renderer->SwapchainImages()[i],
+	// 		VK_FORMAT_B8G8R8A8_UNORM,
+	// 		VK_IMAGE_ASPECT_COLOR_BIT
+	// 	);
+
+	// 	vkCreateImageView(_renderer->Device().device, &view_port_image_view_info, nullptr, &view_port_image_views[i]);
+	// }
 
 	// Create Imgui descriptor set
 	const auto& offscreen_image_views = _renderer->OffScreenImageViews();
@@ -35,7 +55,7 @@ mrs::Viewport::Viewport(EditorLayer* editor_layer, const std::string& name, IRen
 		}
 
 		vkDestroySampler(_renderer->Device().device, _viewport_sampler, nullptr);
-		});
+	});
 }
 
 mrs::Viewport::~Viewport() {}
@@ -44,6 +64,13 @@ void mrs::Viewport::Draw()
 {
 	uint32_t frame = _renderer->CurrentFrame();
 	ImGui::Begin("Viewport");
+
+	bool is_focused = ImGui::IsWindowFocused();
+	if(_focus_state != is_focused)
+	{
+		_focus_state = is_focused;
+		_editor_layer.ToggleInput(is_focused);
+	}
 
 	auto viewport_size = ImGui::GetContentRegionAvail();
 	auto viewport_pos_s = ImGui::GetCursorScreenPos();
@@ -55,19 +82,17 @@ void mrs::Viewport::Draw()
 	glm::vec2 aspects = glm::vec2(1600.0f, 900.0f);
 	glm::vec2 mouse_pos_app_space = glm::vec2(mouse_pos_v.x / viewport_size.x, mouse_pos_v.y / viewport_size.y) * aspects;
 
-	Input::x = mouse_pos_app_space.x;
-	Input::y = mouse_pos_app_space.y;
+	Input::x = static_cast<int>(mouse_pos_app_space.x);
+	Input::y = static_cast<int>(mouse_pos_app_space.y);
 
-	// viewport_size.x = aspects.x * 0.75f;
-	// viewport_size.y = aspects.y * 0.75f;
 	ImGui::Image(_viewport_descriptor_sets[frame], viewport_size);
 
 	// Gizmos
-	auto cam = _editor_layer->EditorCamera();
+	auto cam = _editor_layer.EditorCamera();
 	if(cam && cam.HasComponent<Camera>() && cam.GetComponent<Camera>().IsActive())
 	{
 		// TODO: Check if selected is Screen or World Space Entity
-		auto e = _editor_layer->SelectedEntity();
+		auto e = _editor_layer.SelectedEntity();
 		if(e)
 		{
 			ImGuizmo::SetOrthographic(false);

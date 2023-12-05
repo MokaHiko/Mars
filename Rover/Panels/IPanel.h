@@ -8,14 +8,14 @@ namespace mrs {
     class IPanel
     {
     public:
-        IPanel(EditorLayer* editor_layer, const std::string& name);
+        IPanel(EditorLayer& editor_layer, const std::string& name);
         virtual ~IPanel();
 
         virtual void Draw() = 0;
     public:
         const std::string Name();
     protected:
-        EditorLayer* _editor_layer = nullptr;
+        EditorLayer& _editor_layer;
     private:
         std::string _name = "";
     };

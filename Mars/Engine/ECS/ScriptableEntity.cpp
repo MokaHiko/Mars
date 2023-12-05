@@ -29,6 +29,17 @@ namespace mrs
 		return e;
 	}
 
+	void ScriptableEntity::QueueDestroy()
+	{
+		if(_queued_destroy)
+		{
+			return;
+		}
+
+		_queued_destroy = true;
+		_game_object._scene->QueueDestroy(_game_object);
+	}
+
 	void ScriptableEntity::StartProcess(Ref<Process> process)
 	{
 		if(!process)
@@ -45,11 +56,18 @@ namespace mrs
 
 		if(process_layer)
 		{
+			_processes.push_back(process);
 			process_layer->AttachProcess(process);
 		}
 		else
 		{
 			MRS_ERROR("Process Layer not found!");
 		}
+	}
+
+	void ScriptableEntity::Reset()
+	{
+		_on_start_called = false;
+		_on_create_called = false;
 	}
 }

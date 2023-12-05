@@ -23,7 +23,7 @@ struct ParticleParameters
     float dt; // delta time this frame in seconds
     float emission_rate;
     uint live_particles;
-    uint reset; // set to 1 if reset
+    uint repeating; // set to 1 if repeating
 
     // Buffer offsets
     uint buffer_offset; // Offset into global particle buffer
@@ -48,6 +48,7 @@ layout( push_constant ) uniform ParticleSystemPushConstant{
 	uint index;     // index into particle parameters buffer
 } _particle_push_constant;
 
+vec2 gravity = vec2(0, -9.8f);
 void main()
 {
     ParticleParameters particle_parameters = _particle_parameters_array.parameters[_particle_push_constant.index];
@@ -67,24 +68,45 @@ void main()
     _particles_out.particles[global_index].time_elapsed += particle_parameters.dt;
 
     // Gravity
-    _particles_out.particles[global_index].position += vec2(0, -9.8f) * pow(particle_parameters.dt, 2);
+    _particles_out.particles[global_index].position += 0.5f * gravity * pow(particle_parameters.dt, 2);
 
     // Velocity
-    _particles_out.particles[global_index].position += particle_in.velocity.xy * particle_parameters.dt;
+    _particles_out.particles[global_index].position += particle_in.velocity * particle_parameters.dt;
 
     // Color (Self resetting because it is interpolated)
     float time_elapsed_normalized = _particles_out.particles[global_index].time_elapsed / particle_parameters.life_time;
     _particles_out.particles[global_index].color =  particle_parameters.color_1 * (1.0f - time_elapsed_normalized) + particle_parameters.color_2 * time_elapsed_normalized;
 
-    // Reset
-    float life_time_elapsed = min(floor(_particles_out.particles[global_index].time_elapsed / particle_parameters.life_time), 1.0f);
-        // Reset position
-        _particles_out.particles[global_index].position *= (1 - life_time_elapsed);
+    // TODO: Add Rotation over time
+    // TODO: Add Stop (Stop emitting particles)
 
-        // Reset time
-        _particles_out.particles[global_index].time_elapsed *= (1 - life_time_elapsed);
+    // No lifetime reset if not repeating
+    if(particle_parameters.repeating < 1)
+    {
+        return;
+    }
+
+    float time_elapsed = _particles_out.particles[global_index].time_elapsed;
+    if(time_elapsed >= particle_parameters.life_time)
+    {
+        // Reset position (If not repeating)
+        _particles_out.particles[global_index].position -= particle_in.velocity * time_elapsed;
+        //_particles_out.particles[global_index].position -= 0.5f * gravity * pow(time_elapsed, 2);
+
+        // Reset time (If not repeating)
+        _particles_out.particles[global_index].time_elapsed = 0.0f;
+    }
+
+    // TODO: Optmize Compute Shader
+    // Reset on lifetime reached
+    // float life_time_elapsed = min(floor(_particles_out.particles[global_index].time_elapsed / particle_parameters.life_time), 1.0f);
+    //     // Reset position (If not repeating)
+    //     _particles_out.particles[global_index].position *= (1 - life_time_elapsed);
+
+    //     // Reset time (If not repeating)
+    //     _particles_out.particles[global_index].time_elapsed *= (1 - life_time_elapsed);
 
     // Manual reset
-    _particles_out.particles[global_index].position *= (1 - particle_parameters.reset);
-    _particles_out.particles[global_index].time_elapsed *= (1 - particle_parameters.reset);
+    // _particles_out.particles[global_index].position *= (1 - particle_parameters.reset);
+    // _particles_out.particles[global_index].time_elapsed *= (1 - particle_parameters.reset);
 }

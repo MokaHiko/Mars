@@ -5,7 +5,7 @@ std::vector<std::function<void(mrs::Entity)>> mrs::InspectorPanel::_custom_compo
 void mrs::InspectorPanel::Draw(Entity entity)
 {
 	ImGui::Begin("Inspector");
-	if (entity)
+	if (entity.IsAlive())
 	{
 		Tag& tag = entity.GetComponent<Tag>();
 
@@ -22,6 +22,8 @@ void mrs::InspectorPanel::Draw(Entity entity)
 		DrawComponent<ParticleSystem>(entity);
 		DrawComponent<DirectionalLight>(entity);
 		DrawComponent<MeshCollider>(entity);
+		DrawComponent<SpriteRenderer>(entity);
+		DrawComponent<SpriteAnimator>(entity);
 
 		for(auto& fn : _custom_component_fns)
 		{
@@ -85,7 +87,7 @@ void mrs::InspectorPanel::DrawAddComponent(Entity entity)
 						default:
 						{
 							auto& script = entity.AddComponent<Script>();
-							script.Bind(components[i]);
+							script.Bind(components[i], entity);
 							script.enabled = false;
 						} break;
 						}

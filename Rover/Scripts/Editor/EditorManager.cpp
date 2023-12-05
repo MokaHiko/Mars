@@ -19,8 +19,7 @@ void mrs::EditorManager::InitEditorResources() {
 	auto window = Application::Instance().GetWindow();
 	_camera = Instantiate("Editor Camera");
 
-	_camera.AddComponent<Camera>(CameraType::Perspective, window->GetWidth(),
-		window->GetHeight());
-	_camera.AddComponent<Script>().Bind<CameraController>();
+	_camera.AddComponent<Camera>(CameraType::Perspective, window->GetWidth(), window->GetHeight());
+	_camera.AddScript<CameraController>();
 	_camera.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, 50.0f);
 }

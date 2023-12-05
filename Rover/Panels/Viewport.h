@@ -13,7 +13,7 @@ namespace mrs
     class Viewport : public IPanel
     {
     public:
-        Viewport(EditorLayer* editor_layer, const std::string& name, IRenderPipelineLayer* render_pipeline_layer);
+        Viewport(EditorLayer& editor_layer, const std::string& name, IRenderPipelineLayer* render_pipeline_layer);
         virtual ~Viewport();
 
         virtual void Draw() override;
@@ -22,6 +22,7 @@ namespace mrs
         VkSampler _viewport_sampler;
 
         std::vector<VkDescriptorSet> _viewport_descriptor_sets;
+        bool _focus_state = true;
     };
 }
 

@@ -10,7 +10,7 @@
 #include "Renderer/RenderPipelineLayers/RenderPipelines/ImGuiRenderPipeline/ImGuiRenderPipeline.h"
 #include "Renderer/RenderPipelineLayers/RenderPipelines/PostProcessingRenderPipeline/PostProcessingRenderPipeline.h"
 #include "Renderer/RenderPipelineLayers/RenderPipelines/TerrainRenderPipeline/TerrainRenderPipeline.h"
-#include "Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/UIRenderPipeline.h"
+#include "Renderer/RenderPipelineLayers/RenderPipelines/SpriteRenderPipeline/SpriteRenderPipeline.h"
 
 namespace mrs
 {
@@ -22,10 +22,10 @@ namespace mrs
             _name = "DefaultRenderPipelineLayer";
 
             PushRenderPipeline(new ImGuiRenderPipeline());
-            PushRenderPipeline(new ParticleRenderPipeline(10000));
+            PushRenderPipeline(new ParticleRenderPipeline(50000));
 
             PushRenderPipeline(new MeshRenderPipeline());
-            PushRenderPipeline(new UIRenderPipeline());
+            PushRenderPipeline(new SpriteRenderPipeline());
             PushRenderPipeline(new PostProcessingRenderPipeline());
         };
         ~DefaultRenderPipelineLayer() {};

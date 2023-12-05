@@ -1,5 +1,8 @@
 #include "GameManager.h"
 
+#include <Toolbox/RandomToolBox.h>
+#include <UI/UI.h>
+
 #include "Planet.h"
 #include "Ship.h"
 #include "PlayerShipController.h"
@@ -7,9 +10,9 @@
 #include "Moon.h"
 
 #include "GameLayer/RenderPipelines/CBRenderPipeline.h"
-#include "Toolbox/RandomToolBox.h"
+#include "Spawner.h"
 
-#include "Renderer/RenderPipelineLayers/RenderPipelines/UIRenderPipeline/UI.h"
+#include "Effects/TargetLockEffect.h"
 
 GameManager::GameManager()
 {
@@ -33,6 +36,19 @@ void GameManager::OnStart()
 	{
 		MRS_ERROR("No game camera script found");
 	}
+
+	// Test
+	// {
+	// 	auto spawner = Instantiate("Spawner");
+	// 	spawner.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("default"));
+	// 	spawner.AddScript<Spawner>();
+	// }
+
+	// {
+	// 	auto& sky = Instantiate("SkyBox");
+	// 	sky.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("sphere"), mrs::Material::Get("stars"));
+	// 	sky.GetComponent<mrs::Transform>().scale *= 1000.0f;
+	// }
 
 	tbx::PRNGenerator<float> random(0, 1);
 	tbx::PRNGenerator<float> random_neg(-0.5f, 0.5f);
@@ -68,7 +84,7 @@ void GameManager::OnStart()
 			planet_props.axis_of_rotation = mrs::Vector3(0.5, 0.25, 0.8);
 			planet_props.rotation_rate = 5.0f;
 
-			planet.AddComponent<mrs::Script>().Bind<Planet>();
+			planet.AddScript<Planet>();
 
 			{
 				auto moon = Instantiate("Moon 0");
@@ -92,84 +108,60 @@ void GameManager::OnStart()
 				moon_props._planet = planet;
 				moon_props.a = 7 * planet.GetComponent<mrs::Transform>().scale.x;
 				moon_props.b = 2.5f * planet.GetComponent<mrs::Transform>().scale.x;
-				moon.AddComponent<mrs::Script>().Bind<Moon>();
+				moon.AddScript<Moon>();
 			}
 		}
 	}
 
 	{
-		// Ship Entity
+		// Player
 		auto player = Instantiate("Player");
 		auto& transform = player.GetComponent<mrs::Transform>();
 		transform.position = glm::vec3(0, 0, 0);
 
-		auto& rb = player.AddComponent<mrs::RigidBody2D>();
-		rb.mass = 100;
-		rb.use_gravity = false;
-
-		player.AddComponent<mrs::Script>().Bind<Ship>();
-		auto& resources = player.AddComponent<ShipResources>();
-
-		// Ship model
-		auto ship_model = Instantiate("Player Ship Model!");
-		ship_model.GetComponent<mrs::Transform>().rotation = { 0, 0, 180 };
-		ship_model.AddComponent<mrs::ModelRenderer>(mrs::Model::Get("zenith"));
-
-		auto& thrusters_effect = Instantiate("thrusters_effect");
-		auto& particles = thrusters_effect.AddComponent<mrs::ParticleSystem>();
-		particles.emission_rate = 32;
-		particles.max_particles = 128;
-		particles.particle_size = 1.0f;
-		particles.spread_angle = 25.0f;
-		particles.velocity = {75,50};
-		particles.color_1 = {0.883, 0.490, 0.000, 1.000};
-		particles.color_2 = {0.114, 0.054, 0.006, 0.000};
-		particles.life_time = 1.33f;
-		particles.repeating = true;
-
-		ship_model.GetComponent<mrs::Transform>().AddChild(thrusters_effect);
-		thrusters_effect.GetComponent<mrs::Transform>().position.y = 3.0f;
+		// Ship
+		auto& specs = player.AddComponent<ShipSpecs>();
+		specs.model = mrs::Model::Get("zenith");
+		player.AddScript<Ship>();
 
 		// Ship controller
 		auto ship_controller = Instantiate("Player Controller!");
-		ship_controller.AddComponent<mrs::Script>().Bind<PlayerShipController>();
+		ship_controller.AddScript<PlayerShipController>();
 
 		// Parent
-		transform.AddChild(ship_model);
 		transform.AddChild(ship_controller);
 	}
 
 	for (int i = 1; i < 5; i++) 
 	{
+		// Enemy
 		auto enemy = Instantiate("Enemy_Striker");
 		auto& transform = enemy.GetComponent<mrs::Transform>();
-		transform.position = glm::vec3(5 * i, 0, 0);
+		transform.position = glm::vec3(10 * i, 50.0f, 0);
 
-		auto& mesh_renderer = enemy.AddComponent<mrs::ModelRenderer>(mrs::Model::Get("striker"));
-
-		auto& rb = enemy.AddComponent<mrs::RigidBody2D>();
-		rb.mass = 100;
-		rb.use_gravity = false;
-
-		enemy.AddComponent<mrs::Script>().Bind<Ship>();
-		auto& resources = enemy.AddComponent<ShipResources>();
-		resources.scrap_metal = 10;
+		// Ship
+		auto& specs = enemy.AddComponent<ShipSpecs>();
+		specs.model = mrs::Model::Get("striker");
+		enemy.AddScript<Ship>();
 
 		// Enemy controller
 		auto enemy_controller = Instantiate("Enemy Controller!");
-		enemy_controller.AddComponent<mrs::Script>().Bind<Striker>();
+		enemy_controller.AddScript<Striker>();
 
+		// TODO: Move to targetting
+		auto targetting = Instantiate("targetting");
+		targetting.AddComponent<EffectProperties>().duration = 4.0f;
+		targetting.AddComponent<EffectProperties>().fixed_time = false;
+		targetting.AddScript<TargetLockEffect>();
+
+		// Parent
+		transform.AddChild(targetting);
 		transform.AddChild(enemy_controller);
 	}
 
 	// Ui 
 	{
-		// Sprites
-		// auto health_bar = Instantiate("health_bar");
-		// health_bar.AddComponent<mrs::SpriteRenderer>();
-		// health_bar.AddComponent<mrs::Renderable>().material = mrs::Material::Get("default_ui");
-
-		// 
+		// WorldSpace 
 	}
 }
 
@@ -240,7 +232,7 @@ void GameManager::OnUpdate(float dt)
 	// 				auto& celestial_body = star.AddComponent<CelestialBody>();
 	// 				auto& mesh_renderer = star.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
 
-	// 				star.AddComponent<mrs::Script>().Bind<Planet>();
+	// 				star.AddScript<Planet>();
 
 	// 				// Save in current sector
 	// 				current_stars.push_back(star);

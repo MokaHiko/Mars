@@ -29,58 +29,24 @@ namespace mrs
     public:
         static constexpr auto in_place_delete = true;
 
+        Vector2 GetVelocity() const;
+
         // Adds force as impulse
-        void AddImpulse(const glm::vec2& value)
-        {
-            body->ApplyLinearImpulse({value.x, value.y}, body->GetWorldCenter(), true);
-        }
+        void AddImpulse(const glm::vec2& value);
 
-        // Sets instantaneous velocity 
-        void SetVelocity(const glm::vec2& value)
-        {
-            body->SetLinearVelocity({value.x, value.y});
-        }
+        void ApplyAngularImpulse(const float w);
 
-        void SetType(BodyType type)
-        {
-            switch(type)
-            {
-                case BodyType::STATIC:
-                    body->SetType(b2BodyType::b2_staticBody);
-                    break;
-                case BodyType::DYNAMIC:
-                    body->SetType(b2BodyType::b2_dynamicBody);
-                    break;
-                case BodyType::KINEMATIC:
-                    body->SetType(b2BodyType::b2_kinematicBody);
-                    break;
-                default:
-                    break;
-            }
-        }
+        void SetVelocity(const glm::vec2& value);
 
-        // Set position
-        void SetTransform(const glm::vec2& position, const float angle)
-        {
-            body->SetTransform({position.x, position.y}, angle);
-        }
+        void SetType(BodyType type);
 
-        // Sets instantaneous angular velocity in radians/second
-        void SetAngularVelocity(const float w)
-        {
-            body->SetAngularVelocity(w);
-        }
+        void SetTransform(const glm::vec2& position, const float angle);
 
-        void ApplyAngularImpulse(const float w)
-        {
-            body->ApplyAngularImpulse(w, true);
-        }
+        void SetAngularVelocity(const float w);
 
-        void SetFixedRotation(const bool flag)
-        {
-            body->SetFixedRotation(flag);
-        };
+        void SetFixedRotation(const bool flag);
 
+        bool Initialized() const {return body != nullptr;}
     public:
         bool use_gravity = true;
         float friction = 0.6f;
@@ -88,6 +54,9 @@ namespace mrs
 
         b2Body *body = nullptr;
         BodyType type = BodyType::DYNAMIC;
+
+        Vector2 start_velocity = {0,0};
+        Vector2 start_impulse = {0,0};
     };
 
     struct BoxCollider2D

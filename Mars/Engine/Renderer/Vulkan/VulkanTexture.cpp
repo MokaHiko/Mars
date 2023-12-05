@@ -60,5 +60,11 @@ namespace mrs {
 
 		return nullptr;
 	}
+
+    void Texture::SetSamplerType(SamplerType type)
+	{
+		// TODO: ReUpload After Sampler Change
+		_sampler_type = type;
+	}
 }
 

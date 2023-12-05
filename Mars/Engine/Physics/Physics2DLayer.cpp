@@ -4,6 +4,8 @@
 #include "Physics.h"
 #include "ECS/Components/Components.h"
 
+
+#include "Core/Time.h"
 #include "Algorithm.h"
 
 namespace mrs
@@ -30,8 +32,8 @@ namespace mrs
 		uint32_t velocity_iterations = 6;
 		uint32_t position_iterations = 2;
 
-		float timeStep = dt;
-		_physics_world->Step(timeStep, velocity_iterations, position_iterations);
+		float timeStep = Time::FixedDeltaTime();
+		_physics_world->Step(dt, velocity_iterations, position_iterations);
 
 		FlushQueues();
 
@@ -59,6 +61,10 @@ namespace mrs
 			transform.position.y = new_pos.y;
 			transform.rotation.z = rot_z;
 		}
+	}
+
+	void Physics2DLayer::OnFixedUpdate(float fixed_dt)
+	{
 	}
 
 	void Physics2DLayer::OnImGuiRender()
@@ -141,6 +147,8 @@ namespace mrs
 		{
 			MRS_ERROR("Uknown rigidbody type!");
 		}
+
+		rb.body->SetLinearVelocity({rb.start_velocity.x, rb.start_velocity.y});
 	}
 
 	void Physics2DLayer::CreateFixture(Entity entity, BodyType type)

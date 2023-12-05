@@ -1,20 +1,48 @@
 #include "ParticleComponents.h"
 
-bool mrs::ParticleSystem::operator==(const ParticleSystem &other) const
+void mrs::ParticleSystem::Play()
 {
-    if(other.max_particles != max_particles) {
+    if (running && !stop)
+    {
+        return;
+    }
+
+    stop = false;
+    running = true;
+    time = 0.0f;
+}
+
+void mrs::ParticleSystem::Stop()
+{
+    stop = true;
+}
+
+void mrs::ParticleSystem::Pause()
+{
+    running = false;
+    live_particles = 0;
+}
+
+void mrs::ParticleSystem::Reset()
+{
+    reset = true;
+};
+
+bool mrs::ParticleSystem::operator==(const ParticleSystem& other) const
+{
+    if (other.max_particles != max_particles) {
         return false;
     }
 
-    if(other.duration != duration) {
+    if (other.duration != duration) {
         return false;
     }
 
-    if(other.emission_shape != emission_shape) {
+    if (other.emission_shape != emission_shape) {
         return false;
     }
 
-    if(other.emission_rate != emission_rate) {
+    if (other.emission_rate != emission_rate) {
         return false;
     }
 

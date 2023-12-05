@@ -22,6 +22,7 @@ namespace mrs {
         virtual void OnDisable(){};
 
         virtual void OnUpdate(float dt) {};
+        virtual void OnFixedUpdate(float fixed_dt) {};
         virtual void OnImGuiRender() {};
 
         virtual void OnEvent(Event& event) {};

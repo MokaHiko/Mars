@@ -56,6 +56,28 @@ namespace mrs
             return _registry.emplace<T>(id, std::forward<Args>(args)...);
         }
 
+        template <typename ScriptType>
+        ScriptType& AddScript(entt::entity id)
+        {
+            if (HasComponent<Script>(id))
+            {
+                if (ScriptType* script = dynamic_cast<ScriptType*>(GetComponent<Script>(id).script))
+                {
+                    return *script;
+                }
+                else
+                {
+                    MRS_ERROR("Script Type does not exist on this entity!");
+                }
+            }
+
+            auto& script_component = _registry.emplace<Script>(id);
+            script_component.Bind<ScriptType>({id, this});
+
+            ScriptType* script = dynamic_cast<ScriptType*>(script_component.script);
+            return *script;
+        }
+
         template <typename T, typename... Args>
         bool RemoveComponent(entt::entity id, Args &&...args)
         {
@@ -119,7 +141,7 @@ namespace mrs
         entt::entity _root;
 
         // Entity ids free to be reused
-        std::vector<Entity> _free_queue;
+        std::vector<entt::entity> _free_queue;
 
         // Queue of entities to destroy
         std::list<Entity> _destruction_queue;
@@ -127,7 +149,5 @@ namespace mrs
         // Serialization mode
         bool _serializing = false;
     };
-
 }
-
 #endif

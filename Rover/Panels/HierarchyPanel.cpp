@@ -6,7 +6,7 @@
 #include "InspectorPanel.h"
 #include "Rover.h"
 
-mrs::HierarchyPanel::HierarchyPanel(EditorLayer* editor_layer, const std::string& name, Scene* scene)
+mrs::HierarchyPanel::HierarchyPanel(EditorLayer& editor_layer, const std::string& name, Scene* scene)
 	:IPanel(editor_layer, name), _scene(scene) {}
 
 mrs::HierarchyPanel::~HierarchyPanel() {}
@@ -20,7 +20,7 @@ void mrs::HierarchyPanel::Draw()
 	DrawNodeRecursive(root);
 
 	// Inspect selected entity
-	InspectorPanel::Draw(_editor_layer->SelectedEntity());
+	InspectorPanel::Draw(_editor_layer.SelectedEntity());
 
 	// Creating entity
 	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootWindow))
@@ -47,6 +47,11 @@ void mrs::HierarchyPanel::Draw()
 
 void mrs::HierarchyPanel::DrawNodeRecursive(Entity node)
 {
+	if(!node.IsAlive())
+	{
+		return;
+	}
+
 	static ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow;
 	ImGuiTreeNodeFlags node_flags = base_flags;
 
@@ -57,10 +62,10 @@ void mrs::HierarchyPanel::DrawNodeRecursive(Entity node)
 
 	if (ImGui::IsItemClicked())
 	{
-		_editor_layer->FocusEntity(node);
+		_editor_layer.FocusEntity(node);
 	}
 
-	if (_editor_layer->SelectedEntity() == node)
+	if (_editor_layer.SelectedEntity() == node)
 	{
 		node_flags |= ImGuiTreeNodeFlags_Selected;
 	}

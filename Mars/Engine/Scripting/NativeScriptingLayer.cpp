@@ -1,6 +1,8 @@
 #include "NativeScriptingLayer.h"
 #include "Core/Application.h"
 
+#include "Scripting/Process.h"
+
 void mrs::NativeScriptingLayer::OnAttach()
 {
 	_name = "NativeScriptingLayer";
@@ -13,12 +15,14 @@ void mrs::NativeScriptingLayer::OnAttach()
 }
 
 void mrs::NativeScriptingLayer::OnEnable() {
-	// Instantiate scripts
+
+	// Instantiate/Register scripts
 	{
 		auto view = _scene->Registry()->view<Transform, Script>().use<Script>();
-		for (auto entity : view) {
+		for (auto entity : view)
+		{
 			Entity e(entity, _scene);
-			Script &script_component = e.GetComponent<Script>();
+			Script& script_component = e.GetComponent<Script>();
 
 			if (!script_component.script)
 			{
@@ -32,23 +36,18 @@ void mrs::NativeScriptingLayer::OnEnable() {
 		}
 	}
 
+	// Call Scripts on Start
 	{
 		auto view = _scene->Registry()->view<Transform, Script>().use<Script>();
 		for (auto entity : view) {
 			Entity e(entity, _scene);
-			Script &script_component = e.GetComponent<Script>();
+			Script& script_component = e.GetComponent<Script>();
 
 			// Call Scripts OnStart
-			if (script_component.script) {
+			if (!script_component.script->_on_start_called)
+			{
 				script_component.script->OnStart();
-			}
-			else {
-				script_component.script = script_component.InstantiateScript();
-				script_component.script->_game_object = e;
-				script_component.enabled = true;
-
-				script_component.script->OnCreate();
-				script_component.script->OnStart();
+				script_component.script->_on_start_called = true;
 			}
 		}
 	}
@@ -61,7 +60,7 @@ void mrs::NativeScriptingLayer::OnDisable()
 	for (auto entity : view)
 	{
 		Entity e(entity, _scene);
-		Script &script_component = e.GetComponent<Script>();
+		Script& script_component = e.GetComponent<Script>();
 		script_component.enabled = false;
 		script_component.DestroyScript();
 	}
@@ -69,114 +68,90 @@ void mrs::NativeScriptingLayer::OnDisable()
 
 void mrs::NativeScriptingLayer::OnUpdate(float dt)
 {
-	// Scripts: Update
 	auto view = _scene->Registry()->view<Transform, Script>();
 
 	for (auto entity : view)
 	{
 		Entity e(entity, _scene);
-		Script &script_component = e.GetComponent<Script>();
+		Script& script_component = e.GetComponent<Script>();
 
 		if (!script_component.enabled)
 		{
 			continue;
 		}
 
-		if (!script_component.script)
+		if (!script_component.script->_on_start_called)
 		{
-			script_component.script = script_component.InstantiateScript();
-			script_component.script->_game_object = e;
-
-			// Call OnCreate and OnStart if created during runtime
-			script_component.script->OnCreate();
 			script_component.script->OnStart();
-			continue;
+			script_component.script->_on_start_called = true;
 		}
 
-		e.GetComponent<Script>().script->OnUpdate(dt);
+		script_component.script->OnUpdate(dt);
 	}
 }
 
-void mrs::NativeScriptingLayer::OnEvent(Event &event)
+void mrs::NativeScriptingLayer::OnEvent(Event& event)
 {
 }
 
-void mrs::NativeScriptingLayer::DisableScripts(Entity except) 
+void mrs::NativeScriptingLayer::DisableScripts(Entity except)
 {
 	auto view = _scene->Registry()->view<Transform, Script>();
 	for (auto entity : view)
 	{
 		Entity e(entity, _scene);
 
-		if(e == except)
+		if (e == except)
 		{
 			continue;
 		}
 
-		Script &script_component = e.GetComponent<Script>();
+		Script& script_component = e.GetComponent<Script>();
 		script_component.enabled = false;
 	}
 }
 
-void mrs::NativeScriptingLayer::EnableScripts(Entity except) 
+void mrs::NativeScriptingLayer::EnableScripts(Entity except)
 {
-	auto view = _scene->Registry()->view<Transform, Script>().use<Script>();
+	auto view = _scene->Registry()->view<Transform, Script>();
 
-	for (auto entity : view) 
+	for (auto entity : view)
 	{
 		Entity e(entity, _scene);
-
-		if(e == except)
-		{
-			continue;
-		}
-
-		Script &script_component = e.GetComponent<Script>();
-
-		// Call Scripts On Createe callback
-		if(script_component.script == nullptr)
-		{
-			script_component.script = script_component.InstantiateScript();
-			MRS_ASSERT(script != nullptr, "Cannot instantiate script!");
-
-			script_component.script->_game_object = e;
-		}
+		Script& script_component = e.GetComponent<Script>();
 
 		script_component.enabled = true;
-
-		script_component.script->OnCreate();
-	}
-
-	for (auto entity : view) 
-	{
-		Entity e(entity, _scene);
-
-		if(e == except)
-		{
-			continue;
-		}
-
-		Script &script_component = e.GetComponent<Script>();
-
-		// Call Scripts OnStart callback
-		if(script_component.script == nullptr)
-		{
-			script_component.script = script_component.InstantiateScript();
-			MRS_ASSERT(script != nullptr, "Cannot instantiate script!");
-
-			script_component.script->_game_object = e;
-		}
-
-		script_component.enabled = true;
-		script_component.script->OnStart();
 	}
 }
 
-void mrs::NativeScriptingLayer::OnScriptDestroyed(entt::basic_registry<entt::entity> &, entt::entity entity) 
+void mrs::NativeScriptingLayer::OnScriptBound(Entity entity, Script* script_component)
 {
-	Entity e{entity, _scene};
-    if (e.HasComponent<Script>())
-    {
-        e.GetComponent<Script>().DestroyScript();
-    }
+	if (_enabled)
+	{
+		script_component->script = script_component->InstantiateScript();
+		script_component->script->_game_object = entity;
+		script_component->enabled = true;
+
+		script_component->script->OnCreate();
+	}
+}
+
+void mrs::NativeScriptingLayer::OnScriptDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity)
+{
+	Entity e{ entity, _scene };
+	if (e.HasComponent<Script>())
+	{
+		auto& script_component = e.GetComponent<Script>();
+
+		// Stop all ongoing processes 
+		for(auto& process : script_component.script->_processes)
+		{
+			if(process->IsAlive())
+			{
+				process->Fail();
+			}
+		}
+
+		script_component.DestroyScript();
+	}
 }
