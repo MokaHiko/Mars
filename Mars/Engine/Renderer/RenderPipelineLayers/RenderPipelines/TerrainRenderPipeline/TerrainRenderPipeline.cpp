@@ -3,6 +3,7 @@
 #include <Renderer/Vulkan/VulkanInitializers.h>
 
 #include "Renderer/RenderPipelineLayers/IRenderPipelineLayer.h"
+#include "Renderer/Vulkan/VulkanAssetManager.h"
 
 mrs::TerrainRenderPipeline::TerrainRenderPipeline()
     :IRenderPipeline("Terrain Render Pipeline") {}
@@ -63,7 +64,7 @@ void mrs::TerrainRenderPipeline::Init() {
         }
 
         terrain._terrain_mesh->_vertex_count = static_cast<uint32_t>(terrain._terrain_mesh->_vertices.size());
-        _renderer->UploadMesh(terrain._terrain_mesh);
+        VulkanAssetManager::Instance().UploadMesh(terrain._terrain_mesh);
 
         // Create terrain descriptors
         VkDescriptorImageInfo height_map_descriptor_info = {};

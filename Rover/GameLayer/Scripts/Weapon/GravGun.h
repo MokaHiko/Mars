@@ -11,7 +11,7 @@ public:
     GravGun();
     ~GravGun();
 
-    virtual mrs::Entity CreateStrongProjectile(float hold_time) override;
+    virtual void FireStrongProjectile(float hold_time) override;
 private:
 
 };

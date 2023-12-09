@@ -77,6 +77,8 @@ namespace mrs
     struct SpriteRenderer
     {
         Ref<Sprite> sprite = nullptr; 
+        Ref<Mesh> mesh = nullptr;
+
         int sprite_index = 0;
         Vector4 color {1.0f};
         uint32_t sorting_layer = 0;

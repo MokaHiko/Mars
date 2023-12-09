@@ -4,16 +4,22 @@
 #pragma once
 
 #include "Weapon.h"
+#include <Toolbox/RandomToolBox.h>
 
 class ChargeCanon : public Weapon
 {
 public:
-    virtual mrs::Entity CreateWeakProjectile() override;
-    virtual mrs::Entity CreateStrongProjectile(float hold_time) override;
+    virtual void OnStart() override;
+
+    virtual void FireWeakProjectile() override;
+    virtual void FireStrongProjectile(float hold_time) override;
 
     virtual void OnEquip() override;
     virtual void OnUnEquip() override;
+
+    static tbx::PRNGenerator<float> random_gen;
 private:
+    mrs::Entity BulletMuzzleFlash();
 };
 
 #endif

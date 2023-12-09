@@ -31,9 +31,9 @@ Entities:
       Binding: class GameManager
   - Entity: 22164873
     Tag:
-      Tag: Directional Light
+      Tag: Temporary Sun Light
     Transform:
-      Position: [-35, 186, 555]
+      Position: [-150, 186, -50]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     MeshRenderer:
@@ -52,24 +52,47 @@ Entities:
   #     Scale: [1, 1, 1]
   #   ModelRenderer:
   #     Model: "zenith"
+  - Entity: 4404601799
+    Tag:
+      Tag: Nebula
+    Transform:
+      Position: [2335, 0, -1000.0]
+      Rotation: [0, 0, 0]
+      Scale: [500, 500, 500]
+    ParticleSystem:
+      MaxParticles: 256
+      ParticleSize: 3.5
+      SpreadAngle: 45
+      LifeTime: 8.0
+      EmissionRate: 3.5
+      EmissionShape: 1
+      Velocity: [0.5, 0.5]
+      Running: true
+      Duration: 1.66
+      Repeating: true
+      Color1: [0.883, 0.490, 0.000, 1.000]
+      Color2: [0.114, 0.054, 0.006, 0.000]
+      WorldSpace: false
+      Material: fire_01
   # - Entity: 4404601799
   #   Tag:
   #     Tag: Smoke Particles
   #   Transform:
-  #     Position: [0, 0, 40.0]
+  #     Position: [0, 0.0, 0.0]
   #     Rotation: [0, 0, 0]
   #     Scale: [1, 1, 1]
   #   ParticleSystem:
-  #     MaxParticles: 16
-  #     ParticleSize: 0.5
+  #     EmissionRate: 16
+  #     MaxParticles: 32
+  #     ParticleSize: 3.5
   #     SpreadAngle: 45
-  #     LifeTime: 3.66
-  #     EmissionRate: 64
+  #     LifeTime: 0.35
   #     EmissionShape: 2
-  #     Velocity: [10, 10]
+  #     Velocity: [50, 10]
   #     Running: true
   #     Duration: 1.66
   #     Repeating: true
-  #     Color1: [0.883, 0.490, 0.000, 1.000]
-  #     Color2: [0.114, 0.054, 0.006, 0.000]
+  #     WorldSpace: true
+  #     Color1: [1.0, 1.090, 1.000, 1.000]
+  #     Color2: [0.0, 0.090, 0.000, 0.000]
   #     Material: default_particle

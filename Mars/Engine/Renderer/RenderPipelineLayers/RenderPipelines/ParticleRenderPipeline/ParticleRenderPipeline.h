@@ -47,7 +47,12 @@ namespace mrs
 
     struct ParticleSystemPushConstant
     {
-        uint32_t index;
+        uint32_t index;         // Index into particle parameters buffer
+        float world_space;      //  1 if world_space : 0 if local
+        float new_particles;    // 1 if new_particle : 0 if no new particles
+        float reset;            // 1 if reset : 0 if no reset
+
+        glm::mat4 emission_transform; // emission transform (used if world space particle system)
     };
 
     class ParticleRenderPipeline : public IRenderPipeline

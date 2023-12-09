@@ -11,10 +11,9 @@ GravGun::~GravGun()
 
 }
 
-mrs::Entity GravGun::CreateStrongProjectile(float hold_time)
+void GravGun::FireStrongProjectile(float hold_time)
 {
 	auto& ship_transform = Owner()->GetComponent<mrs::Transform>();
-
 	auto projectile = Instantiate("projectile!");
 	// auto& transform = projectile.GetComponent<mrs::Transform>();
 
@@ -36,6 +35,4 @@ mrs::Entity GravGun::CreateStrongProjectile(float hold_time)
 	// rb.type = mrs::BodyType::KINEMATIC;
 	// rb.use_gravity = false;
 	// projectile.AddScript<Projectile>();
-
-	return projectile;
 }

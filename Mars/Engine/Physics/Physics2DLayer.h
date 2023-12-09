@@ -16,16 +16,26 @@ namespace mrs
     class ContactListener : public b2ContactListener
     {
     public:
-        ContactListener(Scene *scene) : _scene(scene) {}
+        ContactListener(Scene* scene) : _scene(scene) {}
 
         // Called when two fixtures begin to touch
-        virtual void BeginContact(b2Contact *contact) override;
+        virtual void BeginContact(b2Contact* contact) override;
 
         // Called when two fixtures cease to touch
-        virtual void EndContact(b2Contact *contact) override;
+        virtual void EndContact(b2Contact* contact) override;
 
     private:
-        Scene *_scene;
+        Scene* _scene;
+    };
+
+    class RayCastListener : public b2RayCastCallback
+    {
+    public:
+        RayCastListener(Scene* scene, std::function<void(Collision&)> fn) : _scene(scene), _fn(fn) {}
+        virtual float ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float fraction) override;
+    private:
+        std::function<void(Collision&)> _fn = nullptr;
+        Scene* _scene;
     };
 
     class Physics2DLayer : public Layer
@@ -46,6 +56,8 @@ namespace mrs
 
         void OnRigidBody2DCreated(entt::basic_registry<entt::entity>&, entt::entity entity);
         void OnRigidBody2DDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
+
+        void Raycast(const Ray& ray, float distance, RayCastListener& callback);
     private:
         void InitWorld();
         void ShutdownWorld();
@@ -57,7 +69,6 @@ namespace mrs
 
         b2World* _physics_world = nullptr;
         ContactListener* _contact_listener = nullptr;
-
         Scene* _scene;
     };
 }

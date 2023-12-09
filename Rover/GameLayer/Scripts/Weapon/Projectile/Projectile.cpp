@@ -36,22 +36,23 @@ void Projectile::OnCollisionEnter2D(mrs::Entity other)
 
 void Projectile::Die()
 {
-	auto e = Instantiate("Explosion", GetComponent<mrs::Transform>().position);
+	auto e = Instantiate("Projectile Explosion", GetComponent<mrs::Transform>().position);
 
 	auto& particles = e.AddComponent<mrs::ParticleSystem>();
+	particles.duration = 6.0f;
 	particles.repeating = false;
 
 	particles.emission_shape = mrs::EmissionShape::Circle;
 	particles.emission_rate = 32;
-	particles.max_particles = 32;
+	particles.max_particles = 16;
 	particles.velocity = mrs::Vector2{ 5.0f, 5.0f };
-	particles.color_1 = mrs::Vector4(0.91, 0.33, 0.1f, 1.0f);
-	particles.color_2 = mrs::Vector4(0.91, 0.33, 0.1f, 1.0f) * 0.15f;
-	particles.particle_size = 0.15f;
-	particles.life_time = 6.0f;
-	particles.duration = 3.0f;
+    particles.color_1 = mrs::Vector4(0.883, 0.490, 0.000, 1.000);
+    particles.color_2 = mrs::Vector4(0.114, 0.054, 0.006, 0.000);
+	particles.particle_size = 0.5f;
+	particles.life_time = 3.0f;
+	particles.duration = 5.0f;
 
-	e.AddComponent<EffectProperties>().duration = particles.duration;
+	e.AddComponent<EffectProperties>().duration = particles.duration * 3.0f;
 	e.AddScript<Effect>();
 
 	QueueDestroy();

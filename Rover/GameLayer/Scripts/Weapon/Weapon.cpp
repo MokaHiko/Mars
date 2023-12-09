@@ -1,10 +1,6 @@
 #include "Weapon.h"
 #include <Core/Time.h>
 
-void Weapon::OnStart() 
-{
-}
-
 void Weapon::OnUpdate(float dt) 
 {
   _time_since_last_fire += mrs::Time::DeltaTime();
@@ -24,11 +20,11 @@ void Weapon::Fire()
 
 		if(_hold_time >= _long_hold_threash_hold)
 		{
-			auto& projectile = CreateStrongProjectile(_hold_time);
+			FireStrongProjectile(_hold_time);
 		}
 		else
 		{
-			auto& projectile = CreateWeakProjectile();
+			FireWeakProjectile();
 		}
 
 		if(_ammo > 0)

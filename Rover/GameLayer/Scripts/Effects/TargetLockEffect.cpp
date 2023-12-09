@@ -7,10 +7,10 @@ AnimateTargetLockProcess::AnimateTargetLockProcess(mrs::Entity target_lock_sprit
 
 	auto& transform = _target_lock_sprite.GetComponent<mrs::Transform>();
 
-	_end_scale = glm::length(transform.scale);
+	_end_scale = transform.scale.x;
 	_end_rotation = transform.rotation.z;
 
-	_start_scale = glm::length(transform.scale) * 5.0f;
+	_start_scale = transform.scale.x * 3.0f;
 	_start_rotation = transform.rotation.z + 270.0f;
 }
 
@@ -20,11 +20,6 @@ AnimateTargetLockProcess::~AnimateTargetLockProcess()
 
 void AnimateTargetLockProcess::OnUpdate(float dt)
 {
-	if(_time_elapsed >= _duration)
-	{
-		Succeed();
-	}
-
 	auto& transform = _target_lock_sprite.GetComponent<mrs::Transform>();
 
 	// Rotate
@@ -43,18 +38,25 @@ void AnimateTargetLockProcess::OnUpdate(float dt)
 	// }
 	// time_elapsed += dt;
 
+	if(_time_elapsed >= _duration)
+	{
+		Succeed();
+	}
+
 	_time_elapsed += dt;
 }
 
 void TargetLockEffect::Init()
 {
 	auto& transform = GetComponent<mrs::Transform>();
+	_target = transform.parent;
+	transform.scale = mrs::Vector3(3.0f) * _target.GetComponent<mrs::Transform>().scale.x;
+
 	AddComponent<mrs::SpriteRenderer>().sprite = mrs::Sprite::Get("target_lock");
 	AddComponent<mrs::Renderable>().material = mrs::Material::Get("default_ui");
 	//targetting.AddComponent<mrs::SpriteAnimator>();
 
 	// Remove from parent to avoid following rotation
-	_target = transform.parent;
 	_target.GetComponent<mrs::Transform>().RemoveChild(_game_object);
 
 	// TODO Steam line going to root
@@ -68,6 +70,7 @@ void TargetLockEffect::OnUpdate(float dt)
 {
 	if(!_target.IsAlive())
 	{
+		QueueDestroy();
 		return;
 	}
 

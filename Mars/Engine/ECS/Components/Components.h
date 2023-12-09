@@ -57,6 +57,9 @@ namespace mrs
 
         void UpdateModelMatrix();
         Matrix4x4 LocalModelMatrix();
+
+        const Vector3& GlobalPosition() const;
+        Transform& Root();
     private:
         friend class SceneGraphLayer;
         bool dirty_flag = false;

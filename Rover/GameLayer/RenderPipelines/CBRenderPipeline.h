@@ -42,6 +42,8 @@ struct NoiseSettings
 
     mrs::Vector4 center = { 0,0,0,0 };
 
+    int mask = 0;
+
     bool operator==(const NoiseSettings& other) const
     {
         if (n_layers == other.n_layers) return false;
@@ -82,9 +84,9 @@ public:
     std::vector<NoiseFilter> noise_filters = {}; // Maximuim of 4 noise filters for now
     std::vector<TerrainFace> terrain_faces = {};
 
-    mrs::Vector4 color_1{0,0.250,1.0, 0.0f};
-    mrs::Vector4 color_2{0.488f,0.299f,0.120,0.1};
-    mrs::Vector4 color_3{0,0.410, 0, 0.16};
+    mrs::Vector4 color_1{0,0.280, 0.470, 0.0f};
+    mrs::Vector4 color_2{0.488f,0.299f,0.120,0.010};
+    mrs::Vector4 color_3{0,0.410, 0, 0.090f};
     mrs::Vector4 color_4{0.75, 0.75,0.75, 0.35};
 };
 

@@ -294,6 +294,7 @@ bool mrs::SceneSerializer::DeserializeText(const std::string &scene_path)
 			particles.velocity = particles_node["Velocity"].as<glm::vec2>();
 			particles.running = particles_node["Running"].as<bool>();
 			particles.repeating = particles_node["Repeating"].as<bool>();
+			particles.world_space = particles_node["WorldSpace"].as<bool>();
 			particles.duration = particles_node["Duration"].as<float>();
 
 			particles.color_1 = particles_node["Color1"].as<glm::vec4>();
@@ -465,6 +466,7 @@ void mrs::SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::Key << "Running" << YAML::Value << particles.running;
 		out << YAML::Key << "Repeating" << YAML::Value << particles.repeating;
 		out << YAML::Key << "Duration" << YAML::Value << particles.duration;
+		out << YAML::Key << "WorldSpace" << YAML::Value << particles.world_space;
 		out << YAML::Key << "Color1" << YAML::Value << particles.color_1;
 		out << YAML::Key << "Color2" << YAML::Value << particles.color_2;
 		out << YAML::Key << "Material" << YAML::Value << particles.material->Name();

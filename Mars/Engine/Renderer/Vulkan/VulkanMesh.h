@@ -39,7 +39,16 @@ namespace mrs {
 		static Ref<Mesh> Create(const std::string& alias);
 
 		static Ref<Mesh> Get(const std::string& alias);
+	public:
+		const std::vector<Vertex>& Vertices() const; 
+		std::vector<Vertex>& Vertices(); 
 
+		const std::vector<uint32_t>& Indices() const; 
+		std::vector<uint32_t>& Indices(); 
+
+		// Returns true if mesh already uploaded to gpu
+		bool Initialized() const {return _initialized;}
+	public:
 		std::string _mesh_name;
 
 		uint32_t _index_count = 0;
@@ -50,6 +59,8 @@ namespace mrs {
 
 		AllocatedBuffer _buffer = {};
 		AllocatedBuffer _index_buffer = {};
+
+		bool _initialized = false;
 	};
 }
 

@@ -8,14 +8,17 @@
 
 #include "Ship.h"
 
+class GameCamera;
 class PlayerShipController : public mrs::ScriptableEntity
 {
 public:
     virtual void OnStart() override;
     virtual void OnCreate() override;
     virtual void OnUpdate(float dt) override;
+
 private:
     Ship* _ship = nullptr;
+    GameCamera* _camera = nullptr;
 };
 
 #endif

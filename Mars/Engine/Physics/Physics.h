@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include<glm/glm.hpp>
+#include <Math/Math.h>
 
 #include <box2d/b2_body.h>
 #include <box2d/b2_shape.h>
@@ -11,7 +11,6 @@
 #include <box2d/b2_fixture.h>
 
 #include "ECS/Entity.h"
-#include "Core/Application.h"
 #include "Collider.h"
 
 namespace mrs
@@ -30,6 +29,8 @@ namespace mrs
         static constexpr auto in_place_delete = true;
 
         Vector2 GetVelocity() const;
+
+        float GetAngularVelocity() const;
 
         // Adds force as impulse
         void AddImpulse(const glm::vec2& value);
@@ -55,6 +56,7 @@ namespace mrs
         b2Body *body = nullptr;
         BodyType type = BodyType::DYNAMIC;
 
+        float start_angular_velocity = 0.0f;
         Vector2 start_velocity = {0,0};
         Vector2 start_impulse = {0,0};
     };
@@ -92,6 +94,13 @@ namespace mrs
         // Cast a ray into a scene
         static const Collision Raycast(Scene* scene, const Ray& ray, float range = 1000.0f);
     };
+
+     class Physics2D
+     {
+     public: 
+         // Cast a ray into a scene
+         static void Raycast(const Ray& ray, float range = 1000.0f, std::function<void(Collision)> fn = nullptr);
+     };
 };
 
 #endif

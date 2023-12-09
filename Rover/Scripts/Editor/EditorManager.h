@@ -9,13 +9,13 @@
 #include <Core/Application.h>
 #include <Core/Log.h>
 
-#include "CameraController.h"
+#include "EditorCameraController.h"
 namespace mrs
 {
     class EditorManager : public ScriptableEntity
     {
     public:
-        CameraController* _camera_controller = nullptr;
+        EditorCameraController* _camera_controller = nullptr;
         Entity _camera = {};
     public:
         virtual void OnCreate() override;

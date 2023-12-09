@@ -47,7 +47,7 @@ layout(std140, set = 4, binding = 0) readonly buffer DirLights{
     DirectionalLight dir_lights[];
 };
 
-const int toon_levels = 8;
+const int toon_levels = 12;
 const float toon_scale_factor = 1.0f / toon_levels;
 float CalculateShadowFactor()
 {

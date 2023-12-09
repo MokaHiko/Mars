@@ -51,6 +51,7 @@ namespace mrs {
 
     float Lerp(float a, float b, float t);
     Vector2 Lerp(const Vector2& start, const Vector2& end, float percent);
+    Vector3 Lerp(const Vector3& start, const Vector3& end, float percent);
     Vector2 Slerp(const Vector2& start, const Vector2& end, float percent, bool mirror = false);
 }
 #endif

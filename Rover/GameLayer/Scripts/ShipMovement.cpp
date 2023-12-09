@@ -45,17 +45,28 @@ void ShipMovement::MoveTowards(mrs::Vector2 direction)
 	mrs::RigidBody2D& rb = _ship->GetComponent<mrs::RigidBody2D>();
 
 	float w = -glm::radians(direction.x * specs.turn_speed);
-	// if(direction.y < 0)
-	// {
-	// 	w += -glm::radians(specs.turn_speed);
-	// }
 	rb.SetAngularVelocity(w);
-
 	AnimateTurn(w);
 
 	mrs::Vector2 impulse = transform.up * glm::length(direction) * specs.ms;
 	rb.AddImpulse(impulse);
 
+	if(glm::length(direction) > 0.0f)
+	{
+		_movement_state |= ShipMovementState::Accelerating;
+	}
+	else
+	{
+		_movement_state = ShipMovementState::Idle;
+	}
+
+	// No Speed Limit on Boost
+	if(_movement_state & ShipMovementState::Boosting)
+	{
+		return;
+	}
+
+	// Ship Speed Limit
 	mrs::Vector2 velocity = rb.GetVelocity();
 	float v_magnitude = glm::length(velocity);
 	if (v_magnitude > 0)
@@ -64,25 +75,40 @@ void ShipMovement::MoveTowards(mrs::Vector2 direction)
 		{
 			rb.SetVelocity(glm::normalize(velocity) * specs.max_speed);
 		}
-		_movement_state = ShipMovementState::Accelerating;
-	}
-	else
-	{
-		_movement_state = ShipMovementState::Idle;
 	}
 }
 
-void ShipMovement::OnUpdate(float dt) {
-	switch (_movement_state)
+void ShipMovement::Boost(float multiplier, float duration) 
+{
+	if(_movement_state & ShipMovementState::Boosting)
 	{
-	case (ShipMovementState::Idle):
+		MRS_INFO("Already in boost!");
+	}
+	_movement_state |= ShipMovementState::Boosting;
+
+	ShipSpecs& specs = _ship->GetComponent<ShipSpecs>();
+	float start_ms = specs.ms;
+	specs.ms *= multiplier;
+
+	auto boost = CreateRef<mrs::DelayProcess>(duration, [&, start_ms](){
+		_movement_state &= (ShipMovementState)(~ShipMovementState::Boosting);
+
+		ShipSpecs& specs = _ship->GetComponent<ShipSpecs>();
+		specs.ms = start_ms;
+	});
+	StartProcess(boost);
+}
+
+void ShipMovement::OnUpdate(float dt) {
+
+	if(_movement_state == ShipMovementState::Idle)
 	{
 		_thrusters.GetComponent<mrs::ParticleSystem>().Stop();
-	} break;
-	case (ShipMovementState::Accelerating):
+	} 
+
+	if(_movement_state & ShipMovementState::Accelerating)
 	{
 		_thrusters.GetComponent<mrs::ParticleSystem>().Play();
-	} break;
 	}
 }
 

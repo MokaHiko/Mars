@@ -1,9 +1,7 @@
 #include "GameLayer.h"
 
 #include "Scripts/Unit.h"
-#include "Scripts/Spawner.h"
 #include "Scripts/GameManager.h"
-#include "Scripts/Player.h"
 #include "Scripts/Ship.h"
 #include "Scripts/GameCamera.h"
 
@@ -56,8 +54,10 @@ namespace mrs {
 
                     ImGui::DragFloat("Strength", &filter.noise_settings.strength, 0.01f, 0.0f, 1000.0f);
                     ImGui::DragFloat("MinValue", &filter.noise_settings.min_value, 0.01f, 0.0f, 1000.0f);
+
                     ImGui::DragFloat4("Center", glm::value_ptr(filter.noise_settings.center), 0.1f, 0.0f, 1000.0f);
 
+                    ImGui::Checkbox("Mask", (bool*)(&filter.noise_settings.mask));
                     ImGui::TreePop();
                 }
             }
@@ -76,10 +76,8 @@ void GameLayer::OnAttach()
 void GameLayer::RegisterScripts()
 {
 	mrs::Script::Register<Unit>();
-	mrs::Script::Register<Spawner>();
 	mrs::Script::Register<GameManager>();
 	mrs::Script::Register<GameCamera>();
-	mrs::Script::Register<Player>();
 	mrs::Script::Register<Ship>();
 }
 

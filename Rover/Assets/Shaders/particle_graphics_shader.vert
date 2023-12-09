@@ -64,7 +64,12 @@ layout(std140, set = 3, binding = 1) readonly buffer Particles{
 } _particles;
 
 layout( push_constant ) uniform ParticleSystemPushConstant{
-	uint index;
+	uint index;             // index into particle parameters buffer
+    float world_space;      // 1 if world_space : 0 if local
+    float new_particles;    // 1 if new_particle : 0 if no new particles
+    float reset;            // 1 if reset : 0 if no reset
+
+    mat4 emission_transform;    // emission point (used if world space particle system)
 } _particle_push_constant;
 
 void main()
@@ -80,6 +85,19 @@ void main()
     v_color = particle.color;
     v_uv = _uv;
 
-    vec4 pos = vec4((_position *particle_parameters.scale) + vec3(particle.position, float(gl_InstanceIndex) / 100.0f), 1.0f);
-    gl_Position = view_proj * model_matrix * pos;
+    vec4 pos = vec4((_position *particle_parameters.scale) + vec3(particle.position, float(gl_InstanceIndex) / 1000.0f), 1.0f);
+
+    // [IF] (world space) {specifically assign z to emission transform z}
+    pos.z *= 1.0f - _particle_push_constant.world_space;
+    float z_value = _particle_push_constant.emission_transform[3][2];
+    pos.z += (z_value + float(gl_InstanceIndex) / 1000.0f) * _particle_push_constant.world_space;
+
+    if(_particle_push_constant.world_space > 0.0f)
+    {
+        gl_Position = view_proj * pos;
+    }
+    else
+    {
+        gl_Position = view_proj * model_matrix * pos;
+    }
 }

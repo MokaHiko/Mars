@@ -22,6 +22,7 @@ namespace mrs
 
         virtual void OnImGuiRender() override;
         virtual void OnUpdate(float dt) override;
+        virtual void OnFixedUpdate(float fixed_dt) override;
     public:
         void AttachProcess(Ref<Process> process);
         void AbortAllProcesses(bool immediate);

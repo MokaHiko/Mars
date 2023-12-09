@@ -26,8 +26,6 @@ void mrs::Transform::AddChild(Entity e)
     child_transform.parent.GetComponent<Transform>().RemoveChild(e);
   }
 
-  MRS_INFO("Add: %d %s to %d", e.Id(), e.GetComponent<mrs::Tag>().tag.c_str(), self.Id());
-
   // Parent to self
   child_transform.parent = self;
 
@@ -64,24 +62,7 @@ void mrs::Transform::RemoveChild(Entity e)
   }
   children_count--;
 
-  // Parent child back to root
- /* auto root = Application::Instance().GetScene()->Root();
-  auto& child_transform = e.GetComponent<Transform>();
-
-  if(child_transform.parent != root)
-  {
-    child_transform.parent = {};
-    root.GetComponent<mrs::Transform>().AddChild(e);
-  }
-  else
-  {
-    child_transform.parent = {};
-  }
-  */
-
   e.GetComponent<Transform>().parent = {};
-
-  MRS_INFO("Remove: %d %s from %d", e.Id(), e.GetComponent<mrs::Tag>().tag.c_str(), self.Id());
 }
 
 void mrs::Transform::UpdateModelMatrix()
@@ -128,4 +109,27 @@ glm::mat4 mrs::Transform::LocalModelMatrix()
   // model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0.0, 0.0, 1.0));
 
   return model;
+}
+
+const mrs::Vector3& mrs::Transform::GlobalPosition() const
+{
+  Vector3 translation;
+  Vector3 rotation; 
+  Vector3 scale;
+
+  DecomposeTransform(model_matrix, translation, rotation, scale);
+  return translation;
+}
+
+mrs::Transform & mrs::Transform::Root()
+{
+  // TODO: Dirty Check
+  Transform& node = *this;
+
+  while(node.parent)
+  {
+    node = node.parent.GetComponent<mrs::Transform>();
+  }
+
+  return node;
 }

@@ -69,6 +69,7 @@ void mrs::MeshRenderPipeline::Init() {
     Ref<Shader> mesh_fragment_shader = VulkanAssetManager::Instance().LoadShader("Assets/Shaders/default_shader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
     PushShader(mesh_fragment_shader);
 
+	// TODO: Add as defaut in "Mesh pipeline type render pipeline"
     _render_pass = _renderer->_offscreen_render_pass;
     BuildPipeline();
 

@@ -7,8 +7,7 @@ void mrs::EditorManager::OnCreate()
 }
 
 void mrs::EditorManager::OnStart() {
-	_camera_controller =
-		dynamic_cast<CameraController*>(_camera.GetComponent<Script>().script);
+	_camera_controller = dynamic_cast<EditorCameraController*>(_camera.GetComponent<Script>().script);
 }
 
 void mrs::EditorManager::InitEditorResources() {
@@ -20,6 +19,6 @@ void mrs::EditorManager::InitEditorResources() {
 	_camera = Instantiate("Editor Camera");
 
 	_camera.AddComponent<Camera>(CameraType::Perspective, window->GetWidth(), window->GetHeight());
-	_camera.AddScript<CameraController>();
+	_camera.AddScript<EditorCameraController>();
 	_camera.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, 50.0f);
 }

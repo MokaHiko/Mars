@@ -61,6 +61,8 @@ struct NoiseSetting {
   float min_value;
 
   vec4 center;
+
+  int mask;
 };
 
 layout(std140, set = 4, binding = 0) readonly buffer NoiseSettingsSSBO {
@@ -83,18 +85,23 @@ layout(push_constant) uniform CelestialBodyData {
 }
 cb_data;
 
-vec3 CalculateDirLight(DirectionalLight light, vec3 normal, vec3 view_dir) {
+const int toon_levels = 12;
+const float toon_scale_factor = 1.0f / toon_levels;
+vec3 CalculateDirLight(DirectionalLight light, vec3 normal, vec3 view_dir, vec3 gradient_color) 
+{
   float diffuse_factor = max(dot(normal, -light.Direction.xyz), 0.0);
+
+	if(diffuse_factor > 0.0f)
+	{
+		diffuse_factor = ceil(diffuse_factor * toon_levels) * toon_scale_factor;
+	}
 
   vec3 reflect_dir = reflect(-light.Direction.xyz, normal);
   float specular_factor = pow(max(dot(view_dir, reflect_dir), 0.0f), 32);
 
-  vec3 ambient = light.Ambient.xyz * texture(_diffuse_texture, tese_uv).xyz *
-                 _material.diffuse_color.xyz;
-  vec3 diffuse = light.Diffuse.xyz * texture(_diffuse_texture, tese_uv).xyz *
-                 diffuse_factor;
-  vec3 specular = light.Specular.xyz * texture(_specular_texture, tese_uv).xyz *
-                  specular_factor;
+  vec3 ambient = light.Ambient.xyz * texture(_diffuse_texture, tese_uv).xyz * _material.diffuse_color.xyz * gradient_color;
+  vec3 diffuse = light.Diffuse.xyz * texture(_diffuse_texture, tese_uv).xyz * diffuse_factor;
+  vec3 specular = light.Specular.xyz * texture(_specular_texture, tese_uv).xyz * specular_factor * 0.0f;
 
   return ambient + diffuse + specular;
 }
@@ -103,29 +110,33 @@ void main() {
   vec3 final_color = {0.0, 0.0, 0.0};
 
   vec3 normal = tese_normal_world_space;
-  vec3 view_dir =
-      normalize(_global_buffer.camera_position.xyz - tese_position_world_space);
 
-  // ~ Directional Lights
-  for (uint i = 0; i < _global_buffer.n_dir_lights; i++) {
-    final_color += CalculateDirLight(dir_lights[i], normal, view_dir);
-  }
+  // Calculate normals
+  vec3 dx = dFdx(tese_position_world_space);
+  vec3 dy = dFdy(tese_position_world_space);
+  normal = normalize(cross(dx, dy));
 
-  // ~ Shadow shadow
-  // float shadow_factor = CalculateShadowFactor();
-  // frag_color = shadow_factor * vec4(final_color, 1);
+  vec3 view_dir = normalize(_global_buffer.camera_position.xyz - tese_position_world_space);
 
   float step1 = cb_data.color_1.w;
   float step2 = cb_data.color_2.w;;
   float step3 = cb_data.color_3.w;
   float step4 = cb_data.color_4.w;
 
-  // Gradient
-  vec4 color = mix(cb_data.color_1, cb_data.color_2, smoothstep(step1, step2, tese_height));
-  color = mix(color, cb_data.color_3, smoothstep(step2, step3, tese_height));
-  color = mix(color, cb_data.color_4, smoothstep(step3, step4, tese_height));
+  //Gradient
+  vec3 color = mix(cb_data.color_1.xyz, cb_data.color_2.xyz, smoothstep(step1, step2, tese_height));
+  color = mix(color, cb_data.color_3.xyz, smoothstep(step2, step3, tese_height));
+  color = mix(color, cb_data.color_4.xyz, smoothstep(step3, step4, tese_height));
 
-  final_color *= color.xyz;
+  // ~ Directional Lights
+  for (uint i = 0; i < _global_buffer.n_dir_lights; i++) 
+  {
+    final_color += CalculateDirLight(dir_lights[i], normal, view_dir, color);
+  }
+
+  // ~ Shadow shadow
+  // float shadow_factor = CalculateShadowFactor();
+  // frag_color = shadow_factor * vec4(final_color, 1);
 
   frag_color = vec4(final_color, 1);
 }

@@ -42,6 +42,8 @@ namespace mrs
         Ref<EffectTemplate> CreateEffectTemplate(const std::vector<ShaderEffect*>& effects, const std::string name);
 
         // Creates
+	    void UploadMesh(Ref<Mesh> mesh);
+
         void UploadMaterial(Ref<Material> material);
 
         // Creates VkImage and VkImageView from data stored in texture 

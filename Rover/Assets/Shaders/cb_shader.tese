@@ -49,6 +49,8 @@ struct NoiseSetting
     float min_value;
 
     vec4 center;
+
+    int mask;
 };
 
 layout(std140, set = 4, binding = 0) readonly buffer NoiseSettingsSSBO{
@@ -131,19 +133,16 @@ float snoise(vec3 v)
   vec3 p3 = vec3(a1.zw, h.w);
 
   // Normalise gradients
-  vec4 norm =
-      taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+  vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
   p0 *= norm.x;
   p1 *= norm.y;
   p2 *= norm.z;
   p3 *= norm.w;
 
   // Mix final noise value
-  vec4 m =
-      max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
+  vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
   m = m * m;
-  return 42.0 *
-         dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
+  return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
 }
 
 float yScale = 64.0f;
@@ -193,17 +192,23 @@ void main() {
   vec2 texCoords = mix(t0, t1, v);
 
   mat4 model_matrix = _object_buffer.s_objects[tc_entity_id[0]].model_matrix;
+
   // tese_position_world_space = mat3(model_matrix) * vec3(p); // position in
   // world space
-  tese_normal_world_space = normalize(mat3(model_matrix) * tc_normal[0]); // Scaling must be uniform
-
   tese_color = tc_color[0];
   tese_uv = tc_uv[0];
 
+	// Calculating normals & Scaling must be uniform
+  tese_normal_world_space = normalize(mat3(model_matrix) * tc_normal[0]);
+
   float elevation = 0;
+  float mask_value = 0;
   for(int i = 0; i < _cb_data.n_filters; i++)
   {
-    elevation += EvaluateNoiseFilter(_cb_data.noise_filters_indices[i], p.xyz);
+    float value = EvaluateNoiseFilter(_cb_data.noise_filters_indices[i], p.xyz);
+    elevation += value * (1 - mask_value);
+
+    mask_value = clamp(round(value), 0, 1) * noise_settings[_cb_data.noise_filters_indices[i]].mask;
   }
 
   float radius = 1;

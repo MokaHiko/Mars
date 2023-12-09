@@ -78,7 +78,11 @@ bool mrs::Input::IsMouseButtonPressed(int key_code)
 bool mrs::Input::IsMouseButtonDown(int key_code)
 {
 	if (key_code < 4) {
-		return MouseButtons[key_code] && !LastMouseButtons[key_code];
+		if (MouseButtons[key_code] && !LastMouseButtons[key_code])
+		{
+			LastMouseButtons[key_code] = true;
+			return true;
+		}
 	}
 
 	return false;

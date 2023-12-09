@@ -46,28 +46,78 @@ void mrs::ProcessLayer::OnUpdate(float dt) {
 		if (process->IsDead()) {
 			switch (process->State())
 			{
-				case Process::ProcessState::Succeeded:
+			case Process::ProcessState::Succeeded:
+			{
+				process->OnSuccess();
+				if (process->Child())
 				{
-					process->OnSuccess();
-					if (process->Child()) 
-					{
-						AttachProcess(process->Child());
-					}
-					else 
-					{
-						success_count++;
-					}
-				} break;
-				case Process::ProcessState::Failed:
+					AttachProcess(process->Child());
+				}
+				else
 				{
-					process->OnFail();
-					fail_count++;
-				} break;
-				case Process::ProcessState::Aborted:
+					success_count++;
+				}
+			} break;
+			case Process::ProcessState::Failed:
+			{
+				process->OnFail();
+				fail_count++;
+			} break;
+			case Process::ProcessState::Aborted:
+			{
+				process->OnAbort();
+				fail_count++;
+			} break;
+			}
+
+			_processes.erase(this_it);
+		}
+	}
+}
+
+void mrs::ProcessLayer::OnFixedUpdate(float fixed_dt)
+{
+	auto it = _processes.begin();
+
+	uint8_t success_count = 0;
+	uint8_t fail_count = 0;
+
+	while (it != _processes.end()) {
+		Ref<Process> process = (*it);
+
+		std::list<Ref<Process>>::iterator this_it = it;
+		it++;
+
+		if (process->State() == Process::Running)
+		{
+			process->OnUpdate(fixed_dt);
+		}
+
+		if (process->IsDead()) {
+			switch (process->State())
+			{
+			case Process::ProcessState::Succeeded:
+			{
+				process->OnSuccess();
+				if (process->Child())
 				{
-					process->OnAbort();
-					fail_count++;
-				} break;
+					AttachProcess(process->Child());
+				}
+				else
+				{
+					success_count++;
+				}
+			} break;
+			case Process::ProcessState::Failed:
+			{
+				process->OnFail();
+				fail_count++;
+			} break;
+			case Process::ProcessState::Aborted:
+			{
+				process->OnAbort();
+				fail_count++;
+			} break;
 			}
 
 			_processes.erase(this_it);

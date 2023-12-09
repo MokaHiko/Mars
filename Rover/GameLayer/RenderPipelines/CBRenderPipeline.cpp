@@ -202,7 +202,7 @@ void CBRenderPipeline::OnCelestialBodyCreated(entt::basic_registry<entt::entity>
     {
         cb.terrain_faces[i] = { 1, directions[i] };
         cb.terrain_faces[i].ConstructMesh();
-        _renderer->UploadMesh(cb.terrain_faces[i].Mesh());
+        VulkanAssetManager::Instance().UploadMesh(cb.terrain_faces[i].Mesh());
     }
 
     RegisterCelestialBody(cb);

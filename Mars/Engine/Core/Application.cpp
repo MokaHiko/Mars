@@ -39,7 +39,7 @@ namespace mrs {
 		}
 
 		// Set Fixed Delta time
-		Time::SetFixedDeltaTime(1/144.0f);
+		Time::SetFixedDeltaTime(1.0f/144.0f);
 
 		// Main application loop
 		while (_running = PollEvents())

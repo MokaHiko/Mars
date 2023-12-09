@@ -10,7 +10,6 @@
 #include "Moon.h"
 
 #include "GameLayer/RenderPipelines/CBRenderPipeline.h"
-#include "Spawner.h"
 
 #include "Effects/TargetLockEffect.h"
 
@@ -44,11 +43,12 @@ void GameManager::OnStart()
 	// 	spawner.AddScript<Spawner>();
 	// }
 
-	// {
-	// 	auto& sky = Instantiate("SkyBox");
-	// 	sky.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("sphere"), mrs::Material::Get("stars"));
-	// 	sky.GetComponent<mrs::Transform>().scale *= 1000.0f;
-	// }
+	{
+		// auto& sky = Instantiate("SkyBox");
+		// sky.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("sphere"), mrs::Material::Get("stars"));
+		// sky.GetComponent<mrs::Transform>().position.z = 400.0f;
+		// sky.GetComponent<mrs::Transform>().scale *= 1500.0f;
+	}
 
 	tbx::PRNGenerator<float> random(0, 1);
 	tbx::PRNGenerator<float> random_neg(-0.5f, 0.5f);
@@ -61,7 +61,7 @@ void GameManager::OnStart()
 		{
 			auto planet = Instantiate(std::string("Planet") + std::to_string(i + j));
 			auto& transform = planet.GetComponent<mrs::Transform>();
-			transform.position = glm::vec3(-spacing * i, spacing * j, -750);
+			transform.position = glm::vec3(-spacing * i, spacing * j, -950);
 			transform.scale *= 500 * (1 + (0.05f) * random_neg.Next());
 
 			auto& celestial_body = planet.AddComponent<CelestialBody>();
@@ -71,11 +71,18 @@ void GameManager::OnStart()
 			noise_filter.noise_settings.base_roughness = 1.2f;
 			noise_filter.noise_settings.roughness = 2.0f;
 			noise_filter.noise_settings.strength = 0.250;
-			noise_filter.noise_settings.min_value = 0.648;
+			noise_filter.noise_settings.min_value = 0.928;
 			noise_filter.noise_settings.min_resolution = 32;
+			noise_filter.noise_settings.max_resolution = 128;
+			noise_filter.noise_settings.mask = 1;
 			celestial_body.PushFilter(noise_filter);
 
 			noise_filter.noise_settings.n_layers = 2;
+			noise_filter.noise_settings.persistence = 0.630;
+			noise_filter.noise_settings.base_roughness = 0.200f;
+			noise_filter.noise_settings.roughness = 5.700;
+			noise_filter.noise_settings.strength = 1.880;
+			noise_filter.noise_settings.min_value = 1.178;
 			celestial_body.PushFilter({noise_filter});
 
 			auto& mesh_renderer = planet.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("celestial_body"));
@@ -85,7 +92,6 @@ void GameManager::OnStart()
 			planet_props.rotation_rate = 5.0f;
 
 			planet.AddScript<Planet>();
-
 			{
 				auto moon = Instantiate("Moon 0");
 				auto& moon_transform = moon.GetComponent<mrs::Transform>();
@@ -117,11 +123,13 @@ void GameManager::OnStart()
 		// Player
 		auto player = Instantiate("Player");
 		auto& transform = player.GetComponent<mrs::Transform>();
-		transform.position = glm::vec3(0, 0, 0);
+		transform.position = glm::vec3(20, 20, 10);
 
 		// Ship
 		auto& specs = player.AddComponent<ShipSpecs>();
 		specs.model = mrs::Model::Get("zenith");
+		specs.ms = 5.0f;
+		specs.max_speed = 35.0f;
 		player.AddScript<Ship>();
 
 		// Ship controller
@@ -144,19 +152,17 @@ void GameManager::OnStart()
 		specs.model = mrs::Model::Get("striker");
 		enemy.AddScript<Ship>();
 
-		// Enemy controller
-		auto enemy_controller = Instantiate("Enemy Controller!");
-		enemy_controller.AddScript<Striker>();
+		// // Enemy controller
+		// auto enemy_controller = Instantiate("Enemy Controller!");
+		// enemy_controller.AddScript<Striker>();
+		// transform.AddChild(enemy_controller);
 
 		// TODO: Move to targetting
 		auto targetting = Instantiate("targetting");
-		targetting.AddComponent<EffectProperties>().duration = 4.0f;
+		targetting.AddComponent<EffectProperties>().duration = 10.0f;
 		targetting.AddComponent<EffectProperties>().fixed_time = false;
 		targetting.AddScript<TargetLockEffect>();
-
-		// Parent
 		transform.AddChild(targetting);
-		transform.AddChild(enemy_controller);
 	}
 
 	// Ui 

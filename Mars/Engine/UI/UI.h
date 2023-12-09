@@ -22,6 +22,8 @@ namespace mrs
 
         Vector4 color;
         Ref<Font> font;
+
+        bool dirty = true;
     };
 }
 

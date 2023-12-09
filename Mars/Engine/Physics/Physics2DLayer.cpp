@@ -4,7 +4,6 @@
 #include "Physics.h"
 #include "ECS/Components/Components.h"
 
-
 #include "Core/Time.h"
 #include "Algorithm.h"
 
@@ -148,7 +147,8 @@ namespace mrs
 			MRS_ERROR("Uknown rigidbody type!");
 		}
 
-		rb.body->SetLinearVelocity({rb.start_velocity.x, rb.start_velocity.y});
+		rb.body->SetLinearVelocity({ rb.start_velocity.x, rb.start_velocity.y });
+		rb.body->SetAngularVelocity(rb.start_angular_velocity);
 	}
 
 	void Physics2DLayer::CreateFixture(Entity entity, BodyType type)
@@ -214,6 +214,14 @@ namespace mrs
 			MRS_ASSERT(rb.body != nullptr, std::to_string(e.Id()).c_str());
 			_destruction_queue.push_back(rb.body);
 		}
+	}
+
+	void Physics2DLayer::Raycast(const Ray& ray, float distance, RayCastListener& callback)
+	{
+		b2Vec2 p1 = b2Vec2(ray.origin.x, ray.origin.y);
+		b2Vec2 p2 = p1 + b2Vec2(ray.direction.x * distance, ray.direction.y * distance);
+
+		_physics_world->RayCast(&callback, p1, p2);
 	}
 
 	void Physics2DLayer::InitWorld()
@@ -297,7 +305,25 @@ namespace mrs
 			}
 		}
 	}
+
 	void ContactListener::EndContact(b2Contact* contact)
 	{
+	}
+
+	float RayCastListener::ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float fraction)
+	{
+		Entity e = Entity((entt::entity)fixture->GetBody()->GetUserData().pointer, _scene);
+
+		Collision col = {};
+		col.collision_points.normal = Vector3(normal.x, normal.y, 0.0f);
+		col.collision_points.a = Vector3(point.x, point.y, 0.0f);
+		col.entity = e;
+
+		if (_fn)
+		{
+			_fn(col);
+		}
+
+		return fraction;
 	}
 }

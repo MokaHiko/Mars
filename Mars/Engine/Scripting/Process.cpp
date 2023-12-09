@@ -31,7 +31,7 @@ mrs::DelayProcess::DelayProcess(float time, std::function<void(void)> callback)
 
 void mrs::DelayProcess::OnUpdate(float dt)
 {
-	_time -= dt;
+	_time -= Time::DeltaTime();
 	if (_time <= 0)
 	{
 		if (_callback)

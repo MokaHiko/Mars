@@ -206,7 +206,19 @@ void mrs::ParticleRenderPipeline::UpdateComputeDescriptorSets(uint32_t current_f
 			// Stop emitting particles on stop
 			if (!particle_system.stop)
 			{
+				uint32_t previous_live_particles = particle_system.live_particles;
 				particle_system.live_particles = glm::min((uint32_t)(particle_system.emission_rate * particle_system.time), particle_system.max_particles);
+				particle_system.new_particles = particle_system.live_particles > previous_live_particles;
+			}
+			else
+			{
+				// TODO: If Smooth Stop is enabled
+				particle_system.live_particles = static_cast<uint32_t>(glm::max(particle_system.live_particles - (particle_system.emission_rate * dt), 0.0f));
+				if(particle_system.live_particles <= 0.0f)
+				{
+					particle_system.running = false;
+					continue;
+				}
 			}
 			particle_system.time += dt;
 
@@ -263,14 +275,22 @@ void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cm
 		if (particle_system.running)
 		{
 			// Bind push constant
-			ParticleSystemPushConstant pc;
+			ParticleSystemPushConstant pc = {};
 			pc.index = ctr++;
+			pc.new_particles = particle_system.new_particles ? 1.0f : 0.0f;
+			pc.world_space = particle_system.world_space ? 1.0f : 0.0f;
+			pc.reset = particle_system.reset ? 1.0f : 0.0f;
+			pc.emission_transform = e.GetComponent<mrs::Transform>().model_matrix;
 
 			vkCmdPushConstants(cmd, _compute_pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);
 
 			// Update particles
 			uint32_t x_groups = (particle_system.max_particles / 256) + 1;
 			vkCmdDispatch(cmd, x_groups, 1, 1);
+
+			// Reset one time flags
+			particle_system.new_particles = false;
+			particle_system.reset = false;
 		}
 	}
 
@@ -304,11 +324,7 @@ void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cm
 void mrs::ParticleRenderPipeline::FillParticleArray(const ParticleSystem& particle_system, std::vector<Particle>& particles)
 {
 	particles.resize(particle_system.max_particles);
-
 	if (particle_system.emission_shape == EmissionShape::Cone) {
-		if(particle_system.world_space)
-		{
-		}
 		for (uint32_t i = 0; i < particle_system.max_particles; i++)
 		{
 			float r = 0.5f * _random_generator.Next();
@@ -470,8 +486,12 @@ void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_fr
 		auto& material = particle_system.material;
 
 		// Bind particle system properties and material index
-		ParticleSystemPushConstant pc;
+		ParticleSystemPushConstant pc = {};
 		pc.index = ctr++;
+		pc.new_particles = particle_system.new_particles ? 1.0f : 0.0f;
+		pc.world_space = particle_system.world_space ? 1.0f : 0.0f;
+		pc.reset = particle_system.reset ? 1.0f : 0.0f;
+		pc.emission_transform = e.GetComponent<mrs::Transform>().model_matrix;
 
 		//pc.material_index = particle_system.material->MaterialIndex();
 		vkCmdPushConstants(cmd, _pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ParticleSystemPushConstant), &pc);

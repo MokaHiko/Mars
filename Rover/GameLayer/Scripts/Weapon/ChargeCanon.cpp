@@ -3,85 +3,78 @@
 
 #include "Projectile/Bullet.h"
 #include "Effects/Effect.h"
+#include "Effects/TracerEffect.h"
 
-mrs::Entity ChargeCanon::CreateWeakProjectile()
+#include <glm/gtx/quaternion.hpp>
+
+tbx::PRNGenerator<float> ChargeCanon::random_gen(-1,1);
+
+void ChargeCanon::OnStart()
 {
-	// TODO: Recycle 
-	// Weapon muzzle Flash 
-	auto& ship_model_transform = Owner()->_ship_model.GetComponent<mrs::Transform>();
-
-	auto weak_muzzle_flash = Instantiate("Muzzle Flash");
-	auto& weak_muzzle_flash_transform = weak_muzzle_flash.GetComponent<mrs::Transform>();
-	weak_muzzle_flash_transform.rotation = ship_model_transform.rotation;
-
-	//weak_muzzle_flash_transform.position = ship_model_transform.position;
-	weak_muzzle_flash_transform.position += ship_model_transform.up * 10.0f;
-
-	auto& muzzle_particles = weak_muzzle_flash.AddComponent<mrs::ParticleSystem>();
-	muzzle_particles.emission_rate = 128;
-	muzzle_particles.max_particles = 32;
-	muzzle_particles.particle_size = 1.25f;
-	muzzle_particles.spread_angle = 45.0f;
-	muzzle_particles.velocity = { 15,50 };
-	muzzle_particles.color_1 = mrs::Vector4{ 1.0, 1.006, 1, 1.0f };
-	muzzle_particles.color_2 = mrs::Vector4{ 1.0, 1.006, 1, 1.0f } * 0.10f;
-	muzzle_particles.life_time = 1.333f;
-	muzzle_particles.repeating = false;
-	//muzzle_particles.emission_shape = mrs::EmissionShape::Circle;
-	muzzle_particles.duration = muzzle_particles.life_time * 5.0f;
-	muzzle_particles.material = mrs::Material::Get("smoke");
-
-	weak_muzzle_flash.AddComponent<EffectProperties>().duration = muzzle_particles.duration;
-	weak_muzzle_flash.AddScript<Effect>();
-	ship_model_transform.AddChild(weak_muzzle_flash);
-
-	auto& e = Instantiate("Bullet");
-	e.AddScript<Bullet>()._owner = Owner()->_game_object;
-
-	return e;
+  _fire_rate = 0.13f;
 }
 
-mrs::Entity ChargeCanon::CreateStrongProjectile(float hold_time)
+void ChargeCanon::FireWeakProjectile() {
+
+  BulletMuzzleFlash();
+
+  const auto& ship_transform = Owner()->GetComponent<mrs::Transform>();
+
+  float recoil = 4.0f;
+
+  mrs::Ray ray = {};
+  ray.origin = ship_transform.position + (ship_transform.up * 10.0f); // Change to fire point
+
+  glm::quat quat_rot = glm::quat(glm::vec3(0,0, glm::radians(recoil * random_gen.Next())));
+  ray.direction = glm::rotate(quat_rot, ship_transform.up);
+
+  mrs::Vector3 target_pos = ray.origin + (ray.direction * 500.0f);
+  mrs::Physics2D::Raycast(ray, 500.0f, [&](mrs::Collision& col)
+    {
+      if (Ship* ship = col.entity.GetScript<Ship>()) {
+        target_pos = col.collision_points.a;
+
+        auto weak_tracer_flash = Instantiate("Tracer");
+        ship->TakeDamage(25.0f);
+
+        auto e = Instantiate("hit_effect", col.collision_points.a);
+        auto& transform = e.GetComponent<mrs::Transform>();
+        transform.rotation.z += glm::degrees(glm::acos(glm::dot(transform.up, col.collision_points.normal)));
+
+        auto& particles = e.AddComponent<mrs::ParticleSystem>();
+        particles.duration = 5.0f;
+        particles.repeating = false;
+
+        particles.emission_shape = mrs::EmissionShape::Cone;
+        particles.emission_rate = 64;
+        particles.max_particles = 16;
+        particles.spread_angle = 45;
+        particles.velocity = mrs::Vector2{ 50.0f, 10.0f };
+        particles.color_1 = mrs::Vector4(0.883, 0.490, 0.000, 1.000);
+        particles.color_2 = mrs::Vector4(0.114, 0.054, 0.006, 0.000);
+        particles.particle_size = 0.25f;
+        particles.life_time = 0.85f;
+
+        e.AddComponent<EffectProperties>().duration = particles.duration * 3.0f;
+        e.AddScript<Effect>();
+      }
+    });
+
+  // Tracers
+  auto weak_tracer_flash = Instantiate("Tracer", ray.origin);
+  auto& effect_props = weak_tracer_flash.AddComponent<EffectProperties>();
+  effect_props.duration = 1.0f;
+  effect_props.fixed_time = false;
+
+  TracerEffect& tracer = weak_tracer_flash.AddScript<TracerEffect>();
+  tracer.p1 = ray.origin;
+  tracer.p2 = target_pos;
+}
+
+void ChargeCanon::FireStrongProjectile(float hold_time)
 {
-	auto& ship_transform = Owner()->GetComponent<mrs::Transform>();
-
-	auto projectile = Instantiate("projectile!");
-	// auto& transform = projectile.GetComponent<mrs::Transform>();
-
-	// // TODO: Change to fire point
-	// transform.position = ship_transform.position;
-	// transform.rotation = ship_transform.rotation;
-	// transform.position += ship_transform.up * 10.0f;
-	// transform.scale *= 0.5f;
-
-	// auto& props = projectile.AddComponent<ProjectileProperties>();
-	// props.life_span = 5.0f;
-	// props.speed = 30.0f;
-	// props.damage = 50.0f;
-	// props.owner = Owner()->_game_object;
-	// props.direction = ship_transform.up;
-
-	// projectile.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("sphere"), mrs::Material::Get("default"));
-	// auto& rb = projectile.AddComponent<mrs::RigidBody2D>();
-	// rb.type = mrs::BodyType::KINEMATIC;
-	// rb.use_gravity = false;
-	// projectile.AddScript<Projectile>();
-
-	// auto rocket_thrusters = Instantiate("thrusters_effect");
-	// rocket_thrusters.GetComponent<mrs::Transform>().position.y = -3.0f;
-	// auto &thruster_particles = rocket_thrusters.AddComponent<mrs::ParticleSystem>();
-	// thruster_particles.emission_rate = 16;
-	// thruster_particles.max_particles = 48;
-	// thruster_particles.particle_size = 2.0f;
-	// thruster_particles.spread_angle = 20.0f;
-	// thruster_particles.velocity = mrs::Vector2{-props.speed, -props.speed} * 0.75f;
-	// thruster_particles.color_1= mrs::Vector4{1.0f};
-	// thruster_particles.color_2 = mrs::Vector4{1.0f} *= 0.15f;
-	// thruster_particles.life_time = 1.66f;
-	// thruster_particles.repeating = true;
-	// thruster_particles.material = mrs::Material::Get("smoke");
-	// transform.AddChild(rocket_thrusters);
-	return projectile;
+  auto& e = Instantiate("Bullet");
+  e.AddScript<Bullet>()._owner = Owner()->_game_object;
 }
 
 void ChargeCanon::OnEquip()
@@ -92,4 +85,37 @@ void ChargeCanon::OnEquip()
 void ChargeCanon::OnUnEquip()
 {
 
+}
+
+mrs::Entity ChargeCanon::BulletMuzzleFlash()
+{
+  // TODO: Reset and Recycle 
+
+  // Weapon muzzle Flash 
+  auto& ship_model_transform = Owner()->_ship_model.GetComponent<mrs::Transform>();
+
+  auto weak_muzzle_flash = Instantiate("Muzzle Flash");
+  auto& weak_muzzle_flash_transform = weak_muzzle_flash.GetComponent<mrs::Transform>();
+  weak_muzzle_flash_transform.rotation = ship_model_transform.rotation;
+  weak_muzzle_flash_transform.position += ship_model_transform.up * 10.0f;
+  weak_muzzle_flash_transform.position.z += 0.01f;
+
+  auto& muzzle_particles = weak_muzzle_flash.AddComponent<mrs::ParticleSystem>();
+  muzzle_particles.emission_rate = 128;
+  muzzle_particles.max_particles = 16;
+  muzzle_particles.particle_size = 3.2f;
+  muzzle_particles.spread_angle = 45.0f;
+  muzzle_particles.velocity = { 20,50 };
+  muzzle_particles.color_1 = mrs::Vector4{ 0.883f, 0.490f, 0.000f, 1.000f };
+  muzzle_particles.color_2 = mrs::Vector4{ 0.553f, 0.290f, 0.000f, 1.000f } *0.15f;
+  muzzle_particles.life_time = 0.66f;
+  muzzle_particles.repeating = false;
+  muzzle_particles.duration = muzzle_particles.life_time * 5.0f;
+  muzzle_particles.material = mrs::Material::Get("muzzle_02");
+
+  weak_muzzle_flash.AddComponent<EffectProperties>().duration = muzzle_particles.duration;
+  weak_muzzle_flash.AddScript<Effect>();
+  ship_model_transform.AddChild(weak_muzzle_flash);
+
+  return weak_muzzle_flash;
 }

@@ -77,8 +77,11 @@ namespace mrs
         // Indicates whether or not particle system positins and velocities must be reset
         bool reset = false;
 
-        // Indiactes whether or not particles to stop 
+        // Indicates whether or not particles to stop 
         bool stop = false;
+
+        // Indicates when new particles will be emitted
+        bool new_particles = false;
 
         // Pipeline handle to cache offset when destroyed
         ParticleRenderPipeline *pipeline;

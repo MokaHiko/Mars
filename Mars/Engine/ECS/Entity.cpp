@@ -31,6 +31,6 @@ std::ostream& mrs::operator<<(std::ostream& stream, Entity& e)
 {
 	Tag& tag = e.GetComponent<mrs::Tag>();
 	stream << e.Id() << ":" << tag.tag;
-
+	
 	return stream;
 }

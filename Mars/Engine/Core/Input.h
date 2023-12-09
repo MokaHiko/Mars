@@ -32,7 +32,7 @@ namespace mrs {
 		// Returns true if key(key_code) is pressed
 		static bool IsKeyPressed(int key_code);
 
-		// Returns true if key (key_code) is pressed on the frame it is caleld
+		// Returns true if key (key_code) is pressed on the frame it is called
 		static bool IsKeyDown(int key_code);
 
 		// Returns true if mouse button (key_code) is pressed

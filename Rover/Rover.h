@@ -6,6 +6,8 @@
 #include <Mars.h>
 
 #include <Renderer/RenderPipelineLayers/DefaultRenderPipelineLayer/DefaultRenderPipelineLayer.h>
+
+#include <Renderer/RenderPipelineLayers/RenderPipelines/TrailRenderPipeline/TrailRenderPipeline.h>
 #include "GameLayer/RenderPipelines/CBRenderPipeline.h"
 
 namespace mrs {
@@ -76,6 +78,7 @@ namespace mrs {
         EVRenderPipelineLayer()
         {
 			PushRenderPipeline(MRS_NEW CBRenderPipeline);
+			PushRenderPipeline(MRS_NEW mrs::TrailRenderPipeline);
         };
 
         ~EVRenderPipelineLayer() {};

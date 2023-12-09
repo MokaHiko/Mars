@@ -311,4 +311,72 @@ namespace mrs
 		shader->stage = stage;
 		return shader;
 	}
+
+	void VulkanAssetManager::UploadMesh(Ref<Mesh> mesh)
+	{
+		// Create and upload data to staging bufffer
+		const size_t buffer_size = mesh->_vertices.size() * sizeof(Vertex);
+		AllocatedBuffer staging_buffer = _renderer->CreateBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+
+		void *data;
+		vmaMapMemory(_renderer->Allocator(), staging_buffer.allocation, &data);
+		memcpy(data, mesh->_vertices.data(), buffer_size);
+		vmaUnmapMemory(_renderer->Allocator(), staging_buffer.allocation);
+
+		// Create and transfer data to vertex bufffer stored in vulkan mesh
+		mesh->_buffer = _renderer->CreateBuffer(buffer_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0);
+
+		// Copy data to vertex buffer via immediate commands
+		_renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
+		{
+			VkBufferCopy region = {};
+			region.dstOffset = 0;
+			region.size = buffer_size;
+			region.srcOffset = 0;
+			vkCmdCopyBuffer(cmd, staging_buffer.buffer, mesh->_buffer.buffer, 1, &region); 
+		});
+
+		// Create index buffer if indices available
+		if (mesh->Indices().size() > 0)
+		{
+			const size_t index_buffer_size = mesh->Indices().size() * sizeof(uint32_t);
+			AllocatedBuffer index_staging_buffer = _renderer->CreateBuffer(index_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+
+			void *index_data;
+			vmaMapMemory(_renderer->Allocator(), index_staging_buffer.allocation, &index_data);
+			memcpy(index_data, mesh->_indices.data(), index_buffer_size);
+			vmaUnmapMemory(_renderer->Allocator(), index_staging_buffer.allocation);
+
+			mesh->_index_buffer = _renderer->CreateBuffer(index_buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0);
+
+			_renderer->ImmediateSubmit([=](VkCommandBuffer cmd)
+				{
+					VkBufferCopy region = {};
+					region.dstOffset = 0;
+					region.size = index_buffer_size;
+					region.srcOffset = 0;
+					vkCmdCopyBuffer(cmd, index_staging_buffer.buffer, mesh->_index_buffer.buffer, 1, &region); });
+
+			vmaDestroyBuffer(_renderer->Allocator(), index_staging_buffer.buffer, index_staging_buffer.allocation);
+		}
+
+		// Clean up staging buffer and queue vertex buffer for deletion
+
+		// TODO: Clear if static mesh and do not if dynamic mesh(mesh that is expected to be altered)
+		// mesh->_vertices.clear();
+		// mesh->_vertices.shrink_to_fit();
+		// mesh->_indices.clear();
+		// mesh->_indices.shrink_to_fit();
+		mesh->_initialized = true;
+
+		vmaDestroyBuffer(_renderer->Allocator(), staging_buffer.buffer, staging_buffer.allocation);
+
+		_renderer->DeletionQueue().Push([=]()
+		{
+			vmaDestroyBuffer(_renderer->Allocator(), mesh->_buffer.buffer, mesh->_buffer.allocation);
+
+			if (mesh->Indices().size() > 0) {
+				vmaDestroyBuffer(_renderer->Allocator(), mesh->_index_buffer.buffer, mesh->_index_buffer.allocation);
+		}});
+	}
 }

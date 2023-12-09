@@ -84,6 +84,11 @@ mrs::Vector2 mrs::Lerp(const Vector2& start, const Vector2& end, float percent)
     return (start * (1 - percent)) + (end * percent);
 }
 
+mrs::Vector3 mrs::Lerp(const Vector3& start, const Vector3& end, float percent)
+{
+    return (start * (1 - percent)) + (end * percent);
+}
+
 mrs::Vector2 mrs::Slerp(const Vector2& start, const Vector2& end, float percent, bool mirror)
 {
 	Vector2 mid_point = start + ((end - start) / 2.0f);

@@ -19,6 +19,7 @@
 #include "Scripting/NativeScriptingLayer.h"
 #include "Renderer/RenderPipelineLayers/DefaultRenderPipelineLayer/DefaultRenderPipelineLayer.h"
 #include "SceneGraph/SceneGraphLayer.h"
+#include "UI/UILayer.h"
 
 #include "GameLayer/GameLayer.h"
 #include <imgui_impl_sdl2.h>
@@ -29,6 +30,9 @@
 #include "Panels/Viewport.h"
 
 #include "UI/UI.h"
+
+// TODO: Remove
+#include "Renderer/RenderPipelineLayers/RenderPipelines/TrailRenderPipeline/Trails.h"
 
 mrs::Application* mrs::CreateApplication()
 {
@@ -63,7 +67,7 @@ void mrs::EditorLayer::FocusEntity(Entity entity)
 		return;
 	}
 
-	CameraController* camera_controller = (CameraController*)(void*)(_editor_camera.GetComponent<Script>().script);
+	EditorCameraController* camera_controller = (EditorCameraController*)(void*)(_editor_camera.GetComponent<Script>().script);
 	if (camera_controller != nullptr)
 	{
 		camera_controller->_focused = entity;
@@ -187,7 +191,9 @@ void mrs::EditorLayer::LoadEditorResources()
 
 		Ref<Texture> stars_texture = Texture::LoadFromAsset("Assets/Textures/stars.bp", "stars");
 		stars_texture->SetSamplerType(mrs::Texture::SamplerType::Nearest);
-		Material::Create(VulkanAssetManager::Instance().FindEffectTemplate("default_lit"), stars_texture , "stars");
+
+		// Skybox texture should not receive specular lighting
+		Material::Create(VulkanAssetManager::Instance().FindEffectTemplate("default_lit"), stars_texture , "stars")->Data().specular = 0.0f;
 
 		// Sprites
 		mrs::Texture::LoadFromAsset("Assets/Textures/Sprites/target_sheet.bp", "target_sprite_sheet");
@@ -197,9 +203,6 @@ void mrs::EditorLayer::LoadEditorResources()
 		mrs::Texture::LoadFromAsset("Assets/Textures/target_lock.bp", "target_lock");
 		Sprite::Create(mrs::Texture::Get("target_lock"));
 
-		// TODO: Implement Font Renders
-		// Font::LoadFromYaml(mrs::Texture::Get("KenPixel"), "Assets/Fonts/KenneyPixel.yaml");
-
 		// Create Planet Material
 		std::vector<mrs::ShaderEffect*> cb_effects;
 		cb_effects.push_back(_render_pipeline_layer->FindPipeline("CBRenderPipeline")->Effect().get());
@@ -207,6 +210,15 @@ void mrs::EditorLayer::LoadEditorResources()
 
 		Ref<Texture> smoke_texture = Texture::LoadFromAsset("Assets/Textures/smoke.bp", "smoke");
 		Material::Create(VulkanAssetManager::Instance().FindEffectTemplate("default_particle"),  smoke_texture, "smoke");
+
+		Ref<Texture> muzzle_texture = Texture::LoadFromAsset("Assets/Textures/muzzle_02.bp", "muzzle_02");
+		Material::Create(VulkanAssetManager::Instance().FindEffectTemplate("default_particle"), muzzle_texture, "muzzle_02");
+
+		Ref<Texture> fire_texture = Texture::LoadFromAsset("Assets/Textures/fire_01.bp", "fire_01");
+		Material::Create(VulkanAssetManager::Instance().FindEffectTemplate("default_particle"), fire_texture, "fire_01");
+
+		Ref<Texture> trace_texture = Texture::LoadFromAsset("Assets/Textures/trace_01.bp", "trace_01");
+		Material::Create(VulkanAssetManager::Instance().FindEffectTemplate("default_particle"), trace_texture, "trace_01");
 
 		Material::Create(cb_effect, Texture::Get("default"), "celestial_body");
 	}
@@ -220,7 +232,7 @@ void mrs::EditorLayer::LoadEditorScene()
 	MRS_INFO("Initializing Editor");
 
 	// Register Scripts
-	Script::Register<CameraController>();
+	Script::Register<EditorCameraController>();
 
 	bool serialize = false;
 
@@ -231,10 +243,22 @@ void mrs::EditorLayer::LoadEditorScene()
 
 	auto& camera_component = _editor_camera.AddComponent<Camera>(CameraType::Perspective, window->GetWidth(), window->GetHeight());
 
-	_editor_camera.AddScript<CameraController>();
+	_editor_camera.AddScript<EditorCameraController>();
 	_editor_camera.GetComponent<Transform>().position = glm::vec3(0.0, 0.0, 50.0f);
 
 	_render_pipeline_layer->SetCamera(&camera_component);
+
+	// Demo Text
+	auto hello_world = app.GetScene()->Instantiate("Test Text", {}, &serialize);
+	hello_world.AddComponent<SpriteRenderer>().sprite = mrs::Sprite::Get("KenPixel");
+	hello_world.AddComponent<Renderable>().material = mrs::Material::Get("default_ui");
+	hello_world.AddComponent<Text>().font = Font::LoadFromYaml(mrs::Texture::Get("KenPixel"), "Assets/Fonts/KenneyPixel.yaml");;
+	hello_world.AddComponent<Text>().text = "eat shit kurt!";
+
+	// Demo Trail
+	auto trails = app.GetScene()->Instantiate("Test Trail", {}, &serialize);
+	trails.AddComponent<TrailRenderer>();
+	trails.AddComponent<Renderable>().material = mrs::Material::Get("default_line");
 }
 
 void mrs::EditorLayer::Play()
@@ -277,6 +301,8 @@ mrs::Rover::Rover()
 	PushLayer(MRS_NEW NativeScriptingLayer());
 	PushLayer(MRS_NEW ProcessLayer());
 	PushLayer(MRS_NEW SceneGraphLayer());
+
+	PushLayer(MRS_NEW UILayer());
 
 	// Custom render pipeline
 	PushLayer(MRS_NEW EVRenderPipelineLayer());

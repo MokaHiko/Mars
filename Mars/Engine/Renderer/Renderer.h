@@ -155,7 +155,6 @@ namespace mrs {
 		size_t PadToUniformBufferSize(size_t original_size);
 		size_t PadToStorageBufferSize(size_t original_size);
 
-		void UploadMesh(Ref<Mesh> mesh);
 		void ImmediateSubmit(std::function<void(VkCommandBuffer)> &&fn);
 	private:
 		void InitVulkan();

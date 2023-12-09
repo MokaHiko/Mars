@@ -6,6 +6,10 @@
 #include "ShipMovement.h"
 #include "ShipCombat.h"
 
+#include "GameCamera.h"
+
+#include "Physics/Physics.h"
+
 void PlayerShipController::OnStart()
 {
   auto& parent = GetComponent<mrs::Transform>().parent;
@@ -15,7 +19,10 @@ void PlayerShipController::OnStart()
   {
     MRS_INFO("Required ship as direct parent!");
   }
+
+  _camera = FindEntityWithScript<GameCamera>().GetScript<GameCamera>();
 }
+
 
 void PlayerShipController::OnCreate() 
 {
@@ -51,8 +58,16 @@ void PlayerShipController::OnUpdate(float dt)
     _ship->Combat().SwitchCombatMode();
   }
 
-  if(mrs::Input::IsMouseButtonDown(SDL_BUTTON_LEFT))
+  if(mrs::Input::IsMouseButtonPressed(SDL_BUTTON_LEFT))
   {
     _ship->Combat().ManualFire();
+  }
+
+  if (mrs::Input::IsKeyDown(SDLK_LSHIFT))
+  {
+    _ship->Movement().Boost(15.0f, 0.25f);
+  }
+  if(mrs::Input::IsMouseButtonDown(SDL_BUTTON_RIGHT))
+  {
   }
 }

@@ -34,17 +34,19 @@ void Ship::OnCreate() {
   _ship_model.AddComponent<mrs::ModelRenderer>(specs.model);
 
   _ship_thrusters = Instantiate("thrusters_effect");
+  _ship_thrusters.GetComponent<mrs::Transform>().position.x = 0.00f;
   _ship_thrusters.GetComponent<mrs::Transform>().position.y = 3.0f;
   auto &thruster_particles = _ship_thrusters.AddComponent<mrs::ParticleSystem>();
   thruster_particles.emission_rate = 32;
-  thruster_particles.max_particles = 128;
-  thruster_particles.particle_size = 1.0f;
-  thruster_particles.spread_angle = 25.0f;
-  thruster_particles.velocity = {15, 50};
-  thruster_particles.color_1 = {0.883, 0.490, 0.000, 1.000};
-  thruster_particles.color_2 = {0.114, 0.054, 0.006, 0.000};
-  thruster_particles.life_time = 1.33f;
+  thruster_particles.max_particles = 64;
+  thruster_particles.particle_size = 1.25f;
+  thruster_particles.spread_angle = 180.0f;
+  thruster_particles.velocity = {7, 50};
+  thruster_particles.color_1 = {0.093f, 0.747f, 0.265f, 1.000f};
+  thruster_particles.color_2 = {0.231f, 0.000f, 0.391f, 0.000f};
+  thruster_particles.life_time = 0.83f;
   thruster_particles.repeating = true;
+  thruster_particles.world_space = true;
   thruster_particles.material = mrs::Material::Get("smoke");
   _ship_model.GetComponent<mrs::Transform>().AddChild((_ship_thrusters));
 
@@ -108,7 +110,7 @@ void Ship::OnCollisionEnter2D(mrs::Entity other)
 		particles.life_time = 3.0f;
 		particles.duration = 5.0f;
 
-		e.AddComponent<EffectProperties>().duration = particles.duration;
+		e.AddComponent<EffectProperties>().duration = particles.duration * 1.5f;
 		e.AddScript<Effect>();
 
 		TakeDamage(other.GetComponent<ShipSpecs>().mass / 4.0f);
@@ -141,13 +143,13 @@ void Ship::Die()
 		particles.max_particles = 32;
 		particles.velocity = mrs::Vector2{ 5.0f, 5.0f };
 		particles.color_1 = mrs::Vector4(0.883f, 0.490f, 0.000f, 1.000f);
-		particles.color_2 = mrs::Vector4(0.749, 0.565, 0.043, 0.0f);
+		particles.color_2 = mrs::Vector4(0.749, 0.565, 0.043, 0.25f);
 		particles.particle_size = 3.0f;
-		particles.life_time = 6.0f;
+		particles.life_time = 3.0f;
 		particles.duration = 10.0f;
 		particles.repeating = false;
 
-		e.AddComponent<EffectProperties>().duration = particles.duration;
+		e.AddComponent<EffectProperties>().duration = particles.duration * 1.5f;
 		e.AddScript<Effect>();
 	}
 

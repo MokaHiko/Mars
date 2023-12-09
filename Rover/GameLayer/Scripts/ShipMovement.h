@@ -25,16 +25,33 @@ private:
     Ship* _ship = nullptr;
 };
 
-enum class ShipMovementState : uint16_t
+enum ShipMovementState : uint16_t
 {
-    Idle,
-    Accelerating,
+    Idle = 1 << 0,
+    Accelerating = 1 << 1,
+    Boosting = 1 << 2,
 };
+
+inline ShipMovementState operator|(ShipMovementState a, ShipMovementState b)
+{
+    return static_cast<ShipMovementState>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+inline void operator|=(ShipMovementState& a, ShipMovementState b)
+{
+    a = static_cast<ShipMovementState>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+inline void operator&=(ShipMovementState& a, ShipMovementState b)
+{
+    a = static_cast<ShipMovementState>(static_cast<int>(a) & static_cast<int>(b));
+}
 
 class ShipMovement : public mrs::ScriptableEntity
 {
 public:
     void MoveTowards(mrs::Vector2 direction);
+    void Boost(float multiplier, float duration);
 public:
     virtual void OnStart() override;
     virtual void OnUpdate(float dt) override;

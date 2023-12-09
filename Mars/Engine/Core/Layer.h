@@ -11,7 +11,6 @@ namespace mrs {
     {
     public:
         Layer(const std::string& name);
-
         Layer() {};
         virtual ~Layer() {};
 

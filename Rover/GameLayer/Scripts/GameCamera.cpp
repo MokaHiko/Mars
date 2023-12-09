@@ -4,21 +4,13 @@
 #include "Ship.h"
 
 
-GameCamera::GameCamera()
-{
+#include <Scripting/ProcessLayer.h>
+#include <Core/Input.h>
+#include <Core/Log.h>
 
-}
-
-GameCamera::~GameCamera()
-{
-}
 
 void GameCamera::OnStart()
 {
-	// Get handles
-	_camera = &GetComponent<mrs::Camera>();
-	_camera_transform = &GetComponent<mrs::Transform>();
-
 	auto player = FindEntityWithScript<PlayerShipController>();
 	if(player)
 	{
@@ -40,8 +32,7 @@ void GameCamera::OnUpdate(float dt)
 
 		// _camera_transform->position = follow_transform.position;
 		// _camera_transform->position.z = follow_transform.position.z + _distance;
-
-		_camera_transform->position = follow_transform.position + (glm::vec3(0, 10, 0));
+		_camera_transform->position = follow_transform.position + (glm::vec3(0, 0, 0));
 		_camera_transform->position.z = _distance;
 	}
 

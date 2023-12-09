@@ -50,75 +50,11 @@ namespace mrs
 		_deletion_queue.Flush();
 	}
 
-	void Renderer::UploadMesh(Ref<Mesh> mesh)
-	{
-		// Create and upload data to staging bufffer
-		const size_t buffer_size = mesh->_vertices.size() * sizeof(Vertex);
-		AllocatedBuffer staging_buffer = CreateBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
-
-		void *data;
-		vmaMapMemory(_allocator, staging_buffer.allocation, &data);
-		memcpy(data, mesh->_vertices.data(), buffer_size);
-		vmaUnmapMemory(_allocator, staging_buffer.allocation);
-
-		// Create and transfer data to vertex bufffer stored in vulkan mesh
-		mesh->_buffer = CreateBuffer(buffer_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0);
-
-		// Copy data to vertex buffer via immediate commands
-		ImmediateSubmit([=](VkCommandBuffer cmd)
-			{
-				VkBufferCopy region = {};
-				region.dstOffset = 0;
-				region.size = buffer_size;
-				region.srcOffset = 0;
-				vkCmdCopyBuffer(cmd, staging_buffer.buffer, mesh->_buffer.buffer, 1, &region); });
-
-		// Create index buffer if indices available
-		if (mesh->_index_count > 0)
-		{
-			const size_t index_buffer_size = mesh->_index_count * sizeof(uint32_t);
-			AllocatedBuffer index_staging_buffer = CreateBuffer(index_buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
-
-			void *index_data;
-			vmaMapMemory(_allocator, index_staging_buffer.allocation, &index_data);
-			memcpy(index_data, mesh->_indices.data(), index_buffer_size);
-			vmaUnmapMemory(_allocator, index_staging_buffer.allocation);
-
-			mesh->_index_buffer = CreateBuffer(index_buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0);
-
-			ImmediateSubmit([=](VkCommandBuffer cmd)
-				{
-					VkBufferCopy region = {};
-					region.dstOffset = 0;
-					region.size = index_buffer_size;
-					region.srcOffset = 0;
-					vkCmdCopyBuffer(cmd, index_staging_buffer.buffer, mesh->_index_buffer.buffer, 1, &region); });
-
-			vmaDestroyBuffer(_allocator, index_staging_buffer.buffer, index_staging_buffer.allocation);
-		}
-
-		// Clean up staging buffer and queue vertex buffer for deletion
-		mesh->_vertices.clear();
-		mesh->_vertices.shrink_to_fit();
-		mesh->_indices.clear();
-		mesh->_indices.shrink_to_fit();
-
-		vmaDestroyBuffer(_allocator, staging_buffer.buffer, staging_buffer.allocation);
-
-		_deletion_queue.Push([=]()
-			{
-				vmaDestroyBuffer(_allocator, mesh->_buffer.buffer, mesh->_buffer.allocation);
-
-				if (mesh->_index_count > 0) {
-					vmaDestroyBuffer(_allocator, mesh->_index_buffer.buffer, mesh->_index_buffer.allocation);
-				} });
-	}
-
 	void Renderer::UploadResources()
 	{
 		for (auto &it : ResourceManager::Get()._meshes)
 		{
-			UploadMesh(it.second);
+			VulkanAssetManager::Instance().UploadMesh(it.second);
 		}
 
 		// Upload Textures then materials in order
@@ -194,7 +130,6 @@ namespace mrs
 			.request_validation_layers(true)
 			.require_api_version(1, 2, 0)
 			.use_default_debug_messenger()
-			.set_debug_messenger_severity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
 			.build();
 
 		vkb::Instance vkb_instance = intance_result.value();

@@ -107,3 +107,23 @@ Ref<mrs::Mesh> mrs::Mesh::Get(const std::string& alias)
 
 	return nullptr;
 }
+
+const std::vector<uint32_t>& mrs::Mesh::Indices() const
+{
+	return _indices;
+}
+
+std::vector<uint32_t>& mrs::Mesh::Indices()
+{
+	return _indices;
+}
+
+const std::vector<mrs::Vertex>& mrs::Mesh::Vertices() const
+{
+	return _vertices;
+}
+
+std::vector<mrs::Vertex>& mrs::Mesh::Vertices()
+{
+	return _vertices;
+}
