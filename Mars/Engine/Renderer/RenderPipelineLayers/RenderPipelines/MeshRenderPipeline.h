@@ -23,8 +23,8 @@ namespace mrs
         virtual void OnPreRenderPass(VkCommandBuffer cmd, RenderableBatch* batch) override;
         virtual void OnMaterialsUpdate() override;
 
-        virtual void OnRenderableCreated(Entity e) override;
-        virtual void OnRenderableDestroyed(Entity e) override;
+        void OnMeshRendererCreated(entt::basic_registry<entt::entity>&, entt::entity entity);
+        void OnMeshRendererDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
     private:
         void CreateOffScreenFramebuffer();
 
@@ -32,13 +32,13 @@ namespace mrs
         void InitOffScreenPipeline();
 
         void BuildBatches(VkCommandBuffer cmd, RenderableBatch* scene);
-        void RecordIndirectcommands(VkCommandBuffer cmd, RenderableBatch* scene);
+        void RecordIndirectcommands(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch);
 
         void DrawShadowMap(VkCommandBuffer cmd, RenderableBatch *batch);
-        void DrawObjects(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch *batch);
+        void DrawObjects(VkCommandBuffer cmd, uint32_t current_frame);
     private:
         // Mesh
-        VkDescriptorSet _global_data_set = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSet> _global_data_sets = {};
         VkDescriptorSetLayout _global_data_set_layout = VK_NULL_HANDLE;
 
         VkDescriptorSetLayout _object_set_layout = VK_NULL_HANDLE;

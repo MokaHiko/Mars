@@ -86,13 +86,6 @@ namespace mrs
 
         virtual void OnPostMainPass(VkCommandBuffer cmd) {};
 
-        // Called on renderable created
-        virtual void OnRenderableCreated(Entity e) {};
-
-        // TODO: Remove 
-        // Called on renderable destroyed
-        virtual void OnRenderableDestroyed(Entity e) {};
-
         // Called when a material's properties are changed or entity material changed
         virtual void OnMaterialsUpdate() {};
 

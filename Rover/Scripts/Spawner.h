@@ -5,6 +5,7 @@
 
 #include <ECS/ScriptableEntity.h>
 #include <ECS/Components/Components.h>
+#include <Scripting/Process.h>
 
 namespace mrs
 {
@@ -12,9 +13,9 @@ namespace mrs
     {
     public:
         virtual void OnUpdate(float dt) override;
+        virtual void OnCollisionEnter2D(Collision& col) override;
     private:
-        int dir = 1;
-        float time_elapsed = 0.0f;
+        Ref<DelayProcess> _delay_destroy = nullptr;
     };
 
     class Spawner : public ScriptableEntity
@@ -23,7 +24,6 @@ namespace mrs
         virtual void OnStart() override;
         virtual void OnUpdate(float dt) override;
     private:
-
     };
 }
 #endif

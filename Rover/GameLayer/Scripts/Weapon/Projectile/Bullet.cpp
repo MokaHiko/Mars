@@ -14,13 +14,13 @@ void Bullet::Init()
 
 	// TODO: Change to fire point
 	transform.position = ship_transform.position;
-	//transform.rotation = ship_transform.rotation;
 	transform.position += ship_transform.up * 10.0f;
 
 	AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("default"));
 	auto& rb = AddComponent<mrs::RigidBody2D>();
 	rb.type = mrs::BodyType::KINEMATIC;
 	rb.use_gravity = false;
+	rb.mass = 0.15f;
 
 	auto& trail = AddComponent<mrs::ParticleSystem>();
 	trail.emission_rate = 32;

@@ -252,17 +252,18 @@ void mrs::EditorLayer::LoadEditorScene()
 
 	_render_pipeline_layer->SetCamera(&camera_component);
 
-	// // Demo Text
+	// Demo Text
 	// auto hello_world = app.GetScene()->Instantiate("Test Text", {}, &serialize);
 	// hello_world.AddComponent<SpriteRenderer>().sprite = mrs::Sprite::Get("KenPixel");
 	// hello_world.AddComponent<Renderable>().material = mrs::Material::Get("default_ui");
 	// hello_world.AddComponent<Text>().font = Font::LoadFromYaml(mrs::Texture::Get("KenPixel"), "Assets/Fonts/KenneyPixel.yaml");;
 	// hello_world.AddComponent<Text>().text = "eat shit kurt!";
 
-	// // Demo Trail
+	// Demo Trail
 	// auto trails = app.GetScene()->Instantiate("Test Trail", {}, &serialize);
 	// trails.AddComponent<TrailRenderer>();
 
+	// Demo light 
 	// auto light = app.GetScene()->Instantiate("Light", {}, &serialize);
 	// light.AddComponent<mrs::DirectionalLight>();
 }
@@ -283,6 +284,14 @@ void mrs::EditorLayer::Play()
 	_editor_camera.GetComponent<Camera>().SetActive(false);
 	Scene* scene = application.GetScene();
 	scene->Destroy(_editor_camera);
+
+	// Demo Test
+	// auto floor = application.GetScene()->Instantiate("Spawner");
+	// floor.GetComponent<mrs::Transform>().scale.x *= 50.0f;
+	// floor.GetComponent<mrs::Transform>().position.y = -10.0f;
+
+	// floor.AddComponent<mrs::MeshRenderer>();
+	// floor.AddComponent<mrs::RigidBody2D>().SetType(mrs::BodyType::STATIC);
 
 	// auto spawner = application.GetScene()->Instantiate("Spawner");
 	// spawner.AddScript<Spawner>();

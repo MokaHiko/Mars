@@ -68,8 +68,13 @@ namespace mrs
 		body->SetLinearVelocity({ value.x, value.y });
 	}
 
-	void RigidBody2D::SetType(BodyType type)
+	void RigidBody2D::SetType(BodyType t)
 	{
+		if(!Initialized())
+		{
+			type = t;
+			return;
+		}
 		switch (type)
 		{
 		case BodyType::STATIC:

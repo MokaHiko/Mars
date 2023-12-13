@@ -60,7 +60,11 @@ void PlayerShipController::OnUpdate(float dt)
 
   if(mrs::Input::IsMouseButtonPressed(SDL_BUTTON_LEFT))
   {
-    _ship->Combat().ManualFire();
+    _ship->Combat().PrimaryFire();
+  }
+  else if(mrs::Input::IsMouseButtonPressed(SDL_BUTTON_RIGHT))
+  {
+    _ship->Combat().SecondaryFire();
   }
 
   if (mrs::Input::IsKeyDown(SDLK_LSHIFT))

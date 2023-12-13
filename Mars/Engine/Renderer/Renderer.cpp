@@ -16,7 +16,7 @@
 
 namespace mrs
 {
-	Renderer::Renderer(RendererInfo &info)
+	Renderer::Renderer(RendererInfo& info)
 		: _info(info), _window(info.window) {}
 
 	Renderer::~Renderer() {}
@@ -52,29 +52,29 @@ namespace mrs
 
 	void Renderer::UploadResources()
 	{
-		for (auto &it : ResourceManager::Get()._meshes)
+		for (auto& it : ResourceManager::Get()._meshes)
 		{
 			VulkanAssetManager::Instance().UploadMesh(it.second);
 		}
 
 		// Upload Textures then materials in order
-		for (auto &it : ResourceManager::Get()._textures)
+		for (auto& it : ResourceManager::Get()._textures)
 		{
 			VulkanAssetManager::Instance().UploadTexture(it.second);
 		}
 
-		for (auto &it : ResourceManager::Get()._materials)
+		for (auto& it : ResourceManager::Get()._materials)
 		{
 			VulkanAssetManager::Instance().UploadMaterial(it.second);
 		}
 
-		for (auto &it : ResourceManager::Get()._sprites)
+		for (auto& it : ResourceManager::Get()._sprites)
 		{
 			VulkanAssetManager::Instance().UploadSprite(it.second);
 		}
 	}
 
-	void Renderer::ImmediateSubmit(std::function<void(VkCommandBuffer)> &&fn)
+	void Renderer::ImmediateSubmit(std::function<void(VkCommandBuffer)>&& fn)
 	{
 		VkCommandBuffer cmd = _upload_context.command_buffer;
 
@@ -136,7 +136,7 @@ namespace mrs
 		_instance = vkb_instance.instance;
 		_debug_messenger = vkb_instance.debug_messenger;
 
-		if (SDL_Vulkan_CreateSurface((SDL_Window *)_window->GetNativeWindow(), _instance, &_surface) != SDL_TRUE)
+		if (SDL_Vulkan_CreateSurface((SDL_Window*)_window->GetNativeWindow(), _instance, &_surface) != SDL_TRUE)
 		{
 			printf("%s", SDL_GetError());
 		}
@@ -147,7 +147,7 @@ namespace mrs
 		required_features.multiDrawIndirect = VK_TRUE;
 		required_features.drawIndirectFirstInstance = VK_TRUE;
 
-		if(_info.graphics_settings.tesselation)
+		if (_info.graphics_settings.tesselation)
 		{
 			required_features.tessellationShader = VK_TRUE;
 			required_features.fillModeNonSolid = VK_TRUE;
@@ -201,7 +201,7 @@ namespace mrs
 				vkb::destroy_debug_utils_messenger(_instance, _debug_messenger, nullptr);
 
 				vkDestroySurfaceKHR(_instance, _surface, nullptr);
-				vkDestroyInstance(_instance, nullptr); 
+				vkDestroyInstance(_instance, nullptr);
 			});
 	}
 
@@ -212,8 +212,8 @@ namespace mrs
 		VkSurfaceFormatKHR surface_format = {};
 		surface_format.format = VK_FORMAT_B8G8R8A8_UNORM;
 		vkb::Swapchain vkb_swapchain = builder.use_default_format_selection()
-			// .set_desired_present_mode(VK_PRESENT_MODE_MAILBOX_KHR)
-			.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+			.set_desired_present_mode(VK_PRESENT_MODE_MAILBOX_KHR)
+			//.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
 			.set_desired_extent(_window->GetWidth(), _window->GetHeight())
 			.set_desired_format(surface_format)
 			.build()
@@ -282,7 +282,7 @@ namespace mrs
 		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-		std::vector<VkAttachmentDescription> attachments = { color_attachment};
+		std::vector<VkAttachmentDescription> attachments = { color_attachment };
 
 		VkAttachmentReference color_attachment_reference = {};
 		color_attachment_reference.attachment = 0;
@@ -315,7 +315,7 @@ namespace mrs
 		depth_dependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 		depth_dependency.srcAccessMask = 0;
 
-		std::vector<VkSubpassDependency> dependencies = { color_dependency};
+		std::vector<VkSubpassDependency> dependencies = { color_dependency };
 
 		VkRenderPassCreateInfo render_pass_info = {};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -336,22 +336,22 @@ namespace mrs
 			{ vkDestroyRenderPass(_device.device, _render_pass, nullptr); });
 	}
 
-	AllocatedBuffer& Renderer::GlobalBuffer()
-	{
-		return _global_descriptor_buffer;
-	}
-
 	std::vector<AllocatedBuffer>& Renderer::DirLightBuffers()
 	{
 		return _dir_light_descriptor_buffers;
 	}
 
-	std::vector<AllocatedBuffer>& Renderer::ObjectBuffers()
+	std::vector<AllocatedBuffer>& Renderer::GlobalBuffers()
+	{
+		return _global_descriptor_buffers;
+	}
+
+std::vector<AllocatedBuffer>& Renderer::ObjectBuffers()
 	{
 		return _object_descriptor_buffers;
 	}
 
-void Renderer::InitOffScreenAttachments()
+	void Renderer::InitOffScreenAttachments()
 	{
 		VkExtent3D extent = {};
 		extent.depth = 1;
@@ -539,7 +539,7 @@ void Renderer::InitOffScreenAttachments()
 			frame_buffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			frame_buffer_info.pNext = nullptr;
 
-			std::vector<VkImageView> attachments = { _swapchain_image_views[i]};
+			std::vector<VkImageView> attachments = { _swapchain_image_views[i] };
 			frame_buffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
 			frame_buffer_info.pAttachments = attachments.data();
 
@@ -569,7 +569,7 @@ void Renderer::InitOffScreenAttachments()
 		semaphore_info.flags = 0;
 
 		// Create sync structures for frames
-		for (auto &frame : _frame_data)
+		for (auto& frame : _frame_data)
 		{
 			VK_CHECK(vkCreateFence(_device.device, &fence_info, nullptr, &frame.render_fence));
 
@@ -600,26 +600,11 @@ void Renderer::InitOffScreenAttachments()
 		_descriptor_layout_cache = std::make_unique<vkutil::DescriptorLayoutCache>();
 		_descriptor_layout_cache->Init(_device.device);
 
-		// ~ Global Data
-		{
-			size_t global_buffer_size = PadToUniformBufferSize(sizeof(GlobalDescriptorData));
-			_global_descriptor_buffer = CreateBuffer(global_buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-			VkDescriptorBufferInfo _global_descriptor_buffer_info = {};
-			_global_descriptor_buffer_info.buffer = _global_descriptor_buffer.buffer;
-			_global_descriptor_buffer_info.offset = 0;
-			_global_descriptor_buffer_info.range = VK_WHOLE_SIZE;
-
-			vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
-				.BindBuffer(0, &_global_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
-				.Build(&_global_descriptor_set, &_global_descriptor_set_layout);
-
-			_deletion_queue.Push([=]()
-				{ vmaDestroyBuffer(_allocator, _global_descriptor_buffer.buffer, _global_descriptor_buffer.allocation); });
-		}
-
 		// ~ Scene Data
 		{
+			_global_descriptor_buffers.resize(frame_overlaps);
+			_global_descriptor_sets.resize(frame_overlaps);
+
 			_object_descriptor_buffers.resize(frame_overlaps);
 			_object_descriptor_sets.resize(frame_overlaps);
 
@@ -628,6 +613,24 @@ void Renderer::InitOffScreenAttachments()
 
 			for (uint32_t i = 0; i < frame_overlaps; i++)
 			{
+				// Global data
+				size_t global_buffer_size = PadToUniformBufferSize(sizeof(GlobalDescriptorData));
+				_global_descriptor_buffers[i] = CreateBuffer(global_buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+				VkDescriptorBufferInfo _global_descriptor_buffer_info = {};
+				_global_descriptor_buffer_info.buffer = _global_descriptor_buffers[i].buffer;
+				_global_descriptor_buffer_info.offset = 0;
+				_global_descriptor_buffer_info.range = VK_WHOLE_SIZE;
+
+				vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
+					.BindBuffer(0, &_global_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
+					.Build(&_global_descriptor_sets[i], &_global_descriptor_set_layout);
+
+				_deletion_queue.Push([=]()
+				{ 
+					vmaDestroyBuffer(_allocator, _global_descriptor_buffers[i].buffer, _global_descriptor_buffers[i].allocation); 
+				});
+
 				// ~ Object Data
 				size_t object_buffer_size = PadToStorageBufferSize(sizeof(ObjectData)) * _info.max_objects;
 				_object_descriptor_buffers[i] = CreateBuffer(object_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -637,8 +640,8 @@ void Renderer::InitOffScreenAttachments()
 				object_data.model_matrix = glm::mat4(1.0f);
 				object_data.color = glm::vec4(1.0f);
 
-				char *data;
-				vmaMapMemory(_allocator, _object_descriptor_buffers[i].allocation, (void **)&data);
+				char* data;
+				vmaMapMemory(_allocator, _object_descriptor_buffers[i].allocation, (void**)&data);
 				for (uint32_t i = 0; i < _info.max_objects; i++)
 				{
 					memcpy(data, &object_data, sizeof(ObjectData));
@@ -660,7 +663,7 @@ void Renderer::InitOffScreenAttachments()
 				// Clean descriptor resources
 				_deletion_queue.Push([=]()
 					{ vmaDestroyBuffer(_allocator, _object_descriptor_buffers[i].buffer, _object_descriptor_buffers[i].allocation); });
-				
+
 				// ~ Dir lights
 				size_t dir_light_buffer_size = PadToStorageBufferSize(sizeof(DirectionalLight)) * _info.max_dir_lights;
 				_dir_light_descriptor_buffers[i] = CreateBuffer(dir_light_buffer_size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -682,7 +685,7 @@ void Renderer::InitOffScreenAttachments()
 		}
 	}
 
-	void Renderer::UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index)
+	void Renderer::UpdateGlobalDescriptors(Scene* scene, uint32_t frame_index)
 	{
 		// ~ Directional lights
 		int dir_light_count = 0;
@@ -693,7 +696,7 @@ void Renderer::InitOffScreenAttachments()
 			for (auto entity : dir_lights_view)
 			{
 				Entity e(entity, scene);
-				Transform &transform = e.GetComponent<Transform>();
+				Transform& transform = e.GetComponent<Transform>();
 				DirectionalLight& light = e.GetComponent<DirectionalLight>();
 
 				DirectionalLight dir_light = {};
@@ -721,7 +724,7 @@ void Renderer::InitOffScreenAttachments()
 			vmaUnmapMemory(_allocator, _dir_light_descriptor_buffers[frame_index].allocation);
 		}
 
-		// Global Descriptor
+		// Global Descriptors
 		{
 			if (!_camera || !_camera->IsActive())
 			{
@@ -731,7 +734,7 @@ void Renderer::InitOffScreenAttachments()
 				for (auto entity : cam_view)
 				{
 					Entity e(entity, scene);
-					Camera *camera = &e.GetComponent<Camera>();
+					Camera* camera = &e.GetComponent<Camera>();
 
 					MRS_INFO("Switching camera to: %s", e.GetComponent<Tag>().tag.c_str());
 					if (camera->IsActive())
@@ -740,13 +743,14 @@ void Renderer::InitOffScreenAttachments()
 						active_camera_found = true;
 					}
 				}
-				if(!active_camera_found)
+				if (!active_camera_found)
 				{
 					MRS_ERROR("No active camera in scene!");
 				}
 			}
-			void *global_data;
-			vmaMapMemory(_allocator, _global_descriptor_buffer.allocation, &global_data);
+
+			void* global_data;
+			vmaMapMemory(_allocator, _global_descriptor_buffers[frame_index].allocation, &global_data);
 			GlobalDescriptorData global_info = {};
 			if (_camera)
 			{
@@ -754,25 +758,25 @@ void Renderer::InitOffScreenAttachments()
 
 				global_info.view = _camera->GetView();
 				global_info.view_proj = _camera->GetViewProj();
-				
+
 				const glm::vec3& cam_pos = _camera->GetPosition();
 				global_info.camera_position = glm::vec4(cam_pos.x, cam_pos.y, cam_pos.z, 0);
 
 				global_info.n_dir_lights = dir_light_count;
 			}
 			memcpy(global_data, &global_info, sizeof(GlobalDescriptorData));
-			vmaUnmapMemory(_allocator, _global_descriptor_buffer.allocation);
+			vmaUnmapMemory(_allocator, _global_descriptor_buffers[frame_index].allocation);
 		}
 
 		// Update object data storage buffer
 		{
 			auto group = scene->Registry()->group<Tag, Transform>();
-			char *objectData;
-			vmaMapMemory(_allocator, _object_descriptor_buffers[frame_index].allocation, (void **)&objectData);
+			char* objectData;
+			vmaMapMemory(_allocator, _object_descriptor_buffers[frame_index].allocation, (void**)&objectData);
 			for (auto entity : group)
 			{
 				Entity e = Entity(entity, scene);
-				Transform &transform = e.GetComponent<Transform>();
+				Transform& transform = e.GetComponent<Transform>();
 
 				ObjectData obj_info = {};
 				obj_info.color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -810,10 +814,10 @@ void Renderer::InitOffScreenAttachments()
 		return aligned_size;
 	}
 
-	void Renderer::Begin(Scene *scene)
+	void Renderer::Begin(Scene* scene)
 	{
 		// Get current frame index, current frame data, current cmd bufffer
-		auto &frame = CurrentFrameData();
+		auto& frame = CurrentFrameData();
 		uint32_t frame_index = CurrentFrame();
 
 		// Wait till render fence has been flagged
@@ -882,9 +886,9 @@ void Renderer::InitOffScreenAttachments()
 
 	void Renderer::End()
 	{
-		auto &frame = CurrentFrameData();
+		auto& frame = CurrentFrameData();
 		VkCommandBuffer cmd = frame.command_buffer;
-		
+
 		VK_CHECK(vkEndCommandBuffer(cmd));
 
 		// Submit commands

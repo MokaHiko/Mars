@@ -23,7 +23,7 @@ void mrs::TrailRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd, RenderableBa
 		trail_renderer.mesh->Vertices()[1] = v;
 		size_t buffer_size = sizeof(Vertex) * trail_renderer.mesh->Vertices().size();
 		vkCmdUpdateBuffer(cmd, trail_renderer.mesh->_buffer.buffer, 0, buffer_size, trail_renderer.mesh->Vertices().data());
-
+        
         // Vector3 last_point = {};
         // if (trail_renderer.points.size() > 0)
         // {
@@ -81,25 +81,26 @@ void mrs::TrailRenderPipeline::Init()
 
 void mrs::TrailRenderPipeline::InitDescriptors() 
 {
-    VkDescriptorBufferInfo global_buffer_info = {};
-    global_buffer_info.buffer = _renderer->GlobalBuffer().buffer;
-    global_buffer_info.offset = 0;
-    global_buffer_info.range = VK_WHOLE_SIZE;
-
-    vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
-        .BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-        .Build(&_global_data_set, &_global_data_set_layout);
-
+    _global_data_sets.resize(frame_overlaps);
     _object_sets.resize(frame_overlaps);
     for(uint32_t i = 0; i < frame_overlaps; i++)
     {
-        VkDescriptorBufferInfo global_buffer_info = {};
-        global_buffer_info.buffer = _renderer->ObjectBuffers()[i].buffer;
-        global_buffer_info.offset = 0;
-        global_buffer_info.range = VK_WHOLE_SIZE;
+		VkDescriptorBufferInfo global_buffer_info = {};
+		global_buffer_info.buffer = _renderer->GlobalBuffers()[i].buffer;
+		global_buffer_info.offset = 0;
+		global_buffer_info.range = VK_WHOLE_SIZE;
+
+		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+			.BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+			.Build(&_global_data_sets[i], &_global_data_set_layout);
+
+        VkDescriptorBufferInfo object_buffer_info = {};
+        object_buffer_info.buffer = _renderer->ObjectBuffers()[i].buffer;
+        object_buffer_info.offset = 0;
+        object_buffer_info.range = VK_WHOLE_SIZE;
 
         vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
-            .BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+            .BindBuffer(0, &object_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
             .Build(&_object_sets[i], &_object_set_layout);
     }
 }
@@ -110,7 +111,7 @@ void mrs::TrailRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame
 
     // Bind global, object, and light descriptors
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_set, 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_sets[current_frame], 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[current_frame], 0, nullptr);
 
 	// TODO: Indirect Draw in batches

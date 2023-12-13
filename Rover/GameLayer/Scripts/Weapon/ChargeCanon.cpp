@@ -11,11 +11,12 @@ tbx::PRNGenerator<float> ChargeCanon::random_gen(-1,1);
 
 void ChargeCanon::OnStart()
 {
-  _fire_rate = 0.13f;
+  _primary_fire_rate = 0.13f;
+  _secondary_fire_rate = 1.0f;
 }
 
-void ChargeCanon::FireWeakProjectile() {
 
+void ChargeCanon::FireWeakProjectile() {
   BulletMuzzleFlash();
 
   const auto& ship_transform = Owner()->GetComponent<mrs::Transform>();

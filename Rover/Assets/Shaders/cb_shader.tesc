@@ -81,43 +81,43 @@ void main()
 
 	if(gl_InvocationID == 0)
 	{
-		int MIN_TESS_LEVEL = int(noise_settings[cb_data.noise_filters_indices[0]].min_resolution);
-		int MAX_TESS_LEVEL = int(noise_settings[cb_data.noise_filters_indices[0]].max_resolution);
+		// int MIN_TESS_LEVEL = int(noise_settings[cb_data.noise_filters_indices[0]].min_resolution);
+		// int MAX_TESS_LEVEL = int(noise_settings[cb_data.noise_filters_indices[0]].max_resolution);
 
-		// Step 1: Transform points into view space
-		vec4 viewSpacePos00 = _global_buffer.view * _object_buffer.s_objects[v_entity_id[gl_InvocationID]].model_matrix * gl_in[0].gl_Position;
-		vec4 viewSpacePos10 = _global_buffer.view * _object_buffer.s_objects[v_entity_id[gl_InvocationID]].model_matrix * gl_in[1].gl_Position;
-		vec4 viewSpacePos01 = _global_buffer.view * _object_buffer.s_objects[v_entity_id[gl_InvocationID]].model_matrix * gl_in[2].gl_Position;
-		vec4 viewSpacePos11 = _global_buffer.view * _object_buffer.s_objects[v_entity_id[gl_InvocationID]].model_matrix * gl_in[3].gl_Position;
+		// // Step 1: Transform points into view space
+		// vec4 viewSpacePos00 = _global_buffer.view * _object_buffer.s_objects[v_entity_id[gl_InvocationID]].model_matrix * gl_in[0].gl_Position;
+		// vec4 viewSpacePos10 = _global_buffer.view * _object_buffer.s_objects[v_entity_id[gl_InvocationID]].model_matrix * gl_in[1].gl_Position;
+		// vec4 viewSpacePos01 = _global_buffer.view * _object_buffer.s_objects[v_entity_id[gl_InvocationID]].model_matrix * gl_in[2].gl_Position;
+		// vec4 viewSpacePos11 = _global_buffer.view * _object_buffer.s_objects[v_entity_id[gl_InvocationID]].model_matrix * gl_in[3].gl_Position;
 
-		// Step 2: Get distance from camera clamped 
-		float distance00 = clamp((abs(viewSpacePos00.z) - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
-		float distance10 = clamp((abs(viewSpacePos10.z) - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
-		float distance01 = clamp((abs(viewSpacePos01.z) - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
-		float distance11 = clamp((abs(viewSpacePos11.z) - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
+		// // Step 2: Get distance from camera clamped 
+		// float distance00 = clamp((abs(viewSpacePos00.z) - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
+		// float distance10 = clamp((abs(viewSpacePos10.z) - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
+		// float distance01 = clamp((abs(viewSpacePos01.z) - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
+		// float distance11 = clamp((abs(viewSpacePos11.z) - MIN_DISTANCE) / (MAX_DISTANCE - MIN_DISTANCE), 0.0, 1.0);
 
-		// Step 3: interpolate tesselation levels
-		float tessLevel0 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(distance00, distance10));
-		float tessLevel1 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(distance10, distance11));
-		float tessLevel2 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(distance11, distance01));
-		float tessLevel3 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(distance01, distance00));
+		// // Step 3: interpolate tesselation levels
+		// float tessLevel0 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(distance00, distance10));
+		// float tessLevel1 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(distance10, distance11));
+		// float tessLevel2 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(distance11, distance01));
+		// float tessLevel3 = mix(MAX_TESS_LEVEL, MIN_TESS_LEVEL, min(distance01, distance00));
 
-		gl_TessLevelOuter[0] = tessLevel0;	
-		gl_TessLevelOuter[1] = tessLevel1;
-		gl_TessLevelOuter[2] = tessLevel2;
-		gl_TessLevelOuter[3] = tessLevel3;
+		// gl_TessLevelOuter[0] = tessLevel0;	
+		// gl_TessLevelOuter[1] = tessLevel1;
+		// gl_TessLevelOuter[2] = tessLevel2;
+		// gl_TessLevelOuter[3] = tessLevel3;
 
-		gl_TessLevelInner[0] = max(tessLevel0, tessLevel2);
-		gl_TessLevelInner[1] = max(tessLevel1, tessLevel3);
+		// gl_TessLevelInner[0] = max(tessLevel0, tessLevel2);
+		// gl_TessLevelInner[1] = max(tessLevel1, tessLevel3);
 
-		// NoiseSetting noise_filter = noise_settings[cb_data.noise_filters_indices[0]];
-		// gl_TessLevelOuter[0] = noise_filter.min_resolution;	
-		// gl_TessLevelOuter[1] = noise_filter.min_resolution;
-		// gl_TessLevelOuter[2] = noise_filter.min_resolution;
-		// gl_TessLevelOuter[3] = noise_filter.min_resolution;
+		NoiseSetting noise_filter = noise_settings[cb_data.noise_filters_indices[0]];
+		gl_TessLevelOuter[0] = noise_filter.min_resolution;	
+		gl_TessLevelOuter[1] = noise_filter.min_resolution;
+		gl_TessLevelOuter[2] = noise_filter.min_resolution;
+		gl_TessLevelOuter[3] = noise_filter.min_resolution;
 
-		// gl_TessLevelInner[0] = noise_filter.min_resolution;
-		// gl_TessLevelInner[1] = noise_filter.min_resolution;
+		gl_TessLevelInner[0] = noise_filter.min_resolution;
+		gl_TessLevelInner[1] = noise_filter.min_resolution;
 	}
 
 	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;

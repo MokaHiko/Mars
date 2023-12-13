@@ -3,7 +3,8 @@
 
 void Weapon::OnUpdate(float dt) 
 {
-  _time_since_last_fire += mrs::Time::DeltaTime();
+   _time_since_last_primary_fire += mrs::Time::DeltaTime();
+   _time_since_last_secondary_fire += mrs::Time::DeltaTime();
 }
 
 void Weapon::Equip(Ship* ship)
@@ -12,24 +13,32 @@ void Weapon::Equip(Ship* ship)
 	OnEquip();
 }
 
-void Weapon::Fire() 
+void Weapon::Fire(int alternate_fire) 
 {
-	if(_time_since_last_fire >= _fire_rate)
+	if(!alternate_fire)
 	{
-		_time_since_last_fire = 0;
+		if(_time_since_last_primary_fire >= _primary_fire_rate)
+		{
+			_time_since_last_primary_fire = 0;
 
-		if(_hold_time >= _long_hold_threash_hold)
-		{
-			FireStrongProjectile(_hold_time);
-		}
-		else
-		{
 			FireWeakProjectile();
+			if(_secondary_ammo > 0)
+			{
+				_secondary_ammo--;
+			}
 		}
-
-		if(_ammo > 0)
+	}
+	else
+	{
+		if(_time_since_last_secondary_fire >= _secondary_fire_rate)
 		{
-			_ammo--;
+			_time_since_last_secondary_fire = 0;
+
+			FireStrongProjectile(100.0f);
+			if(_secondary_ammo > 0)
+			{
+				_secondary_ammo--;
+			}
 		}
 	}
 }

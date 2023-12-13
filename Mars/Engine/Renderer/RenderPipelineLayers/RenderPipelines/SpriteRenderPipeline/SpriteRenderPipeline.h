@@ -30,7 +30,7 @@ namespace mrs
         };
 
         // Mesh
-        VkDescriptorSet _global_data_set = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSet> _global_data_sets = {};
         VkDescriptorSetLayout _global_data_set_layout = VK_NULL_HANDLE;
 
         VkDescriptorSetLayout _object_set_layout = VK_NULL_HANDLE;

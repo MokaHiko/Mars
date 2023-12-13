@@ -53,9 +53,14 @@ void ShipCombat::ScanTargets()
   // TODO: Add scanning vfx
 }
 
-void ShipCombat::ManualFire() 
+void ShipCombat::PrimaryFire() 
 {
   _current_weapon->Fire();
+}
+
+void ShipCombat::SecondaryFire() 
+{
+  _current_weapon->Fire(1);
 }
 
 AutoCombatProcess::AutoCombatProcess(ShipCombat& combat)

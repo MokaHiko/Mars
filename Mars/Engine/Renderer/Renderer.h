@@ -106,7 +106,7 @@ namespace mrs {
 		// Adds semaphore for graphics queue to wait during submission
 		void PushGraphicsSemaphore(VkPipelineStageFlags wait_stage,  VkSemaphore semaphore) {_graphics_wait_stages.push_back(wait_stage), _graphics_wait_semaphores.push_back(semaphore);}
 	public:
-		AllocatedBuffer& GlobalBuffer();
+		std::vector<AllocatedBuffer>& GlobalBuffers();
 		std::vector<AllocatedBuffer>& ObjectBuffers();
 		std::vector<AllocatedBuffer>& DirLightBuffers();
 
@@ -176,9 +176,9 @@ namespace mrs {
 		Camera *_camera = nullptr;
 
 		// Global descriptor
-		VkDescriptorSet _global_descriptor_set;
+		std::vector<VkDescriptorSet> _global_descriptor_sets;
+		std::vector<AllocatedBuffer> _global_descriptor_buffers;
 		VkDescriptorSetLayout _global_descriptor_set_layout;
-		AllocatedBuffer _global_descriptor_buffer;
 
 		// Directional lights descriptors
 		std::vector<VkDescriptorSet> _dir_light_descriptor_sets;

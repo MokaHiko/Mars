@@ -35,7 +35,8 @@ public:
     void ScanTargets();
 
     // Manual combat
-    void ManualFire();
+    void PrimaryFire();
+    void SecondaryFire();
 
     std::vector<mrs::Entity> _targets;
     Ship* _ship = nullptr;

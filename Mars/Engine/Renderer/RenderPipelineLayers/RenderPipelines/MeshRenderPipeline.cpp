@@ -9,19 +9,21 @@
 #include "Renderer/RenderPipelineLayers/IRenderPipelineLayer.h"
 
 void mrs::MeshRenderPipeline::InitDescriptors() {
-    VkDescriptorBufferInfo global_buffer_info = {};
-    global_buffer_info.buffer = _renderer->GlobalBuffer().buffer;
-    global_buffer_info.offset = 0;
-    global_buffer_info.range = VK_WHOLE_SIZE;
 
-    vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
-        .BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-        .Build(&_global_data_set, &_global_data_set_layout);
-
+    _global_data_sets.resize(frame_overlaps);
     _object_sets.resize(frame_overlaps);
     _dir_light_sets.resize(frame_overlaps);
     for (uint32_t i = 0; i < frame_overlaps; i++)
     {
+		VkDescriptorBufferInfo global_buffer_info = {};
+		global_buffer_info.buffer = _renderer->GlobalBuffers()[i].buffer;
+		global_buffer_info.offset = 0;
+		global_buffer_info.range = VK_WHOLE_SIZE;
+
+		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+        .BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+        .Build(&_global_data_sets[i], &_global_data_set_layout);
+
         VkDescriptorBufferInfo object_buffer_info = {};
         object_buffer_info.buffer = _renderer->ObjectBuffers()[i].buffer;
         object_buffer_info.offset = 0;
@@ -57,6 +59,10 @@ mrs::MeshRenderPipeline::MeshRenderPipeline()
 mrs::MeshRenderPipeline::~MeshRenderPipeline() {}
 
 void mrs::MeshRenderPipeline::Init() {
+	Scene* scene = Application::Instance().GetScene();
+	scene->Registry()->on_construct<MeshRenderer>().connect<&MeshRenderPipeline::OnMeshRendererCreated>(this);
+	scene->Registry()->on_destroy<MeshRenderer>().connect<&MeshRenderPipeline::OnMeshRendererDestroyed>(this);
+
     // Shadow Pipeline
     CreateOffScreenFramebuffer();
     InitDescriptors();
@@ -115,12 +121,12 @@ void mrs::MeshRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame,
     if (_rerecord)
     {
         BuildBatches(cmd, batch);
-        RecordIndirectcommands(cmd, batch);
+        RecordIndirectcommands(cmd, current_frame, batch);
 
         _rerecord = false;
     }
 
-    DrawObjects(cmd, current_frame, batch);
+    DrawObjects(cmd, current_frame);
 }
 
 void mrs::MeshRenderPipeline::End(VkCommandBuffer cmd)
@@ -143,29 +149,31 @@ void mrs::MeshRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd, RenderableBat
     vkCmdEndRenderPass(cmd);
 }
 
-
 void mrs::MeshRenderPipeline::OnMaterialsUpdate()
 {
     _rerecord = true;
 }
 
-void mrs::MeshRenderPipeline::OnRenderableCreated(Entity e)
+
+
+void mrs::MeshRenderPipeline::OnMeshRendererCreated(entt::basic_registry<entt::entity>&, entt::entity entity)
 {
     _rerecord = true;
 }
 
-void mrs::MeshRenderPipeline::OnRenderableDestroyed(Entity e)
+void mrs::MeshRenderPipeline::OnMeshRendererDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity)
 {
     _rerecord = true;
 }
 
-void mrs::MeshRenderPipeline::DrawObjects(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
+
+void mrs::MeshRenderPipeline::DrawObjects(VkCommandBuffer cmd, uint32_t current_frame)
 {
     VulkanFrameContext frame_context = _renderer->CurrentFrameData();
 
     // Bind global, object, and light descriptors
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_set, 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_sets[current_frame], 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[current_frame], 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 4, 1, &_dir_light_sets[current_frame], 0, nullptr);
 
@@ -333,12 +341,10 @@ void mrs::MeshRenderPipeline::BuildBatches(VkCommandBuffer cmd, RenderableBatch*
     _batches = GetRenderablesAsBatches(batch);
 }
 
-void mrs::MeshRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, RenderableBatch* batch)
+void mrs::MeshRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
 {
-    uint32_t frame_index = _renderer->CurrentFrame();
     char* draw_commands;
-    vmaMapMemory(_renderer->Allocator(), _indirect_buffers[frame_index].allocation, (void**)&draw_commands);
-
+    vmaMapMemory(_renderer->Allocator(), _indirect_buffers[current_frame].allocation, (void**)&draw_commands);
     // Encode draw commands for each renderable ahead of time
     int ctr = 0;
     for (auto e : batch->entities)
@@ -356,7 +362,7 @@ void mrs::MeshRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, Render
         memcpy(draw_commands + offset, &draw_command, sizeof(VkDrawIndexedIndirectCommand));
         ctr++;
     }
-    vmaUnmapMemory(_renderer->Allocator(), _indirect_buffers[frame_index].allocation);
+    vmaUnmapMemory(_renderer->Allocator(), _indirect_buffers[current_frame].allocation);
 }
 
 void mrs::MeshRenderPipeline::DrawShadowMap(VkCommandBuffer cmd, RenderableBatch* batch)
@@ -365,7 +371,7 @@ void mrs::MeshRenderPipeline::DrawShadowMap(VkCommandBuffer cmd, RenderableBatch
 
     // Bind global and object descriptors
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _offscreen_render_pipeline);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_set, 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_sets[n_frame], 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[n_frame], 0, nullptr);
 
     for (auto& batch : _batches)

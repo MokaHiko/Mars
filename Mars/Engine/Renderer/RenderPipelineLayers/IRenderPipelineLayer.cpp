@@ -82,11 +82,6 @@ namespace mrs
 			pipeline->Init();
 			_renderable_batches[pipeline] = {};
 		}
-
-		// Subscribe to MeshRenderer component signals
-		Scene* scene = Application::Instance().GetScene();
-		scene->Registry()->on_construct<MeshRenderer>().connect<&IRenderPipelineLayer::OnRenderableCreated>(this);
-		scene->Registry()->on_destroy<MeshRenderer>().connect<&IRenderPipelineLayer::OnRenderableDestroyed>(this);
 	}
 
 	void IRenderPipelineLayer::OnDetatch()
@@ -107,6 +102,7 @@ namespace mrs
 		VkCommandBuffer cmd = _renderer->CurrentFrameData().command_buffer;
 
 		Scene* scene = Application::Instance().GetScene();
+		_renderer->UpdateGlobalDescriptors(scene, current_frame_index);
 		BuildBatches(scene);
 
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
@@ -121,7 +117,6 @@ namespace mrs
 		}
 
 		_renderer->MeshPassStart(cmd, _renderer->_offscreen_framebuffers[current_frame_index], _renderer->_offscreen_render_pass);
-		_renderer->UpdateGlobalDescriptors(scene, current_frame_index);
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
 			(*it)->Begin(cmd, current_frame_index, &_renderable_batches[*it]);
@@ -188,31 +183,10 @@ namespace mrs
 		_render_pipeline_layers.PopRenderPipeline(pipeline);
 	}
 
-	void IRenderPipelineLayer::OnRenderableCreated(entt::basic_registry<entt::entity>&, entt::entity entity)
-	{
-		static Scene* scene = Application::Instance().GetScene();
-		Entity e{ entity, scene };
-
-		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
-		{
-			(*it)->OnRenderableCreated(e);
-		}
-	}
-
-	void IRenderPipelineLayer::OnRenderableDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity)
-	{
-		static Scene* scene = Application::Instance().GetScene();
-		Entity e{ entity, scene };
-
-		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
-		{
-			(*it)->OnRenderableDestroyed(e);
-		}
-	}
-
 	void IRenderPipelineLayer::OnImGuiRender()
 	{
 	}
+
 	void IRenderPipelineLayer::OnMaterialsUpdate()
 	{
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)

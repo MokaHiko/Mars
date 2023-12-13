@@ -78,20 +78,21 @@ void CBRenderPipeline::InitDescriptors()
 
 	// TODO: Put in by default
     {
-		VkDescriptorBufferInfo global_buffer_info = {};
-		global_buffer_info.buffer = _renderer->GlobalBuffer().buffer;
-		global_buffer_info.offset = 0;
-		global_buffer_info.range = VK_WHOLE_SIZE;
-
-		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
-			.BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-			.Build(&_global_data_set, &_global_data_set_layout);
-
+		_global_data_sets.resize(frame_overlaps);
 		_object_sets.resize(frame_overlaps);
 		_dir_light_sets.resize(frame_overlaps);
 
 		for (uint32_t i = 0; i < frame_overlaps; i++)
 		{
+			VkDescriptorBufferInfo global_buffer_info = {};
+			global_buffer_info.buffer = _renderer->GlobalBuffers()[i].buffer;
+			global_buffer_info.offset = 0;
+			global_buffer_info.range = VK_WHOLE_SIZE;
+
+			vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+				.BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+				.Build(&_global_data_sets[i], &_global_data_set_layout);
+
 			VkDescriptorBufferInfo object_buffer_info = {};
 			object_buffer_info.buffer = _renderer->ObjectBuffers()[i].buffer;
 			object_buffer_info.offset = 0;
@@ -147,7 +148,6 @@ void CBRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, mrs::R
 
     // TODO: Add on CB properties change or new celestial body
     _rerecord = true;
-
     if (_rerecord)
     {
         BuildBatches(cmd, batch);
@@ -165,16 +165,6 @@ void CBRenderPipeline::End(VkCommandBuffer cmd)
 }
 
 void CBRenderPipeline::OnMaterialsUpdate()
-{
-    _rerecord = true;
-}
-
-void CBRenderPipeline::OnRenderableCreated(mrs::Entity e)
-{
-    _rerecord = true;
-}
-
-void CBRenderPipeline::OnRenderableDestroyed(mrs::Entity e)
 {
     _rerecord = true;
 }
@@ -345,7 +335,7 @@ void CBRenderPipeline::InitIndirectCommands() {
     for (int i = 0; i < frame_overlaps; i++)
     {
         _indirect_buffers[i] = _renderer->CreateBuffer(
-            _renderer->PadToStorageBufferSize(_renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand))) * max_indirect_commands,
+            _renderer->PadToStorageBufferSize(_renderer->PadToStorageBufferSize(sizeof(VkDrawIndirectCommand))) * max_indirect_commands,
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
             VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
             VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -369,34 +359,32 @@ void CBRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, mrs::Renderab
 {
     using namespace mrs;
 
-    for (int i = 0; i < frame_overlaps; i++)
-    {
-        char* draw_commands;
-        vmaMapMemory(_renderer->Allocator(), _indirect_buffers[i].allocation, (void**)&draw_commands);
+    uint32_t i = _renderer->CurrentFrame();
+	char* draw_commands;
+	vmaMapMemory(_renderer->Allocator(), _indirect_buffers[i].allocation, (void**)&draw_commands);
 
-        // Encode draw commands for each renderable ahead of time
-        int ctr = 0;
-        for (auto e : batch->entities)
-        {
-            const auto& cb = e.GetComponent<CelestialBody>();
+	// Encode draw commands for each renderable ahead of time
+	int ctr = 0;
+	for (auto e : batch->entities)
+	{
+		const auto& cb = e.GetComponent<CelestialBody>();
 
-            // 6 faces of cube
-            for (auto& face : cb.terrain_faces)
-            {
-                VkDrawIndirectCommand draw_command = {};
-                draw_command.instanceCount = 1;
-                draw_command.firstInstance = e.Id();
-                draw_command.firstVertex = 0;
-                draw_command.vertexCount = face.Mesh()->_vertex_count;
+		// 6 faces of cube
+		for (auto& face : cb.terrain_faces)
+		{
+			VkDrawIndirectCommand draw_command = {};
+			draw_command.instanceCount = 1;
+			draw_command.firstInstance = e.Id();
+			draw_command.firstVertex = 0;
+			draw_command.vertexCount = face.Mesh()->_vertex_count;
 
-                static size_t padded_draw_indirect_size = _renderer->PadToStorageBufferSize(sizeof(VkDrawIndirectCommand));
-                size_t offset = ctr * padded_draw_indirect_size;
-                memcpy(draw_commands + offset, &draw_command, sizeof(VkDrawIndirectCommand));
-                ctr++;
-            }
-        }
-        vmaUnmapMemory(_renderer->Allocator(), _indirect_buffers[i].allocation);
-    }
+			static size_t padded_draw_indirect_size = _renderer->PadToStorageBufferSize(sizeof(VkDrawIndirectCommand));
+			size_t offset = ctr * padded_draw_indirect_size;
+			memcpy(draw_commands + offset, &draw_command, sizeof(VkDrawIndirectCommand));
+			ctr++;
+		}
+	}
+	vmaUnmapMemory(_renderer->Allocator(), _indirect_buffers[i].allocation);
 }
 
 void CBRenderPipeline::DrawObjects(VkCommandBuffer cmd, mrs::RenderableBatch* batch)
@@ -409,7 +397,7 @@ void CBRenderPipeline::DrawObjects(VkCommandBuffer cmd, mrs::RenderableBatch* ba
 
     // Bind global, object, and light descriptors
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_set, 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_sets[n_frame], 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[n_frame], 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 3, 1, &_dir_light_sets[n_frame], 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 4, 1, &_celestial_body_sets[n_frame], 0, nullptr);

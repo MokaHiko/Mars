@@ -16,11 +16,11 @@ public:
     virtual void OnUpdate(float dt) final;
 
     void Equip(Ship* ship);
-    void Fire();
+    void Fire(int alternate_fire = 0);
 protected:
     virtual void OnEquip() {};
     virtual void OnUnEquip() {};
-
+    
     virtual void FireWeakProjectile() = 0;
     virtual void FireStrongProjectile(float hold_time) = 0;
 
@@ -28,12 +28,15 @@ protected:
 
     float _long_hold_threash_hold = 1.0f;
 
-    int _ammo = 100;
-    float _fire_rate = 0.35f;
+    int _primary_ammo = 100;
+    int _secondary_ammo = 10;
+    float _primary_fire_rate = 0.35f;
+    float _secondary_fire_rate = 1.0f;
     int _cannon_side = 1;
 private:
     float _hold_time = 0.0f;
-    float _time_since_last_fire = 0.0f;
+    float _time_since_last_primary_fire = 0.0f;
+    float _time_since_last_secondary_fire = 0.0f;
 
     Ship* _ship = {};
 };

@@ -123,7 +123,7 @@ void GameManager::OnStart()
 		// Player
 		auto player = Instantiate("Player");
 		auto& transform = player.GetComponent<mrs::Transform>();
-		transform.position = glm::vec3(20, 20, 10);
+		transform.position = glm::vec3(20, 20, 0);
 
 		// Ship
 		auto& specs = player.AddComponent<ShipSpecs>();
@@ -146,7 +146,7 @@ void GameManager::OnStart()
 		auto enemy = Instantiate("Enemy_Striker");
 		auto& transform = enemy.GetComponent<mrs::Transform>();
 		transform.position = glm::vec3(10 * i, 50.0f, 0);
-		transform.scale *= 1.5f;
+		transform.scale *= 2.0f;
 
 		// Ship
 		auto& specs = enemy.AddComponent<ShipSpecs>();
@@ -154,9 +154,9 @@ void GameManager::OnStart()
 		enemy.AddScript<Ship>();
 
 		// // Enemy controller
-		// auto enemy_controller = Instantiate("Enemy Controller!");
-		// enemy_controller.AddScript<Striker>();
-		// transform.AddChild(enemy_controller);
+		auto enemy_controller = Instantiate("Enemy Controller!");
+		enemy_controller.AddScript<Striker>();
+		transform.AddChild(enemy_controller);
 
 		// TODO: Move to targetting
 		auto targetting = Instantiate("targetting");

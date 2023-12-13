@@ -106,10 +106,6 @@ public:
 
     virtual void OnMaterialsUpdate() override;
 
-    // TODO: Change Irendering layer to use Renderable Component 
-    virtual void OnRenderableCreated(mrs::Entity e) override;
-    virtual void OnRenderableDestroyed(mrs::Entity e) override;
-
     void OnCelestialBodyCreated(entt::basic_registry<entt::entity>&, entt::entity entity);
     void OnCelestialBodyUpdated(entt::basic_registry<entt::entity>&, entt::entity entity);
     void OnCelestialBodyDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
@@ -144,7 +140,7 @@ private:
     std::vector<NoiseSettings> _noise_settings; // Map between the index in the noise settings storage buffer
 private:
     // Mesh
-    VkDescriptorSet _global_data_set = VK_NULL_HANDLE;
+    std::vector<VkDescriptorSet> _global_data_sets = {};
     VkDescriptorSetLayout _global_data_set_layout = VK_NULL_HANDLE;
 
     VkDescriptorSetLayout _object_set_layout = VK_NULL_HANDLE;

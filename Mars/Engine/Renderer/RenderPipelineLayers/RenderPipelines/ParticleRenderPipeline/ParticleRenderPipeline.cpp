@@ -269,7 +269,8 @@ void mrs::ParticleRenderPipeline::RecordComputeCommandBuffers(VkCommandBuffer cm
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline_layout, 0, 1, &_compute_descriptor_sets[current_frame], 0, 0);
 
 	int ctr = 0;
-	for (auto e : batch->entities) {
+	for (auto e : batch->entities) 
+	{
 		auto& particle_system = e.GetComponent<ParticleSystem>();
 
 		if (particle_system.running)
@@ -353,26 +354,27 @@ void mrs::ParticleRenderPipeline::FillParticleArray(const ParticleSystem& partic
 
 void mrs::ParticleRenderPipeline::InitGraphicsDescriptors()
 {
-	VkDescriptorBufferInfo global_buffer_info = {};
-	global_buffer_info.buffer = _renderer->GlobalBuffer().buffer;
-	global_buffer_info.offset = 0;
-	global_buffer_info.range = VK_WHOLE_SIZE;
-
-	vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
-		.BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
-		.Build(&_global_data_set, &_global_data_set_layout);
-
+	_global_data_sets.resize(frame_overlaps);
 	_object_sets.resize(frame_overlaps);
 	_dir_light_sets.resize(frame_overlaps);
 	for (uint32_t i = 0; i < frame_overlaps; i++)
 	{
 		VkDescriptorBufferInfo global_buffer_info = {};
-		global_buffer_info.buffer = _renderer->ObjectBuffers()[i].buffer;
+		global_buffer_info.buffer = _renderer->GlobalBuffers()[i].buffer;
 		global_buffer_info.offset = 0;
 		global_buffer_info.range = VK_WHOLE_SIZE;
 
 		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
-			.BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+        .BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+        .Build(&_global_data_sets[i], &_global_data_set_layout);
+
+		VkDescriptorBufferInfo object_buffer_info = {};
+		object_buffer_info.buffer = _renderer->ObjectBuffers()[i].buffer;
+		object_buffer_info.offset = 0;
+		object_buffer_info.range = VK_WHOLE_SIZE;
+
+		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+			.BindBuffer(0, &object_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 			.Build(&_object_sets[i], &_object_set_layout);
 
 		VkDescriptorBufferInfo dir_light_buffer_info = {};
@@ -461,7 +463,7 @@ void mrs::ParticleRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_fr
 	static Ref<Mesh> quad_mesh = Mesh::Get("quad");
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_set, 0, 0);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_sets[current_frame], 0, 0);
 	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[current_frame], 0, 0);
 
 	// Bind particle parameters and particles
