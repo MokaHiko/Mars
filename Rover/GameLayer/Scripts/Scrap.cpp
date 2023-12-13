@@ -26,9 +26,9 @@ void Scrap::OnStart()
 	StartProcess(delay_destroy);
 }
 
-void Scrap::OnCollisionEnter2D(mrs::Entity other) 
+void Scrap::OnCollisionEnter2D(mrs::Collision& col) 
 {
-	if(other.HasComponent<ShipResources>())
+	if(col.entity.HasComponent<ShipResources>())
 	{
 		Fade();
 	}

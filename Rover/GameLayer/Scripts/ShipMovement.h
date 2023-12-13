@@ -55,7 +55,7 @@ public:
 public:
     virtual void OnStart() override;
     virtual void OnUpdate(float dt) override;
-    virtual void OnCollisionEnter2D(mrs::Entity other) override;
+    virtual void OnCollisionEnter2D(mrs::Collision& col) override;
 
     Ship* _ship = nullptr;
 private:

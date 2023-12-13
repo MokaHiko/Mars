@@ -111,11 +111,13 @@ void mrs::PostProcessingRenderPipeline::InitDescriptors()
 
 void mrs::PostProcessingRenderPipeline::OnMainPassBegin(VkCommandBuffer cmd)
 {
+	uint32_t frame_index = _renderer->CurrentFrame();
+
 	static Ref<Mesh> screen_quad = Mesh::Get("quad");
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline);
 
 	// Draw scene as quad
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline_layout, 0, 1, &_post_process_descriptor_sets[_renderer->CurrentFrame()], 0, nullptr);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline_layout, 0, 1, &_post_process_descriptor_sets[frame_index], 0, nullptr);
 
 	VkDeviceSize offset = 0;
 	vkCmdBindVertexBuffers(cmd, 0, 1, &screen_quad->_buffer.buffer,  &offset);

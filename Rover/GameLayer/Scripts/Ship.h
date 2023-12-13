@@ -35,7 +35,7 @@ public:
     virtual void OnCreate() override;
     virtual void OnUpdate(float dt) override;
 
-    virtual void OnCollisionEnter2D(mrs::Entity other) override;
+    virtual void OnCollisionEnter2D(mrs::Collision& col) override;
 public:
     ShipCombat& Combat();
     ShipMovement& Movement();

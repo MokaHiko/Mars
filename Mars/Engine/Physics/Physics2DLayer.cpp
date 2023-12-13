@@ -287,12 +287,28 @@ namespace mrs
 		Entity entity_a = Entity((entt::entity)contact->GetFixtureA()->GetBody()->GetUserData().pointer, _scene);
 		Entity entity_b = Entity((entt::entity)contact->GetFixtureB()->GetBody()->GetUserData().pointer, _scene);
 
+		//normal manifold contains all info...
+		int num_points = contact->GetManifold()->pointCount;
+
+		//...world manifold is helpful for getting locations
+		b2WorldManifold world_manifold;
+		contact->GetWorldManifold(&world_manifold);
+
+		b2Vec2 a = world_manifold.points[0];
+		b2Vec2 b = world_manifold.points[1];
+
+		Collision col = {};
+		col.collision_points.a = Vector3(a.x, a.y, 0.0f);
+		col.collision_points.b = Vector3(b.x, b.y, 0.0f);
+
 		if (entity_a.HasComponent<Script>()) {
 			ScriptableEntity* script = (entity_a.GetComponent<Script>().script);
 
 			if (script != nullptr)
 			{
-				script->OnCollisionEnter2D(entity_b);
+				col.entity = entity_b;
+				col.collision_points.normal = glm::normalize(col.collision_points.a - col.collision_points.b);
+				script->OnCollisionEnter2D(col);
 			}
 		}
 
@@ -301,7 +317,9 @@ namespace mrs
 
 			if (script)
 			{
-				script->OnCollisionEnter2D(entity_a);
+				col.entity = entity_a;
+				col.collision_points.normal = glm::normalize(col.collision_points.b - col.collision_points.a);
+				script->OnCollisionEnter2D(col);
 			}
 		}
 	}

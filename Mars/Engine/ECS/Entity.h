@@ -30,7 +30,7 @@ namespace mrs
 
         // Returns true if entity has component <T>
         template <typename T>
-        bool HasComponent()
+        bool HasComponent() const
         {
             return _scene->HasComponent<T>(_id);
         }

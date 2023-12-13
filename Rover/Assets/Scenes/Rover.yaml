@@ -76,23 +76,67 @@ Entities:
       Material: fire_01
   # - Entity: 4404601799
   #   Tag:
-  #     Tag: Smoke Particles
+  #     Tag: Explosion Particles
   #   Transform:
   #     Position: [0, 0.0, 0.0]
   #     Rotation: [0, 0, 0]
   #     Scale: [1, 1, 1]
   #   ParticleSystem:
-  #     EmissionRate: 16
+  #     EmissionRate: 64
   #     MaxParticles: 32
   #     ParticleSize: 3.5
   #     SpreadAngle: 45
-  #     LifeTime: 0.35
-  #     EmissionShape: 2
-  #     Velocity: [50, 10]
+  #     LifeTime: 1.8
+  #     EmissionShape: 1
+  #     Velocity: [5, 5]
   #     Running: true
   #     Duration: 1.66
   #     Repeating: true
-  #     WorldSpace: true
-  #     Color1: [1.0, 1.090, 1.000, 1.000]
-  #     Color2: [0.0, 0.090, 0.000, 0.000]
-  #     Material: default_particle
+  #     WorldSpace: false
+  #     Color1: [0.865, 0.502, 0.049, 1.000]
+  #     Color2: [0.149, 0.102, 0.000, 0.000]
+  #     Material: circle_05
+  # - Entity: 4904601799
+  #   Tag:
+  #     Tag: Sparks
+  #   Transform:
+  #     Position: [0, 0.0, 0.0]
+  #     Rotation: [0, 0, 0]
+  #     Scale: [1, 1, 1]
+  #   ParticleSystem:
+  #     EmissionRate: 64
+  #     MaxParticles: 32
+  #     ParticleSize: 1.2
+  #     SpreadAngle: 45
+  #     LifeTime: 1.8
+  #     EmissionShape: 1
+  #     Velocity: [15, 15]
+  #     Running: true
+  #     Duration: 1.66
+  #     Repeating: true
+  #     WorldSpace: false
+  #     Color1: [0.865, 0.802, 0.049, 1.000]
+  #     Color2: [0.865, 0.802, 0.049, 1.000]
+  #     Material: trace_01
+  # - Entity: 4404201799
+  #   Tag:
+  #     Tag: Smoke Particles
+  #   Transform:
+  #     Position: [0, 0.0, -2.0]
+  #     Rotation: [0, 0, 0]
+  #     Scale: [1.5, 1.5, 1.5]
+  #   ParticleSystem:
+  #     EmissionRate: 64
+  #     MaxParticles: 32
+  #     ParticleSize: 4.5
+  #     SpreadAngle: 45
+  #     LifeTime: 2.2
+  #     EmissionShape: 1
+  #     Velocity: [5, 5]
+  #     Running: true
+  #     Duration: 1.66
+  #     Repeating: true
+  #     WorldSpace: false
+  #     Color1: [0.420, 0.420, 0.420, 0.176]
+  #     Color2: [0.110, 0.110, 0.110, 0.000]
+  #     Material: smoke

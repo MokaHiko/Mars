@@ -20,7 +20,6 @@ void mrs::Transform::AddChild(Entity e)
     return;
   }
 
-
   if(child_transform.parent)
   {
     child_transform.parent.GetComponent<Transform>().RemoveChild(e);

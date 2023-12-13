@@ -33,6 +33,7 @@
 
 // TODO: Remove
 #include "Renderer/RenderPipelineLayers/RenderPipelines/TrailRenderPipeline/Trails.h"
+#include "Scripts/Spawner.h"
 
 mrs::Application* mrs::CreateApplication()
 {
@@ -220,6 +221,9 @@ void mrs::EditorLayer::LoadEditorResources()
 		Ref<Texture> trace_texture = Texture::LoadFromAsset("Assets/Textures/trace_01.bp", "trace_01");
 		Material::Create(VulkanAssetManager::Instance().FindEffectTemplate("default_particle"), trace_texture, "trace_01");
 
+		Ref<Texture> circle_texture = Texture::LoadFromAsset("Assets/Textures/circle_05.bp", "circle_05");
+		Material::Create(VulkanAssetManager::Instance().FindEffectTemplate("default_particle"), circle_texture, "circle_05");
+
 		Material::Create(cb_effect, Texture::Get("default"), "celestial_body");
 	}
 
@@ -248,17 +252,19 @@ void mrs::EditorLayer::LoadEditorScene()
 
 	_render_pipeline_layer->SetCamera(&camera_component);
 
-	// Demo Text
-	auto hello_world = app.GetScene()->Instantiate("Test Text", {}, &serialize);
-	hello_world.AddComponent<SpriteRenderer>().sprite = mrs::Sprite::Get("KenPixel");
-	hello_world.AddComponent<Renderable>().material = mrs::Material::Get("default_ui");
-	hello_world.AddComponent<Text>().font = Font::LoadFromYaml(mrs::Texture::Get("KenPixel"), "Assets/Fonts/KenneyPixel.yaml");;
-	hello_world.AddComponent<Text>().text = "eat shit kurt!";
+	// // Demo Text
+	// auto hello_world = app.GetScene()->Instantiate("Test Text", {}, &serialize);
+	// hello_world.AddComponent<SpriteRenderer>().sprite = mrs::Sprite::Get("KenPixel");
+	// hello_world.AddComponent<Renderable>().material = mrs::Material::Get("default_ui");
+	// hello_world.AddComponent<Text>().font = Font::LoadFromYaml(mrs::Texture::Get("KenPixel"), "Assets/Fonts/KenneyPixel.yaml");;
+	// hello_world.AddComponent<Text>().text = "eat shit kurt!";
 
-	// Demo Trail
-	auto trails = app.GetScene()->Instantiate("Test Trail", {}, &serialize);
-	trails.AddComponent<TrailRenderer>();
-	trails.AddComponent<Renderable>().material = mrs::Material::Get("default_line");
+	// // Demo Trail
+	// auto trails = app.GetScene()->Instantiate("Test Trail", {}, &serialize);
+	// trails.AddComponent<TrailRenderer>();
+
+	// auto light = app.GetScene()->Instantiate("Light", {}, &serialize);
+	// light.AddComponent<mrs::DirectionalLight>();
 }
 
 void mrs::EditorLayer::Play()
@@ -277,6 +283,9 @@ void mrs::EditorLayer::Play()
 	_editor_camera.GetComponent<Camera>().SetActive(false);
 	Scene* scene = application.GetScene();
 	scene->Destroy(_editor_camera);
+
+	// auto spawner = application.GetScene()->Instantiate("Spawner");
+	// spawner.AddScript<Spawner>();
 
 	// Enable runtime layers
 	application.EnableLayer("Physics2DLayer");

@@ -19,6 +19,7 @@ public:
     mrs::Vector3 p1 = {};
     mrs::Vector3 p2 = {};
 
+    float range = 0.0f;
     float duration = 0.0f;
     float time_elapsed = 0.0f;
 };

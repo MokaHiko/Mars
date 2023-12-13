@@ -145,6 +145,7 @@ namespace mrs
 		vkb::PhysicalDeviceSelector device_selector(vkb_instance);
 		VkPhysicalDeviceFeatures required_features = {};
 		required_features.multiDrawIndirect = VK_TRUE;
+		required_features.drawIndirectFirstInstance = VK_TRUE;
 
 		if(_info.graphics_settings.tesselation)
 		{
@@ -211,7 +212,8 @@ namespace mrs
 		VkSurfaceFormatKHR surface_format = {};
 		surface_format.format = VK_FORMAT_B8G8R8A8_UNORM;
 		vkb::Swapchain vkb_swapchain = builder.use_default_format_selection()
-			.set_desired_present_mode(VK_PRESENT_MODE_MAILBOX_KHR)
+			// .set_desired_present_mode(VK_PRESENT_MODE_MAILBOX_KHR)
+			.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
 			.set_desired_extent(_window->GetWidth(), _window->GetHeight())
 			.set_desired_format(surface_format)
 			.build()
@@ -569,10 +571,10 @@ void Renderer::InitOffScreenAttachments()
 		// Create sync structures for frames
 		for (auto &frame : _frame_data)
 		{
-			vkCreateFence(_device.device, &fence_info, nullptr, &frame.render_fence);
+			VK_CHECK(vkCreateFence(_device.device, &fence_info, nullptr, &frame.render_fence));
 
-			vkCreateSemaphore(_device.device, &semaphore_info, nullptr, &frame.present_semaphore);
-			vkCreateSemaphore(_device.device, &semaphore_info, nullptr, &frame.render_semaphore);
+			VK_CHECK(vkCreateSemaphore(_device.device, &semaphore_info, nullptr, &frame.present_semaphore));
+			VK_CHECK(vkCreateSemaphore(_device.device, &semaphore_info, nullptr, &frame.render_semaphore));
 
 			_deletion_queue.Push([=]()
 				{
@@ -606,7 +608,7 @@ void Renderer::InitOffScreenAttachments()
 			VkDescriptorBufferInfo _global_descriptor_buffer_info = {};
 			_global_descriptor_buffer_info.buffer = _global_descriptor_buffer.buffer;
 			_global_descriptor_buffer_info.offset = 0;
-			_global_descriptor_buffer_info.range = sizeof(GlobalDescriptorData);
+			_global_descriptor_buffer_info.range = VK_WHOLE_SIZE;
 
 			vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
 				.BindBuffer(0, &_global_descriptor_buffer_info, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS)
@@ -648,7 +650,7 @@ void Renderer::InitOffScreenAttachments()
 				VkDescriptorBufferInfo _object_descriptor_buffer_info = {};
 				_object_descriptor_buffer_info.buffer = _object_descriptor_buffers[i].buffer;
 				_object_descriptor_buffer_info.offset = 0;
-				_object_descriptor_buffer_info.range = object_buffer_size;
+				_object_descriptor_buffer_info.range = VK_WHOLE_SIZE;
 
 				// Build descriptors
 				vkutil::DescriptorBuilder::Begin(_descriptor_layout_cache.get(), _descriptor_allocator.get())
@@ -764,15 +766,13 @@ void Renderer::InitOffScreenAttachments()
 
 		// Update object data storage buffer
 		{
-			auto view = scene->Registry()->view<Tag, Transform>();
+			auto group = scene->Registry()->group<Tag, Transform>();
 			char *objectData;
 			vmaMapMemory(_allocator, _object_descriptor_buffers[frame_index].allocation, (void **)&objectData);
-			for (auto entity : view)
+			for (auto entity : group)
 			{
 				Entity e = Entity(entity, scene);
 				Transform &transform = e.GetComponent<Transform>();
-
-				glm::vec3 pos = transform.position;
 
 				ObjectData obj_info = {};
 				obj_info.color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -813,9 +813,8 @@ void Renderer::InitOffScreenAttachments()
 	void Renderer::Begin(Scene *scene)
 	{
 		// Get current frame index, current frame data, current cmd bufffer
-		uint32_t frame_index = CurrentFrame();
 		auto &frame = CurrentFrameData();
-		VkCommandBuffer cmd = frame.command_buffer;
+		uint32_t frame_index = CurrentFrame();
 
 		// Wait till render fence has been flagged
 		VK_CHECK(vkWaitForFences(_device.device, 1, &frame.render_fence, VK_TRUE, time_out));
@@ -826,10 +825,8 @@ void Renderer::InitOffScreenAttachments()
 		vkAcquireNextImageKHR(_device.device, _swapchain, time_out, frame.present_semaphore, VK_NULL_HANDLE, &_current_swapchain_image);
 		PushGraphicsSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, frame.present_semaphore);
 
-		// Update global descriptors
-		UpdateGlobalDescriptors(scene, frame_index);
-
 		// ~ Begin Recording
+		VkCommandBuffer cmd = frame.command_buffer;
 		VK_CHECK(vkResetCommandBuffer(cmd, 0));
 		VkCommandBufferBeginInfo cmd_begin_info = vkinit::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 		VK_CHECK(vkBeginCommandBuffer(cmd, &cmd_begin_info));

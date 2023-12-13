@@ -14,7 +14,7 @@ public:
     virtual void OnStart() final;
     virtual void OnUpdate(float dt) final;
 
-    virtual void OnCollisionEnter2D(mrs::Entity other) override;
+    virtual void OnCollisionEnter2D(mrs::Collision& col) override;
     virtual void Die();
 
     mrs::Entity _owner = {}; 

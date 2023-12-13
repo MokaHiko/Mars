@@ -18,19 +18,6 @@ void mrs::TrailRenderPipeline::OnPreRenderPass(VkCommandBuffer cmd, RenderableBa
 		auto& transform = e.GetComponent<mrs::Transform>();
 		auto& trail_renderer = e.GetComponent<TrailRenderer>();
 
-		if(!trail_renderer.mesh)
-		{
-			std::string trail_mesh_name = "trail_" + std::to_string(e.Id());
-			trail_renderer.mesh = Mesh::Create(trail_mesh_name);
-
-			Vertex v = {};
-			v.position = transform.position;
-            trail_renderer.mesh->Vertices() = {v, {}};
-            trail_renderer.mesh->Indices() = {0,1};
-
-            VulkanAssetManager::Instance().UploadMesh(trail_renderer.mesh);
-		}
-
 		Vertex v = {};
 		v.position = transform.position;
 		trail_renderer.mesh->Vertices()[1] = v;
@@ -86,6 +73,10 @@ void mrs::TrailRenderPipeline::Init()
     default_line_effects.push_back(Effect().get());
     Ref<EffectTemplate> default_line = VulkanAssetManager::Instance().CreateEffectTemplate(default_line_effects, "default_line");
     Material::Create(default_line, Texture::Get("default"), "default_line");
+
+    // Register Callbacks
+    _scene->Registry()->on_construct<TrailRenderer>().connect<&TrailRenderPipeline::OnTrailRendererCreated>(this); 
+    _scene->Registry()->on_destroy<TrailRenderer>().connect<&TrailRenderPipeline::OnTrailRendererDestroyed>(this);
 }
 
 void mrs::TrailRenderPipeline::InitDescriptors() 
@@ -148,6 +139,31 @@ void mrs::TrailRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame
 }
 
 void mrs::TrailRenderPipeline::End(VkCommandBuffer cmd) {}
+
+void mrs::TrailRenderPipeline::OnTrailRendererCreated(entt::basic_registry<entt::entity> &, entt::entity entity) 
+{
+    Entity e{ entity, _scene };
+	e.AddComponent<Renderable>().material = mrs::Material::Get("default_line");
+    auto& trail_renderer = e.GetComponent<TrailRenderer>();
+
+    if(!trail_renderer.mesh)
+    {
+        std::string trail_mesh_name = "trail_" + std::to_string(e.Id());
+        trail_renderer.mesh = Mesh::Create(trail_mesh_name);
+
+        Vertex v = {};
+        v.position = e.GetComponent<mrs::Transform>().position;
+        trail_renderer.mesh->Vertices() = {v, {}};
+        trail_renderer.mesh->Indices() = {0,1};
+
+        VulkanAssetManager::Instance().UploadMesh(trail_renderer.mesh);
+    }
+}
+
+void mrs::TrailRenderPipeline::OnTrailRendererDestroyed(entt::basic_registry<entt::entity> &, entt::entity entity) 
+{
+
+}
 
 void mrs::TrailRenderPipeline::UpdateTrails() 
 {

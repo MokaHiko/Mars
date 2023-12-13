@@ -1,6 +1,5 @@
 #include "GameLayer.h"
 
-#include "Scripts/Unit.h"
 #include "Scripts/GameManager.h"
 #include "Scripts/Ship.h"
 #include "Scripts/GameCamera.h"
@@ -75,7 +74,6 @@ void GameLayer::OnAttach()
 
 void GameLayer::RegisterScripts()
 {
-	mrs::Script::Register<Unit>();
 	mrs::Script::Register<GameManager>();
 	mrs::Script::Register<GameCamera>();
 	mrs::Script::Register<Ship>();

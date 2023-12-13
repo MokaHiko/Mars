@@ -71,12 +71,12 @@ void Ship::OnUpdate(float dt)
 {
 }
 
-void Ship::OnCollisionEnter2D(mrs::Entity other)
+void Ship::OnCollisionEnter2D(mrs::Collision& col)
 {
 	// Check if resource
-	if (other.HasComponent<Resource>())
+	if (col.entity.HasComponent<Resource>())
 	{
-		const Resource& resource = other.GetComponent<Resource>();
+		const Resource& resource = col.entity.GetComponent<Resource>();
 		auto& ship_resources = GetComponent<ShipResources>();
 
 		switch (resource.type)
@@ -93,7 +93,7 @@ void Ship::OnCollisionEnter2D(mrs::Entity other)
 			break;
 		}
 	}
-	else if(other.HasComponent<ShipSpecs>())
+	else if(col.entity.HasComponent<ShipSpecs>())
 	{
 		auto e = Instantiate("Sparks", GetComponent<mrs::Transform>().position);
 
@@ -113,7 +113,7 @@ void Ship::OnCollisionEnter2D(mrs::Entity other)
 		e.AddComponent<EffectProperties>().duration = particles.duration * 1.5f;
 		e.AddScript<Effect>();
 
-		TakeDamage(other.GetComponent<ShipSpecs>().mass / 4.0f);
+		TakeDamage(col.entity.GetComponent<ShipSpecs>().mass / 4.0f);
 	}
 }
 
@@ -136,7 +136,7 @@ void Ship::Die()
 		auto e = Instantiate("Explosion", GetComponent<mrs::Transform>().position);
 
 		auto& particles = e.AddComponent<mrs::ParticleSystem>();
-		particles.material = mrs::Material::Get("smoke");
+		particles.material = mrs::Material::Get("circle_05");
 
 		particles.emission_shape = mrs::EmissionShape::Circle;
 		particles.emission_rate = 64;
@@ -145,11 +145,11 @@ void Ship::Die()
 		particles.color_1 = mrs::Vector4(0.883f, 0.490f, 0.000f, 1.000f);
 		particles.color_2 = mrs::Vector4(0.749, 0.565, 0.043, 0.25f);
 		particles.particle_size = 3.0f;
-		particles.life_time = 3.0f;
-		particles.duration = 10.0f;
+		particles.life_time = 5.0f;
+		particles.duration = 5.0f;
 		particles.repeating = false;
 
-		e.AddComponent<EffectProperties>().duration = particles.duration * 1.5f;
+		e.AddComponent<EffectProperties>().duration = particles.duration;
 		e.AddScript<Effect>();
 	}
 

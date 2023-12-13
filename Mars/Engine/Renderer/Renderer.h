@@ -156,6 +156,7 @@ namespace mrs {
 		size_t PadToStorageBufferSize(size_t original_size);
 
 		void ImmediateSubmit(std::function<void(VkCommandBuffer)> &&fn);
+		void UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index);
 	private:
 		void InitVulkan();
 		void InitSwapchain();
@@ -164,7 +165,6 @@ namespace mrs {
 		void InitFramebuffers();
 		void InitSyncStructures();
 		void InitGlobalDescriptors();
-		void UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index);
 	public:
 		// General renderer info
 		RendererInfo _info = {};

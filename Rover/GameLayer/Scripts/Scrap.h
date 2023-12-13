@@ -25,7 +25,7 @@ class Scrap : public mrs::ScriptableEntity
 {
 public:
     virtual void OnStart() override;
-    virtual void OnCollisionEnter2D(mrs::Entity other) override;
+    virtual void OnCollisionEnter2D(mrs::Collision& col) override;
 
     void Fade();
 private:

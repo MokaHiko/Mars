@@ -20,6 +20,9 @@ namespace mrs
         virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch) override;
         virtual void End(VkCommandBuffer cmd) override;
     private:
+        void OnTrailRendererCreated(entt::basic_registry<entt::entity>&, entt::entity entity);
+        void OnTrailRendererDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
+
         void UpdateTrails();
     private:
         // Line Renderer

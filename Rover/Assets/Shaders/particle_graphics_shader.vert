@@ -85,12 +85,12 @@ void main()
     v_color = particle.color;
     v_uv = _uv;
 
-    vec4 pos = vec4((_position *particle_parameters.scale) + vec3(particle.position, float(gl_InstanceIndex) / 1000.0f), 1.0f);
+    vec4 pos = vec4((_position *particle_parameters.scale) + vec3(particle.position, float(gl_InstanceIndex) / 10000.0f), 1.0f);
 
     // [IF] (world space) {specifically assign z to emission transform z}
     pos.z *= 1.0f - _particle_push_constant.world_space;
     float z_value = _particle_push_constant.emission_transform[3][2];
-    pos.z += (z_value + float(gl_InstanceIndex) / 1000.0f) * _particle_push_constant.world_space;
+    pos.z += (z_value + float(gl_InstanceIndex) / 10000.0f) * _particle_push_constant.world_space;
 
     if(_particle_push_constant.world_space > 0.0f)
     {

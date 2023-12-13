@@ -27,9 +27,8 @@ void mrs::SceneGraphLayer::OnDisable()
 
 void mrs::SceneGraphLayer::OnUpdate(float dt)
 {
-	Transform& node = _scene->Root().GetComponent<Transform>();
-
-	RecursiveUpdate(node);
+	Transform& root = _scene->Root().GetComponent<Transform>();
+	RecursiveUpdate(root);
 }
 
 void mrs::SceneGraphLayer::OnTransformCreated(entt::basic_registry<entt::entity>&, entt::entity entity)
@@ -62,11 +61,10 @@ void mrs::SceneGraphLayer::OnTransformDestroyed(entt::basic_registry<entt::entit
 
 void mrs::SceneGraphLayer::RecursiveUpdate(Transform& node)
 {
-	// TODO: Dirty Check
 	for (uint32_t i = 0; i < node.children_count; i++)
 	{
 		Transform& transform = node.children[i].GetComponent<Transform>();
-		transform.UpdateModelMatrix();
+		transform.UpdateModelMatrix(); 
 
 		RecursiveUpdate(transform);
 	}

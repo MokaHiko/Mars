@@ -112,7 +112,7 @@ void ShipMovement::OnUpdate(float dt) {
 	}
 }
 
-void ShipMovement::OnCollisionEnter2D(mrs::Entity other) 
+void ShipMovement::OnCollisionEnter2D(mrs::Collision& col) 
 {
 }
 

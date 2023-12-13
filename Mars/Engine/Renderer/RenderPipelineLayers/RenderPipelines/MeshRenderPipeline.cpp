@@ -20,15 +20,15 @@ void mrs::MeshRenderPipeline::InitDescriptors() {
 
     _object_sets.resize(frame_overlaps);
     _dir_light_sets.resize(frame_overlaps);
-    for(uint32_t i = 0; i < frame_overlaps; i++)
+    for (uint32_t i = 0; i < frame_overlaps; i++)
     {
-        VkDescriptorBufferInfo global_buffer_info = {};
-        global_buffer_info.buffer = _renderer->ObjectBuffers()[i].buffer;
-        global_buffer_info.offset = 0;
-        global_buffer_info.range = VK_WHOLE_SIZE;
+        VkDescriptorBufferInfo object_buffer_info = {};
+        object_buffer_info.buffer = _renderer->ObjectBuffers()[i].buffer;
+        object_buffer_info.offset = 0;
+        object_buffer_info.range = VK_WHOLE_SIZE;
 
         vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
-            .BindBuffer(0, &global_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+            .BindBuffer(0, &object_buffer_info, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
             .Build(&_object_sets[i], &_object_set_layout);
 
         VkDescriptorBufferInfo dir_light_buffer_info = {};
@@ -51,7 +51,7 @@ void mrs::MeshRenderPipeline::InitDescriptors() {
         .Build(&_shadow_map_descriptor, &_shadow_map_descriptor_layout);
 }
 
-mrs::MeshRenderPipeline::MeshRenderPipeline() 
+mrs::MeshRenderPipeline::MeshRenderPipeline()
     :IRenderPipeline("MeshRenderPipeline") {}
 
 mrs::MeshRenderPipeline::~MeshRenderPipeline() {}
@@ -69,7 +69,7 @@ void mrs::MeshRenderPipeline::Init() {
     Ref<Shader> mesh_fragment_shader = VulkanAssetManager::Instance().LoadShader("Assets/Shaders/default_shader.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
     PushShader(mesh_fragment_shader);
 
-	// TODO: Add as defaut in "Mesh pipeline type render pipeline"
+    // TODO: Add as defaut in "Mesh pipeline type render pipeline"
     _render_pass = _renderer->_offscreen_render_pass;
     BuildPipeline();
 
@@ -77,34 +77,37 @@ void mrs::MeshRenderPipeline::Init() {
     InitIndirectCommands();
 
     // Define Effect Template
-	std::vector<ShaderEffect*> default_lit_effects;
-	default_lit_effects.push_back(Effect().get());
-	Ref<EffectTemplate> default_lit = VulkanAssetManager::Instance().CreateEffectTemplate(default_lit_effects, "default_lit");
+    std::vector<ShaderEffect*> default_lit_effects;
+    default_lit_effects.push_back(Effect().get());
+    Ref<EffectTemplate> default_lit = VulkanAssetManager::Instance().CreateEffectTemplate(default_lit_effects, "default_lit");
 
     // Default Mesh Materials
-	Ref<Texture> default_texture = Texture::Get("default");
-	Material::Create(default_lit, default_texture, "default");
+    Ref<Texture> default_texture = Texture::Get("default");
+    Material::Create(default_lit, default_texture, "default");
+    Material::Create(default_lit, default_texture, "red")->DiffuseColor() = { 1.0f, 0.0f, 0.0f, 1.0f };
+    Material::Create(default_lit, default_texture, "green")->DiffuseColor() = { 0.0f, 1.0f, 0.0f, 1.0f };
+    Material::Create(default_lit, default_texture, "blue")->DiffuseColor() = { 0.0f, 0.0f, 1.0f, 1.0f };
 
-	Mesh::LoadFromAsset("Assets/Models/cube.boop_obj", "cube");
-	Mesh::LoadFromAsset("Assets/Models/cone.boop_obj", "cone");
-	Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj", "monkey");
-	Mesh::LoadFromAsset("Assets/Models/quad.boop_obj", "quad");
-	Mesh::LoadFromAsset("Assets/Models/plane.boop_obj", "plane");
-	Mesh::LoadFromAsset("Assets/Models/sphere.boop_obj", "sphere");
+    Mesh::LoadFromAsset("Assets/Models/cube.boop_obj", "cube");
+    Mesh::LoadFromAsset("Assets/Models/cone.boop_obj", "cone");
+    Mesh::LoadFromAsset("Assets/Models/monkey_smooth.boop_obj", "monkey");
+    Mesh::LoadFromAsset("Assets/Models/quad.boop_obj", "quad");
+    Mesh::LoadFromAsset("Assets/Models/plane.boop_obj", "plane");
+    Mesh::LoadFromAsset("Assets/Models/sphere.boop_obj", "sphere");
 
-	Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
-	Mesh::LoadFromAsset("Assets/Models/soldier.boop_obj", "soldier");
+    Mesh::LoadFromAsset("Assets/Models/container.boop_obj", "container");
+    Mesh::LoadFromAsset("Assets/Models/soldier.boop_obj", "soldier");
 
-	// Manually built meshes
-	auto screen_quad = Mesh::Create("screen_quad");
-	screen_quad->_vertices.push_back({ { -1.0f, -1.0f, 0.0f }, {}, {}, {} });
-	screen_quad->_vertices.push_back({ { -1.0f, 1.0f, 0.0f }, {}, {}, {} });
-	screen_quad->_vertices.push_back({ { 1.0f, -1.0f, 0.0f }, {}, {}, {} });
-	screen_quad->_vertices.push_back({ { 1.0f,  1.0f, 0.0f }, {}, {}, {} });
-	screen_quad->_vertex_count = 4;
+    // Manually built meshes
+    auto screen_quad = Mesh::Create("screen_quad");
+    screen_quad->_vertices.push_back({ { -1.0f, -1.0f, 0.0f }, {}, {}, {} });
+    screen_quad->_vertices.push_back({ { -1.0f, 1.0f, 0.0f }, {}, {}, {} });
+    screen_quad->_vertices.push_back({ { 1.0f, -1.0f, 0.0f }, {}, {}, {} });
+    screen_quad->_vertices.push_back({ { 1.0f,  1.0f, 0.0f }, {}, {}, {} });
+    screen_quad->_vertex_count = 4;
 
-	screen_quad->_indices = { 0,2,1,1,2,3 };
-	screen_quad->_index_count = 6;
+    screen_quad->_indices = { 0,2,1,1,2,3 };
+    screen_quad->_index_count = 6;
 }
 
 void mrs::MeshRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
@@ -117,7 +120,7 @@ void mrs::MeshRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame,
         _rerecord = false;
     }
 
-    DrawObjects(cmd, batch);
+    DrawObjects(cmd, current_frame, batch);
 }
 
 void mrs::MeshRenderPipeline::End(VkCommandBuffer cmd)
@@ -156,17 +159,15 @@ void mrs::MeshRenderPipeline::OnRenderableDestroyed(Entity e)
     _rerecord = true;
 }
 
-void mrs::MeshRenderPipeline::DrawObjects(VkCommandBuffer cmd, RenderableBatch* batch)
+void mrs::MeshRenderPipeline::DrawObjects(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
 {
-    uint32_t n_frame = _renderer->CurrentFrame();
-
     VulkanFrameContext frame_context = _renderer->CurrentFrameData();
 
     // Bind global, object, and light descriptors
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_set, 0, nullptr);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[n_frame], 0, nullptr);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 4, 1, &_dir_light_sets[n_frame], 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[current_frame], 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 4, 1, &_dir_light_sets[current_frame], 0, nullptr);
 
     for (auto& batch : _batches)
     {
@@ -188,7 +189,7 @@ void mrs::MeshRenderPipeline::DrawObjects(VkCommandBuffer cmd, RenderableBatch* 
         // Draw batch
         static uint32_t batch_stride = static_cast<uint32_t>(_renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand)));
         uint32_t indirect_offset = batch.first * batch_stride;
-        vkCmdDrawIndexedIndirect(cmd, _indirect_buffers[n_frame].buffer, indirect_offset, batch.count, batch_stride);
+        vkCmdDrawIndexedIndirect(cmd, _indirect_buffers[current_frame].buffer, indirect_offset, batch.count, batch_stride);
     }
 }
 
@@ -210,9 +211,9 @@ void mrs::MeshRenderPipeline::InitIndirectCommands()
                 VMA_MEMORY_USAGE_CPU_TO_GPU, 0);
 
         _renderer->DeletionQueue().Push([=]()
-        { 
-            vmaDestroyBuffer(_renderer->Allocator(), _indirect_buffers[i].buffer, _indirect_buffers[i].allocation); 
-        });
+            {
+                vmaDestroyBuffer(_renderer->Allocator(), _indirect_buffers[i].buffer, _indirect_buffers[i].allocation);
+            });
     }
 }
 
@@ -304,11 +305,11 @@ void mrs::MeshRenderPipeline::InitOffScreenPipeline()
 
     // Create pipeline layout
     VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::PipelineLayoutCreateInfo();
-    std::vector<VkDescriptorSetLayout> descriptor_layouts = { _global_data_set_layout, _object_set_layout};
+    std::vector<VkDescriptorSetLayout> descriptor_layouts = { _global_data_set_layout, _object_set_layout };
     pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_layouts.size());
     pipeline_layout_info.pSetLayouts = descriptor_layouts.data();
 
-	VK_CHECK(vkCreatePipelineLayout(_device->device, &pipeline_layout_info, nullptr, &_offscreen_render_pipeline_layout));
+    VK_CHECK(vkCreatePipelineLayout(_device->device, &pipeline_layout_info, nullptr, &_offscreen_render_pipeline_layout));
     pipeline_builder._pipeline_layout = _offscreen_render_pipeline_layout;
 
     _offscreen_render_pipeline = pipeline_builder.Build(_device->device, _offscreen_render_pass, true);
@@ -321,10 +322,10 @@ void mrs::MeshRenderPipeline::InitOffScreenPipeline()
     // Clean Up
     vkDestroyShaderModule(_device->device, vertex_shader_module, nullptr);
     _renderer->DeletionQueue().Push([=]()
-    { 
-        vkDestroyPipeline(_device->device, _offscreen_render_pipeline, nullptr); 
-        vkDestroyPipelineLayout(_device->device, _offscreen_render_pipeline_layout, nullptr); 
-    });
+        {
+            vkDestroyPipeline(_device->device, _offscreen_render_pipeline, nullptr);
+            vkDestroyPipelineLayout(_device->device, _offscreen_render_pipeline_layout, nullptr);
+        });
 }
 
 void mrs::MeshRenderPipeline::BuildBatches(VkCommandBuffer cmd, RenderableBatch* batch)
@@ -334,30 +335,28 @@ void mrs::MeshRenderPipeline::BuildBatches(VkCommandBuffer cmd, RenderableBatch*
 
 void mrs::MeshRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, RenderableBatch* batch)
 {
-    for (int i = 0; i < frame_overlaps; i++)
+    uint32_t frame_index = _renderer->CurrentFrame();
+    char* draw_commands;
+    vmaMapMemory(_renderer->Allocator(), _indirect_buffers[frame_index].allocation, (void**)&draw_commands);
+
+    // Encode draw commands for each renderable ahead of time
+    int ctr = 0;
+    for (auto e : batch->entities)
     {
-        char* draw_commands;
-        vmaMapMemory(_renderer->Allocator(), _indirect_buffers[i].allocation, (void**)&draw_commands);
+        auto renderable = e.GetComponent<MeshRenderer>();
 
-        // Encode draw commands for each renderable ahead of time
-        int ctr = 0;
-        for (auto e : batch->entities)
-        {
-            auto renderable = e.GetComponent<MeshRenderer>();
+        VkDrawIndexedIndirectCommand draw_command = {};
+        draw_command.vertexOffset = 0;
+        draw_command.indexCount = renderable.GetMesh()->_index_count;
+        draw_command.instanceCount = 1;
+        draw_command.firstInstance = e.Id();
 
-            VkDrawIndexedIndirectCommand draw_command = {};
-            draw_command.vertexOffset = 0;
-            draw_command.indexCount = renderable.GetMesh()->_index_count;
-            draw_command.instanceCount = 1;
-            draw_command.firstInstance = e.Id();
-
-            static size_t padded_draw_indirect_size = _renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand));
-            size_t offset = ctr * padded_draw_indirect_size;
-            memcpy(draw_commands + offset, &draw_command, sizeof(VkDrawIndexedIndirectCommand));
-            ctr++;
-        }
-        vmaUnmapMemory(_renderer->Allocator(), _indirect_buffers[i].allocation);
+        static size_t padded_draw_indirect_size = _renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand));
+        size_t offset = ctr * padded_draw_indirect_size;
+        memcpy(draw_commands + offset, &draw_command, sizeof(VkDrawIndexedIndirectCommand));
+        ctr++;
     }
+    vmaUnmapMemory(_renderer->Allocator(), _indirect_buffers[frame_index].allocation);
 }
 
 void mrs::MeshRenderPipeline::DrawShadowMap(VkCommandBuffer cmd, RenderableBatch* batch)
@@ -499,12 +498,12 @@ void mrs::MeshRenderPipeline::CreateOffScreenFramebuffer()
         &_shadow_map_sampler));
 
     _renderer->DeletionQueue().Push([=]()
-    {
+        {
             vkDestroySampler(_device->device, _shadow_map_sampler, nullptr);
             vkDestroyFramebuffer(_device->device, _offscreen_framebuffer, nullptr);
             vkDestroyRenderPass(_device->device, _offscreen_render_pass, nullptr);
             vkDestroyImageView(_device->device, _offscreen_depth_image_view, nullptr);
-            vmaDestroyImage(_renderer->Allocator(), _offscreen_depth_image.image, _offscreen_depth_image.allocation); 
-    });
+            vmaDestroyImage(_renderer->Allocator(), _offscreen_depth_image.image, _offscreen_depth_image.allocation);
+        });
 }
 

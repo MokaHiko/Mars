@@ -28,14 +28,16 @@ void ChargeCanon::FireWeakProjectile() {
   glm::quat quat_rot = glm::quat(glm::vec3(0,0, glm::radians(recoil * random_gen.Next())));
   ray.direction = glm::rotate(quat_rot, ship_transform.up);
 
-  mrs::Vector3 target_pos = ray.origin + (ray.direction * 500.0f);
-  mrs::Physics2D::Raycast(ray, 500.0f, [&](mrs::Collision& col)
+  float range = 500.0f;
+
+  mrs::Vector3 target_pos = ray.origin + (ray.direction * range);
+  mrs::Physics2D::Raycast(ray, range, [&](mrs::Collision& col)
     {
       if (Ship* ship = col.entity.GetScript<Ship>()) {
         target_pos = col.collision_points.a;
 
         auto weak_tracer_flash = Instantiate("Tracer");
-        ship->TakeDamage(25.0f);
+        ship->TakeDamage(10.0f);
 
         auto e = Instantiate("hit_effect", col.collision_points.a);
         auto& transform = e.GetComponent<mrs::Transform>();
@@ -63,12 +65,14 @@ void ChargeCanon::FireWeakProjectile() {
   // Tracers
   auto weak_tracer_flash = Instantiate("Tracer", ray.origin);
   auto& effect_props = weak_tracer_flash.AddComponent<EffectProperties>();
-  effect_props.duration = 1.0f;
+  effect_props.duration = 0.25f;
   effect_props.fixed_time = false;
 
   TracerEffect& tracer = weak_tracer_flash.AddScript<TracerEffect>();
   tracer.p1 = ray.origin;
   tracer.p2 = target_pos;
+  tracer.range = range;
+  tracer.target = Owner()->_game_object;
 }
 
 void ChargeCanon::FireStrongProjectile(float hold_time)

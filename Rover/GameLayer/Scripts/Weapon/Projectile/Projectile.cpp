@@ -24,9 +24,9 @@ void Projectile::OnUpdate(float dt)
 	_time_alive += dt;
 }
 
-void Projectile::OnCollisionEnter2D(mrs::Entity other)
+void Projectile::OnCollisionEnter2D(mrs::Collision& col)
 {
-	if (Ship* ship = other.GetScript<Ship>())
+	if (Ship* ship = col.entity.GetScript<Ship>())
 	{
 		ship->TakeDamage(_damage);
 	}

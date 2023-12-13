@@ -15,13 +15,13 @@ namespace mrs
         float min_vertex_distance = 1.0f;
         float width = 1.0f;
 
+        Ref<Mesh> mesh;
     private:
         friend class TrailRenderPipeline;
 
         int insert_index = 0;
         int max_points = 12;
 
-        Ref<Mesh> mesh;
         std::vector<Vector3> points;
 
         int start_index = 0;

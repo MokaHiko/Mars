@@ -64,10 +64,11 @@ namespace mrs
         virtual void Init() override;
 
         virtual void Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt, RenderableBatch* compute_batch);
-        virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch) override;
-        virtual void End(VkCommandBuffer cmd) override;
 
         virtual void OnPreRenderPass(VkCommandBuffer cmd, RenderableBatch* batch) override;
+
+        virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch) override;
+        virtual void End(VkCommandBuffer cmd) override;
 
         void RegisterParticleSystem(ParticleSystem &particle_system);
         void CacheParticleSystemType(ParticleSystem &particle_system);

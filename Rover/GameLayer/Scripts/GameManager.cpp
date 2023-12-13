@@ -146,6 +146,7 @@ void GameManager::OnStart()
 		auto enemy = Instantiate("Enemy_Striker");
 		auto& transform = enemy.GetComponent<mrs::Transform>();
 		transform.position = glm::vec3(10 * i, 50.0f, 0);
+		transform.scale *= 1.5f;
 
 		// Ship
 		auto& specs = enemy.AddComponent<ShipSpecs>();

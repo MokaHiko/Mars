@@ -35,10 +35,10 @@ namespace mrs
 
 	IRenderPipeline* IRenderPipelineLayer::FindPipeline(const std::string& name)
 	{
-		auto it = std::find_if(_render_pipeline_layers.begin(), _render_pipeline_layers.end(), [&](const IRenderPipeline* pipeline) 
-		{
-			return pipeline->Name() == name;
-		});
+		auto it = std::find_if(_render_pipeline_layers.begin(), _render_pipeline_layers.end(), [&](const IRenderPipeline* pipeline)
+			{
+				return pipeline->Name() == name;
+			});
 
 		if (it != _render_pipeline_layers.end())
 		{
@@ -48,7 +48,7 @@ namespace mrs
 		return nullptr;
 	}
 
-void IRenderPipelineLayer::OnAttach()
+	void IRenderPipelineLayer::OnAttach()
 	{
 		// Initialize rendererer systems
 		RendererInfo renderer_info = {};
@@ -115,16 +115,16 @@ void IRenderPipelineLayer::OnAttach()
 		}
 
 		_renderer->Begin(scene);
-
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
 			(*it)->OnPreRenderPass(cmd, &_renderable_batches[*it]);
 		}
 
 		_renderer->MeshPassStart(cmd, _renderer->_offscreen_framebuffers[current_frame_index], _renderer->_offscreen_render_pass);
+		_renderer->UpdateGlobalDescriptors(scene, current_frame_index);
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
-			(*it)->Begin(cmd,current_frame_index, &_renderable_batches[*it]);
+			(*it)->Begin(cmd, current_frame_index, &_renderable_batches[*it]);
 		}
 
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
@@ -132,6 +132,24 @@ void IRenderPipelineLayer::OnAttach()
 			(*it)->End(cmd);
 		}
 		_renderer->MeshPassEnd(cmd);
+
+		// OffScreen Image Pipeline Barrier
+		VkImageMemoryBarrier view_port_image_barrier = {};
+		view_port_image_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		view_port_image_barrier.srcAccessMask = 0;
+		view_port_image_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		view_port_image_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		view_port_image_barrier.image = _renderer->_offscreen_images[current_frame_index].image;
+
+		VkImageSubresourceRange range = {};
+		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		range.levelCount = 1;
+		range.baseMipLevel = 0;
+		range.layerCount = 1;
+		range.baseArrayLayer = 0;
+		view_port_image_barrier.subresourceRange = range;
+
+		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &view_port_image_barrier);
 
 		_renderer->MainPassStart(cmd);
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
@@ -213,7 +231,7 @@ void IRenderPipelineLayer::OnAttach()
 			auto& renderable = e.GetComponent<MeshRenderer>();
 			Ref<EffectTemplate> base_template = renderable.GetMaterial()->BaseTemplate();
 
-			for(const ShaderEffect* effect : base_template->shader_effects)
+			for (const ShaderEffect* effect : base_template->shader_effects)
 			{
 				_renderable_batches[effect->render_pipeline].entities.push_back(e);
 			}
@@ -228,7 +246,7 @@ void IRenderPipelineLayer::OnAttach()
 				auto& renderable = e.GetComponent<ParticleSystem>();
 				Ref<EffectTemplate> base_template = renderable.material->BaseTemplate();
 
-				for(const ShaderEffect* effect : base_template->shader_effects)
+				for (const ShaderEffect* effect : base_template->shader_effects)
 				{
 					_renderable_batches[effect->render_pipeline].entities.push_back(e);
 				}
@@ -243,7 +261,7 @@ void IRenderPipelineLayer::OnAttach()
 				auto& renderable = e.GetComponent<Renderable>();
 				Ref<EffectTemplate> base_template = renderable.material->BaseTemplate();
 
-				for(const ShaderEffect* effect : base_template->shader_effects)
+				for (const ShaderEffect* effect : base_template->shader_effects)
 				{
 					_renderable_batches[effect->render_pipeline].entities.push_back(e);
 				}

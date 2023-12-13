@@ -16,6 +16,7 @@ mrs::PerformancePanel::~PerformancePanel() {}
 void mrs::PerformancePanel::Draw()
 {
 	ImGui::Begin("Performance");
+	ImGui::Text("Frame buffer %d", _renderer->CurrentFrame());
 	ImGui::Text("Pipeline Layers %d", _render_pipeline_layer->PipelineLayers().PipelineStack().size());
 	if (ImGui::CollapsingHeader("Pipeline Layers"))
 	{

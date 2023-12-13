@@ -35,7 +35,7 @@ namespace mrs
         void RecordIndirectcommands(VkCommandBuffer cmd, RenderableBatch* scene);
 
         void DrawShadowMap(VkCommandBuffer cmd, RenderableBatch *batch);
-        void DrawObjects(VkCommandBuffer cmd, RenderableBatch *batch);
+        void DrawObjects(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch *batch);
     private:
         // Mesh
         VkDescriptorSet _global_data_set = VK_NULL_HANDLE;

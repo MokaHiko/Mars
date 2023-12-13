@@ -8,6 +8,8 @@
 
 namespace mrs
 {
+    struct Collision;
+
     class Process;
     class ScriptableEntity
     {
@@ -19,7 +21,7 @@ namespace mrs
         virtual void OnStart() {}
         virtual void OnUpdate(float dt) {}
 
-        virtual void OnCollisionEnter2D(Entity other) {}
+        virtual void OnCollisionEnter2D(Collision& col) {}
 
         // Gets reference to attached entity's component 
         template <typename T>
