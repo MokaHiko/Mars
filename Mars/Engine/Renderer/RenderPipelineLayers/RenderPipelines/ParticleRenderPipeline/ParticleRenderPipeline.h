@@ -63,7 +63,7 @@ namespace mrs
 
         virtual void Init() override;
 
-        virtual void Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt, RenderableBatch* compute_batch);
+        virtual void Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt, RenderableBatch* compute_batch) override;
 
         virtual void OnPreRenderPass(VkCommandBuffer cmd, RenderableBatch* batch) override;
 

@@ -438,8 +438,8 @@ void mrs::ParticleRenderPipeline::Compute(VkCommandBuffer cmd, uint32_t current_
 	VkDevice device = _renderer->Device().device;
 
 	vkWaitForFences(device, 1, &_compute_in_flight_fences[current_frame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-	UpdateComputeDescriptorSets(current_frame, Time::FixedDeltaTime(), compute_batch);
 	vkResetFences(device, 1, &_compute_in_flight_fences[current_frame]);
+	UpdateComputeDescriptorSets(current_frame, Time::FixedDeltaTime(), compute_batch);
 
 	vkResetCommandBuffer(cmd, 0);
 	RecordComputeCommandBuffers(cmd, current_frame, compute_batch);
@@ -453,7 +453,7 @@ void mrs::ParticleRenderPipeline::Compute(VkCommandBuffer cmd, uint32_t current_
 	submit_info.signalSemaphoreCount = 1;
 	submit_info.pSignalSemaphores = &_compute_in_flight_semaphores[current_frame];
 
-	_renderer->PushGraphicsSemaphore(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, _compute_in_flight_semaphores[current_frame]);
+	_renderer->PushGraphicsSemaphore(VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, _compute_in_flight_semaphores[current_frame]);
 	VK_CHECK(vkQueueSubmit(_renderer->Queues().compute, 1, &submit_info, _compute_in_flight_fences[current_frame]));
 }
 

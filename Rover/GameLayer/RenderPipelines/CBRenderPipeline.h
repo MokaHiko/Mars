@@ -105,12 +105,12 @@ public:
     virtual void End(VkCommandBuffer cmd) override;
 
     virtual void OnMaterialsUpdate() override;
+    virtual void UpdateDescriptors(uint32_t current_frame, float dt, mrs::RenderableBatch* batch) override; 
 
     void OnCelestialBodyCreated(entt::basic_registry<entt::entity>&, entt::entity entity);
     void OnCelestialBodyUpdated(entt::basic_registry<entt::entity>&, entt::entity entity);
     void OnCelestialBodyDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
 
-    void UpdateDescriptors(uint32_t frame_index);
     void RegisterCelestialBody(CelestialBody& cb);
 private:
     // Celstial Bodies
@@ -162,10 +162,10 @@ private:
     // Indirect Drawing
     void InitIndirectCommands();
 
-    void BuildBatches(VkCommandBuffer cmd, mrs::RenderableBatch* batch);
-    void RecordIndirectcommands(VkCommandBuffer cmd, mrs::RenderableBatch* batch);
+    void BuildBatches(mrs::RenderableBatch* batch);
+    void RecordIndirectcommands(mrs::RenderableBatch* batch);
 
-    void DrawObjects(VkCommandBuffer cmd, mrs::RenderableBatch* batch);
+    void DrawObjects(VkCommandBuffer cmd, uint32_t current_frame, mrs::RenderableBatch* batch);
 
     // Returns vector of indirect draw batches from renderable batch
     std::vector<CBIndirectBatch> GetRenderablesAsBatches(mrs::RenderableBatch* batch);

@@ -42,18 +42,10 @@ mrs::Viewport::Viewport(EditorLayer& editor_layer, const std::string& name, IRen
 	// }
 
 	// Create Imgui descriptor set
-	const auto& offscreen_image_views = _renderer->OffScreenImageViews();
-	for (uint32_t i = 0; i < offscreen_image_views.size(); i++)
-	{
-		_viewport_descriptor_sets.push_back(ImGui_ImplVulkan_AddTexture(_viewport_sampler, offscreen_image_views[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-	}
+	_viewport_descriptor_set = ImGui_ImplVulkan_AddTexture(_viewport_sampler, _renderer->OffScreenImageView(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	_renderer->DeletionQueue().Push([&]() {
-		for (VkDescriptorSet viewport_descriptor : _viewport_descriptor_sets)
-		{
-			ImGui_ImplVulkan_RemoveTexture(viewport_descriptor);
-		}
-
+		ImGui_ImplVulkan_RemoveTexture(_viewport_descriptor_set);
 		vkDestroySampler(_renderer->Device().device, _viewport_sampler, nullptr);
 	});
 }
@@ -62,7 +54,6 @@ mrs::Viewport::~Viewport() {}
 
 void mrs::Viewport::Draw()
 {
-	uint32_t frame = _renderer->CurrentFrame();
 	ImGui::Begin("Viewport");
 
 	bool is_focused = ImGui::IsWindowFocused();
@@ -85,7 +76,7 @@ void mrs::Viewport::Draw()
 	Input::x = static_cast<int>(mouse_pos_app_space.x);
 	Input::y = static_cast<int>(mouse_pos_app_space.y);
 
-	ImGui::Image(_viewport_descriptor_sets[frame], viewport_size);
+	ImGui::Image(_viewport_descriptor_set, viewport_size);
 
 	// Gizmos
 	auto cam = _editor_layer.EditorCamera();

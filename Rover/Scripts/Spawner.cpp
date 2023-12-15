@@ -1,8 +1,15 @@
 #include "Spawner.h"
 #include "Core/Time.h"
 
+Ref<mrs::Font> mrs::Spawner::_font = nullptr;
+
 void mrs::Spawner::OnStart()
 {
+	// if(!_font)
+	// {
+	// 	_font = Font::LoadFromYaml(mrs::Texture::Get("KenPixel"), "Assets/Fonts/KenneyPixel.yaml");
+	// }
+
 	AddComponent<MeshRenderer>();
 }
 
@@ -19,7 +26,7 @@ void mrs::Spawner::OnUpdate(float dt)
 
 	auto& transform = GetComponent<mrs::Transform>();
 	transform.position = mrs::Lerp(p1, p2, time_elapsed / 5.0f);
-	transform.rotation += transform.position;
+	transform.rotation += transform.position * dt;
 
 	if (time_elapsed >= 5.0f) {
 		p1.x *= -1;
@@ -28,7 +35,7 @@ void mrs::Spawner::OnUpdate(float dt)
 		time_elapsed = 0.0f;
 	}
 
-	static int ctr = 0;
+	static int ctr = 0;	
 	if (time >= 0.25f) {
 		auto e = Instantiate("cube", { transform.position.x, transform.position.y - 5.0f, 0.0f });
 		auto& new_pos = e.GetComponent<mrs::Transform>().position;
@@ -40,39 +47,36 @@ void mrs::Spawner::OnUpdate(float dt)
 		}
 		else
 		{
-			e.AddComponent<mrs::MeshRenderer>(Mesh::Get("cube"), Material::Get("blue"));
+			e.AddComponent<mrs::MeshRenderer>(Mesh::Get("sphere"), Material::Get("blue"));
 		}
 		e.AddScript<Unit>();
 		e.AddComponent<mrs::RigidBody2D>();
 
-		auto& trail = e.AddComponent<mrs::ParticleSystem>();
-		trail.emission_rate = 32;
-		trail.max_particles = 64;
-		trail.particle_size = 0.15f;
-		trail.spread_angle = 35.0f;
-		trail.velocity = { 10, 50 };
-		trail.color_1 = { 1.0f, 1.0f, 1.0f, 1.000f };
-		trail.color_2 = { 0.0f, 0.0f, 0.0f, 0.25f };
-		trail.life_time = 0.55f;
-		trail.repeating = true;
-		trail.world_space = true;
+		// auto hello_world = Instantiate("");
+		// hello_world.AddComponent<SpriteRenderer>().sprite = mrs::Sprite::Get("KenPixel");
+		// hello_world.AddComponent<Renderable>().material = mrs::Material::Get("default_ui");
+		// hello_world.AddComponent<mrs::Text>().text = "eat shit kurt!";
+		// hello_world.AddComponent<mrs::Text>().font = _font;
 
 		time = 0.0f;
 		ctr++;
 	}
 }
 
-void mrs::Unit::OnUpdate(float dt)
+void mrs::Unit::OnStart() 
 {
 }
+
+void mrs::Unit::OnUpdate(float dt) {}
 
 void mrs::Unit::OnCollisionEnter2D(mrs::Collision& col)
 {
 	if (!_delay_destroy)
 	{
-		_delay_destroy = CreateRef<DelayProcess>(5.0f, [&] {
+		_delay_destroy = CreateRef<DelayProcess>(5.0f, [&] 
+		{
 			QueueDestroy();
-			});
+		});
 
 		StartProcess(_delay_destroy);
 	}

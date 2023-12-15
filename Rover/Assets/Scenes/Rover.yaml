@@ -31,7 +31,7 @@ Entities:
       Binding: class GameManager
   - Entity: 22164873
     Tag:
-      Tag: Temporary Sun Light
+      Tag: Sun Light
     Transform:
       Position: [-150, 186, -50]
       Rotation: [0, 0, 0]
@@ -43,20 +43,11 @@ Entities:
       Ambient: [1, 1, 1, 1]
       Diffuse: [0.5, 0.5, 0.5, 1]
       Specular: [1, 1, 1, 1]
-  # - Entity: 22164876
-  #   Tag:
-  #     Tag: Zenith
-  #   Transform:
-  #     Position: [0,0, 40]
-  #     Rotation: [-45, -45, -45]
-  #     Scale: [1, 1, 1]
-  #   ModelRenderer:
-  #     Model: "zenith"
   - Entity: 4404601799
     Tag:
       Tag: Nebula
     Transform:
-      Position: [2335, 0, -1000.0]
+      Position: [2335, 0, -900.0]
       Rotation: [0, 0, 0]
       Scale: [500, 500, 500]
     ParticleSystem:

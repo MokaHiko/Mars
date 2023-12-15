@@ -213,7 +213,7 @@ namespace mrs
 		surface_format.format = VK_FORMAT_B8G8R8A8_UNORM;
 		vkb::Swapchain vkb_swapchain = builder.use_default_format_selection()
 			.set_desired_present_mode(VK_PRESENT_MODE_MAILBOX_KHR)
-			//.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+			// .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
 			.set_desired_extent(_window->GetWidth(), _window->GetHeight())
 			.set_desired_format(surface_format)
 			.build()
@@ -346,7 +346,7 @@ namespace mrs
 		return _global_descriptor_buffers;
 	}
 
-std::vector<AllocatedBuffer>& Renderer::ObjectBuffers()
+	std::vector<AllocatedBuffer>& Renderer::ObjectBuffers()
 	{
 		return _object_descriptor_buffers;
 	}
@@ -358,21 +358,16 @@ std::vector<AllocatedBuffer>& Renderer::ObjectBuffers()
 		extent.width = _window->GetWidth();
 		extent.height = _window->GetHeight();
 
-		_offscreen_images.resize(frame_overlaps);
-		_offscreen_images_views.resize(frame_overlaps);
-		for (uint32_t i = 0; i < frame_overlaps; i++)
-		{
-			VkImageCreateInfo image_info = vkinit::ImageCreateInfo(_offscreen_framebuffer_format, extent, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-			VmaAllocationCreateInfo alloc_info = {};
+		VkImageCreateInfo image_info = vkinit::ImageCreateInfo(_offscreen_framebuffer_format, extent, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+		VmaAllocationCreateInfo alloc_info = {};
 
-			alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-			alloc_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		alloc_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-			VK_CHECK(vmaCreateImage(Allocator(), &image_info, &alloc_info, &_offscreen_images[i].image, &_offscreen_images[i].allocation, nullptr));
-			VkImageViewCreateInfo image_view_info = vkinit::ImageViewCreateInfo(_offscreen_images[i].image, _offscreen_framebuffer_format, VK_IMAGE_ASPECT_COLOR_BIT);
+		VK_CHECK(vmaCreateImage(Allocator(), &image_info, &alloc_info, &_offscreen_image.image, &_offscreen_image.allocation, nullptr));
+		VkImageViewCreateInfo image_view_info = vkinit::ImageViewCreateInfo(_offscreen_image.image, _offscreen_framebuffer_format, VK_IMAGE_ASPECT_COLOR_BIT);
 
-			VK_CHECK(vkCreateImageView(_device.device, &image_view_info, nullptr, &_offscreen_images_views[i]));
-		}
+		VK_CHECK(vkCreateImageView(_device.device, &image_view_info, nullptr, &_offscreen_images_view));
 
 		// Create offscren depth attachment
 		VkExtent3D depth_extent = {};
@@ -393,15 +388,12 @@ std::vector<AllocatedBuffer>& Renderer::ObjectBuffers()
 		VK_CHECK(vkCreateImageView(_device.device, &depth_image_view_info, nullptr, &_offscreen_depth_image_view));
 
 		// Clean up
-		DeletionQueue().Push([&]() {
+		DeletionQueue().Push([&]() 
+		{
 			vmaDestroyImage(Allocator(), _offscreen_depth_image.image, _offscreen_depth_image.allocation);
 			vkDestroyImageView(_device.device, _offscreen_depth_image_view, nullptr);
-
-			for (auto image_view : _offscreen_images_views)
-			{
-				vkDestroyImageView(_device.device, image_view, nullptr);
-			};
-			});
+			vkDestroyImageView(_device.device, _offscreen_images_view, nullptr);
+		});
 	}
 
 	void Renderer::InitOffScreenRenderPass()
@@ -502,30 +494,25 @@ std::vector<AllocatedBuffer>& Renderer::ObjectBuffers()
 
 	void Renderer::InitOffScreenFramebuffers()
 	{
-		_offscreen_framebuffers.resize(frame_overlaps);
-		// Link render pass attachments to swapchain images by frame buffers
+		// Link render pass attachments to swapchain images by frame buffer
+		VkFramebufferCreateInfo frame_buffer_info = {};
+		frame_buffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		frame_buffer_info.pNext = nullptr;
 
-		for (uint32_t i = 0; i < _offscreen_framebuffers.size(); i++)
-		{
-			VkFramebufferCreateInfo frame_buffer_info = {};
-			frame_buffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			frame_buffer_info.pNext = nullptr;
+		std::vector<VkImageView> attachments = { _offscreen_images_view, _offscreen_depth_image_view };
+		frame_buffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+		frame_buffer_info.pAttachments = attachments.data();
 
-			std::vector<VkImageView> attachments = { _offscreen_images_views[i], _offscreen_depth_image_view };
-			frame_buffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
-			frame_buffer_info.pAttachments = attachments.data();
+		// 2d attachments buffer
+		frame_buffer_info.width = _window->GetWidth();
+		frame_buffer_info.height = _window->GetHeight();
+		frame_buffer_info.layers = 1;
 
-			// 2d attachments buffer
-			frame_buffer_info.width = _window->GetWidth();
-			frame_buffer_info.height = _window->GetHeight();
-			frame_buffer_info.layers = 1;
+		frame_buffer_info.renderPass = _offscreen_render_pass;
+		VK_CHECK(vkCreateFramebuffer(_device.device, &frame_buffer_info, nullptr, &_offscreen_framebuffer));
 
-			frame_buffer_info.renderPass = _offscreen_render_pass;
-			VK_CHECK(vkCreateFramebuffer(_device.device, &frame_buffer_info, nullptr, &_offscreen_framebuffers[i]));
-
-			_deletion_queue.Push([&]()
-				{ vkDestroyFramebuffer(_device.device, _offscreen_framebuffers[i], nullptr); });
-		}
+		_deletion_queue.Push([&]()
+			{ vkDestroyFramebuffer(_device.device, _offscreen_framebuffer, nullptr); });
 	}
 
 	void Renderer::InitFramebuffers()
@@ -814,10 +801,10 @@ std::vector<AllocatedBuffer>& Renderer::ObjectBuffers()
 		return aligned_size;
 	}
 
-	void Renderer::Begin(Scene* scene)
+	void Renderer::WaitForFences()
 	{
 		// Get current frame index, current frame data, current cmd bufffer
-		auto& frame = CurrentFrameData();
+		const VulkanFrameContext& frame = CurrentFrameData();
 		uint32_t frame_index = CurrentFrame();
 
 		// Wait till render fence has been flagged
@@ -828,6 +815,16 @@ std::vector<AllocatedBuffer>& Renderer::ObjectBuffers()
 		// Make sure image has been acquired before submitting
 		vkAcquireNextImageKHR(_device.device, _swapchain, time_out, frame.present_semaphore, VK_NULL_HANDLE, &_current_swapchain_image);
 		PushGraphicsSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, frame.present_semaphore);
+
+		// Global Descriptors
+		UpdateGlobalDescriptors(Application::Instance().GetScene(), frame_index);
+	}
+
+	void Renderer::Begin(Scene* scene)
+	{
+		// Get current frame index, current frame data, current cmd bufffer
+		const VulkanFrameContext& frame = CurrentFrameData();
+		uint32_t frame_index = CurrentFrame();
 
 		// ~ Begin Recording
 		VkCommandBuffer cmd = frame.command_buffer;

@@ -95,29 +95,23 @@ void mrs::PostProcessingRenderPipeline::InitDescriptors()
 {
 	auto test_image = Texture::Get("chicago_traffic");
 
-	_post_process_descriptor_sets.resize(frame_overlaps);
-	for (uint32_t i = 0; i < _post_process_descriptor_sets.size(); i++)
-	{
-		VkDescriptorImageInfo base_image_info = {};
-		base_image_info.sampler = _screen_sampler;
-		base_image_info.imageView = _renderer->_offscreen_images_views[i];
-		base_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	VkDescriptorImageInfo base_image_info = {};
+	base_image_info.sampler = _screen_sampler;
+	base_image_info.imageView = _renderer->_offscreen_images_view;
+	base_image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
-			.BindImage(0, &base_image_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-			.Build(&_post_process_descriptor_sets[i], &_post_process_descriptor_set_layout);
-	}
+	vkutil::DescriptorBuilder::Begin(_renderer->DescriptorLayoutCache(), _renderer->DescriptorAllocator())
+		.BindImage(0, &base_image_info, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+		.Build(&_post_process_descriptor_set, &_post_process_descriptor_set_layout);
 }
 
 void mrs::PostProcessingRenderPipeline::OnMainPassBegin(VkCommandBuffer cmd)
 {
-	uint32_t frame_index = _renderer->CurrentFrame();
-
 	static Ref<Mesh> screen_quad = Mesh::Get("quad");
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline);
 
 	// Draw scene as quad
-	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline_layout, 0, 1, &_post_process_descriptor_sets[frame_index], 0, nullptr);
+	vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _post_process_pipeline_layout, 0, 1, &_post_process_descriptor_set, 0, nullptr);
 
 	VkDeviceSize offset = 0;
 	vkCmdBindVertexBuffers(cmd, 0, 1, &screen_quad->_buffer.buffer,  &offset);

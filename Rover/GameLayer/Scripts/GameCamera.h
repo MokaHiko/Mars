@@ -12,7 +12,7 @@ public:
     virtual void OnUpdate(float dt) override;
 private:
     mrs::Entity _follow = {};
-    float _distance = 100.0f;
+    float _distance = 75.0f;
 
     float _zoom_distance = 50.0f; 
     float _zoom_duration = 0.5f;

@@ -260,12 +260,12 @@ void mrs::EditorLayer::LoadEditorScene()
 	// hello_world.AddComponent<Text>().text = "eat shit kurt!";
 
 	// Demo Trail
-	// auto trails = app.GetScene()->Instantiate("Test Trail", {}, &serialize);
-	// trails.AddComponent<TrailRenderer>();
+	auto trails = app.GetScene()->Instantiate("Test Trail", {}, &serialize);
+	trails.AddComponent<TrailRenderer>().min_vertex_distance = 0.5f;
 
 	// Demo light 
-	// auto light = app.GetScene()->Instantiate("Light", {}, &serialize);
-	// light.AddComponent<mrs::DirectionalLight>();
+	auto light = app.GetScene()->Instantiate("Light", {}, &serialize);
+	light.AddComponent<mrs::DirectionalLight>();
 }
 
 void mrs::EditorLayer::Play()
@@ -281,20 +281,9 @@ void mrs::EditorLayer::Play()
 	application.GetScene()->Serialization(false);
 
 	// Destroy editor scene entities
-	_editor_camera.GetComponent<Camera>().SetActive(false);
-	Scene* scene = application.GetScene();
-	scene->Destroy(_editor_camera);
-
-	// Demo Test
-	// auto floor = application.GetScene()->Instantiate("Spawner");
-	// floor.GetComponent<mrs::Transform>().scale.x *= 50.0f;
-	// floor.GetComponent<mrs::Transform>().position.y = -10.0f;
-
-	// floor.AddComponent<mrs::MeshRenderer>();
-	// floor.AddComponent<mrs::RigidBody2D>().SetType(mrs::BodyType::STATIC);
-
-	// auto spawner = application.GetScene()->Instantiate("Spawner");
-	// spawner.AddScript<Spawner>();
+	// _editor_camera.GetComponent<Camera>().SetActive(false);
+	// Scene* scene = application.GetScene();
+	// scene->Destroy(_editor_camera);
 
 	// Enable runtime layers
 	application.EnableLayer("Physics2DLayer");

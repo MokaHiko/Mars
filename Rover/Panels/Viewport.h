@@ -21,7 +21,7 @@ namespace mrs
         Ref<Renderer> _renderer;
         VkSampler _viewport_sampler;
 
-        std::vector<VkDescriptorSet> _viewport_descriptor_sets;
+        VkDescriptorSet _viewport_descriptor_set;
         bool _focus_state = true;
     };
 }

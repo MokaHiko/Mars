@@ -36,13 +36,6 @@ void GameManager::OnStart()
 		MRS_ERROR("No game camera script found");
 	}
 
-	// Test
-	// {
-	// 	auto spawner = Instantiate("Spawner");
-	// 	spawner.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("cube"), mrs::Material::Get("default"));
-	// 	spawner.AddScript<Spawner>();
-	// }
-
 	{
 		// auto& sky = Instantiate("SkyBox");
 		// sky.AddComponent<mrs::MeshRenderer>(mrs::Mesh::Get("sphere"), mrs::Material::Get("stars"));

@@ -15,12 +15,10 @@
 
 namespace mrs
 {
+    // A entities that share the same render pipeline
     struct RenderableBatch
     {
         std::vector<Entity> entities;
-
-        Material* material;
-        Mesh* mesh;
     };
 
     // RenderPipeline Stack

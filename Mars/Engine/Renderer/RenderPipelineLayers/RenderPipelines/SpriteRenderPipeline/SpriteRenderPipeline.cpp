@@ -71,8 +71,6 @@ void mrs::SpriteRenderPipeline::InitDescriptors()
 
 void mrs::SpriteRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
 {
-    UpdateDescriptors();
-
     uint32_t n_frame = _renderer->CurrentFrame();
     VulkanFrameContext frame_context = _renderer->CurrentFrameData();
 
@@ -125,7 +123,7 @@ void mrs::SpriteRenderPipeline::End(VkCommandBuffer cmd)
 {
 }
 
-void mrs::SpriteRenderPipeline::UpdateDescriptors()
+void mrs::SpriteRenderPipeline::UpdateDescriptors(uint32_t current_frame, float dt, RenderableBatch* batch)
 {
     Scene* scene = Application::Instance().GetScene();
 

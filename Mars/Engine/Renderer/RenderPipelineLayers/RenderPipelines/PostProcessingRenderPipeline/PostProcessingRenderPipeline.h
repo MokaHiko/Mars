@@ -20,7 +20,7 @@ namespace mrs
         void InitPostProcessPipeline();
         void InitDescriptors();
     private:
-        std::vector<VkDescriptorSet> _post_process_descriptor_sets;
+        VkDescriptorSet _post_process_descriptor_set;
         VkSampler _screen_sampler;
 
         VkDescriptorSetLayout _post_process_descriptor_set_layout;

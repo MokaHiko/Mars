@@ -19,11 +19,11 @@ namespace mrs
 
         virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch) override;
         virtual void End(VkCommandBuffer cmd) override;
+
+        virtual void UpdateDescriptors(uint32_t current_frame, float dt, RenderableBatch* batch) override;
     private:
         void OnTrailRendererCreated(entt::basic_registry<entt::entity>&, entt::entity entity);
         void OnTrailRendererDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity);
-
-        void UpdateTrails();
     private:
         // Line Renderer
         std::vector<VkDescriptorSet> _global_data_sets = {};
@@ -31,6 +31,10 @@ namespace mrs
 
         VkDescriptorSetLayout _object_set_layout = VK_NULL_HANDLE;
         std::vector<VkDescriptorSet> _object_sets = {};
+
+        std::vector<AllocatedBuffer> _trails_vertex_buffer = {};
+        int n_trails = 0;
+        int _insert_index = 0;
 
         Scene* _scene = nullptr;
     };

@@ -141,23 +141,7 @@ void CBRenderPipeline::InitDescriptors()
 
 void CBRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, mrs::RenderableBatch* batch)
 {
-    if (batch->entities.empty())
-    {
-        return;
-    }
-
-    // TODO: Add on CB properties change or new celestial body
-    _rerecord = true;
-    if (_rerecord)
-    {
-        BuildBatches(cmd, batch);
-        RecordIndirectcommands(cmd, batch);
-        UpdateDescriptors(current_frame);
-
-        _rerecord = false;
-    }
-
-    DrawObjects(cmd, batch);
+    DrawObjects(cmd, current_frame, batch);
 }
 
 void CBRenderPipeline::End(VkCommandBuffer cmd)
@@ -206,6 +190,8 @@ void CBRenderPipeline::OnCelestialBodyUpdated(entt::basic_registry<entt::entity>
     Entity e{ entity, Application::Instance().GetScene() };
     auto& cb = e.GetComponent<CelestialBody>();
     RegisterCelestialBody(cb);
+
+    _rerecord = true;
 }
 
 void CBRenderPipeline::OnCelestialBodyDestroyed(entt::basic_registry<entt::entity>&, entt::entity entity)
@@ -216,18 +202,29 @@ void CBRenderPipeline::OnCelestialBodyDestroyed(entt::basic_registry<entt::entit
     _rerecord = true;
 }
 
-void CBRenderPipeline::UpdateDescriptors(uint32_t frame_index)
+void CBRenderPipeline::UpdateDescriptors(uint32_t current_frame, float dt, mrs::RenderableBatch* batch)
 {
-    // Copy settings to noise settings storage buffer
-    char* noise_data = nullptr;
-    vmaMapMemory(_renderer->Allocator(), _noise_settings_buffers[frame_index].allocation, (void**)&noise_data);
-    for(int i = 0; i < _noise_settings.size(); i++)
+    // TODO: Add on CB properties change or new celestial body
+    if (_rerecord)
     {
-        static size_t padded_noise_settings_size = _renderer->PadToStorageBufferSize(sizeof(NoiseSettings));
-        memcpy(noise_data, &_noise_settings[i], sizeof(NoiseSettings));
-        noise_data += padded_noise_settings_size;
+        BuildBatches(batch);
+        RecordIndirectcommands(batch);
+
+        for(int frame = 0; frame < mrs::frame_overlaps; frame++)
+        {
+            // Copy settings to noise settings storage buffer
+            char* noise_data = nullptr;
+            vmaMapMemory(_renderer->Allocator(), _noise_settings_buffers[frame].allocation, (void**)&noise_data);
+            for(int i = 0; i < _noise_settings.size(); i++)
+            {
+                static size_t padded_noise_settings_size = _renderer->PadToStorageBufferSize(sizeof(NoiseSettings));
+                memcpy(noise_data, &_noise_settings[i], sizeof(NoiseSettings));
+                noise_data += padded_noise_settings_size;
+            }
+            vmaUnmapMemory(_renderer->Allocator(), _noise_settings_buffers[frame].allocation);
+        }
+        _rerecord = false;
     }
-    vmaUnmapMemory(_renderer->Allocator(), _noise_settings_buffers[frame_index].allocation);
 }
 
 void CBRenderPipeline::RegisterCelestialBody(CelestialBody& cb)
@@ -348,59 +345,57 @@ void CBRenderPipeline::InitIndirectCommands() {
     }
 }
 
-void CBRenderPipeline::BuildBatches(VkCommandBuffer cmd, mrs::RenderableBatch* batch)
+void CBRenderPipeline::BuildBatches(mrs::RenderableBatch* batch)
 {
-    _noise_settings.clear();
+    //_noise_settings.clear();
     _batches.clear();
     _batches = GetRenderablesAsBatches(batch);
 }
 
-void CBRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, mrs::RenderableBatch* batch)
+void CBRenderPipeline::RecordIndirectcommands(mrs::RenderableBatch* batch)
 {
     using namespace mrs;
-
-    uint32_t i = _renderer->CurrentFrame();
-	char* draw_commands;
-	vmaMapMemory(_renderer->Allocator(), _indirect_buffers[i].allocation, (void**)&draw_commands);
 
 	// Encode draw commands for each renderable ahead of time
-	int ctr = 0;
-	for (auto e : batch->entities)
-	{
-		const auto& cb = e.GetComponent<CelestialBody>();
-
-		// 6 faces of cube
-		for (auto& face : cb.terrain_faces)
+    for (int i = 0; i < frame_overlaps; i++)
+    {
+		int ctr = 0;
+		char* draw_commands;
+		vmaMapMemory(_renderer->Allocator(), _indirect_buffers[i].allocation, (void**)&draw_commands);
+		for (auto& e : batch->entities)
 		{
-			VkDrawIndirectCommand draw_command = {};
-			draw_command.instanceCount = 1;
-			draw_command.firstInstance = e.Id();
-			draw_command.firstVertex = 0;
-			draw_command.vertexCount = face.Mesh()->_vertex_count;
+			const auto& cb = e.GetComponent<CelestialBody>();
 
-			static size_t padded_draw_indirect_size = _renderer->PadToStorageBufferSize(sizeof(VkDrawIndirectCommand));
-			size_t offset = ctr * padded_draw_indirect_size;
-			memcpy(draw_commands + offset, &draw_command, sizeof(VkDrawIndirectCommand));
-			ctr++;
+			// 6 faces of cube
+			for (auto& face : cb.terrain_faces)
+			{
+				VkDrawIndirectCommand draw_command = {};
+				draw_command.instanceCount = 1;
+				draw_command.firstInstance = e.Id();
+				draw_command.firstVertex = 0;
+				draw_command.vertexCount = face.Mesh()->_vertex_count;
+
+				static size_t padded_draw_indirect_size = _renderer->PadToStorageBufferSize(sizeof(VkDrawIndirectCommand));
+				size_t offset = ctr * padded_draw_indirect_size;
+				memcpy(draw_commands + offset, &draw_command, sizeof(VkDrawIndirectCommand));
+		        ctr++;
+			}
 		}
-	}
-	vmaUnmapMemory(_renderer->Allocator(), _indirect_buffers[i].allocation);
+		vmaUnmapMemory(_renderer->Allocator(), _indirect_buffers[i].allocation);
+    }
 }
 
-void CBRenderPipeline::DrawObjects(VkCommandBuffer cmd, mrs::RenderableBatch* batch)
+void CBRenderPipeline::DrawObjects(VkCommandBuffer cmd, uint32_t current_frame, mrs::RenderableBatch* batch)
 {
     using namespace mrs;
-
-    uint32_t n_frame = _renderer->CurrentFrame();
-
     VulkanFrameContext frame_context = _renderer->CurrentFrameData();
 
     // Bind global, object, and light descriptors
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_sets[n_frame], 0, nullptr);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[n_frame], 0, nullptr);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 3, 1, &_dir_light_sets[n_frame], 0, nullptr);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 4, 1, &_celestial_body_sets[n_frame], 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_sets[current_frame], 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[current_frame], 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 3, 1, &_dir_light_sets[current_frame], 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 4, 1, &_celestial_body_sets[current_frame], 0, nullptr);
 
     for (auto& batch : _batches)
     {
@@ -418,7 +413,7 @@ void CBRenderPipeline::DrawObjects(VkCommandBuffer cmd, mrs::RenderableBatch* ba
         // Draw batch
         static uint32_t batch_stride = static_cast<uint32_t>(_renderer->PadToStorageBufferSize(sizeof(VkDrawIndirectCommand)));
         uint32_t indirect_offset = batch.first * batch_stride;
-        vkCmdDrawIndirect(cmd, _indirect_buffers[n_frame].buffer, indirect_offset, batch.count, batch_stride);
+        vkCmdDrawIndirect(cmd, _indirect_buffers[current_frame].buffer, indirect_offset, batch.count, batch_stride);
     }
 }
 

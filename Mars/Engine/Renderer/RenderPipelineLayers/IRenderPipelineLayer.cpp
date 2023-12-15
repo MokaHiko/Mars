@@ -102,12 +102,17 @@ namespace mrs
 		VkCommandBuffer cmd = _renderer->CurrentFrameData().command_buffer;
 
 		Scene* scene = Application::Instance().GetScene();
-		_renderer->UpdateGlobalDescriptors(scene, current_frame_index);
 		BuildBatches(scene);
 
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
 			(*it)->Compute(_renderer->CurrentFrameData().compute_command_buffer, current_frame_index, dt, &_renderable_batches[*it]);
+		}
+
+		_renderer->WaitForFences();
+		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
+		{
+			(*it)->UpdateDescriptors(current_frame_index, dt, &_renderable_batches[*it]);
 		}
 
 		_renderer->Begin(scene);
@@ -116,7 +121,7 @@ namespace mrs
 			(*it)->OnPreRenderPass(cmd, &_renderable_batches[*it]);
 		}
 
-		_renderer->MeshPassStart(cmd, _renderer->_offscreen_framebuffers[current_frame_index], _renderer->_offscreen_render_pass);
+		_renderer->MeshPassStart(cmd, _renderer->_offscreen_framebuffer, _renderer->_offscreen_render_pass);
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
 		{
 			(*it)->Begin(cmd, current_frame_index, &_renderable_batches[*it]);
@@ -127,24 +132,6 @@ namespace mrs
 			(*it)->End(cmd);
 		}
 		_renderer->MeshPassEnd(cmd);
-
-		// OffScreen Image Pipeline Barrier
-		VkImageMemoryBarrier view_port_image_barrier = {};
-		view_port_image_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		view_port_image_barrier.srcAccessMask = 0;
-		view_port_image_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		view_port_image_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		view_port_image_barrier.image = _renderer->_offscreen_images[current_frame_index].image;
-
-		VkImageSubresourceRange range = {};
-		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		range.levelCount = 1;
-		range.baseMipLevel = 0;
-		range.layerCount = 1;
-		range.baseArrayLayer = 0;
-		view_port_image_barrier.subresourceRange = range;
-
-		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &view_port_image_barrier);
 
 		_renderer->MainPassStart(cmd);
 		for (auto it = _render_pipeline_layers.rbegin(); it != _render_pipeline_layers.rend(); it++)
@@ -197,7 +184,7 @@ namespace mrs
 
 	void IRenderPipelineLayer::BuildBatches(Scene* scene)
 	{
-		auto renderables = scene->Registry()->view<MeshRenderer>();
+		auto renderables = scene->Registry()->group<MeshRenderer>();
 
 		for (auto entity : renderables)
 		{
@@ -213,7 +200,7 @@ namespace mrs
 
 		{
 			// TODO: Replace with Renderable Base Component
-			auto n_renderables = scene->Registry()->view<ParticleSystem>();
+			auto n_renderables = scene->Registry()->group<ParticleSystem>();
 			for (auto entity : n_renderables)
 			{
 				Entity e(entity, scene);
@@ -228,7 +215,7 @@ namespace mrs
 		}
 
 		{
-			auto n_renderables = scene->Registry()->view<Renderable>();
+			auto n_renderables = scene->Registry()->group<Renderable>();
 			for (auto entity : n_renderables)
 			{
 				Entity e(entity, scene);

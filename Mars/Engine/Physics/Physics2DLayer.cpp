@@ -31,8 +31,8 @@ namespace mrs
 		uint32_t velocity_iterations = 6;
 		uint32_t position_iterations = 2;
 
-		float timeStep = Time::FixedDeltaTime();
-		_physics_world->Step(dt, velocity_iterations, position_iterations);
+		float timeStep = Time::DeltaTime();
+		_physics_world->Step(timeStep, velocity_iterations, position_iterations);
 
 		FlushQueues();
 
@@ -64,6 +64,7 @@ namespace mrs
 
 	void Physics2DLayer::OnFixedUpdate(float fixed_dt)
 	{
+;
 	}
 
 	void Physics2DLayer::OnImGuiRender()

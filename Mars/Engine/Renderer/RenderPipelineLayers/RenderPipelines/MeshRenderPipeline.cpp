@@ -53,13 +53,26 @@ void mrs::MeshRenderPipeline::InitDescriptors() {
         .Build(&_shadow_map_descriptor, &_shadow_map_descriptor_layout);
 }
 
+void mrs::MeshRenderPipeline::UpdateDescriptors(uint32_t current_frame, float dt, RenderableBatch* batch) 
+{
+    if (_rerecord)
+    {
+        BuildBatches(batch);
+        RecordIndirectcommands(current_frame, batch);
+
+        _rerecord = false;
+    }
+}
+
 mrs::MeshRenderPipeline::MeshRenderPipeline()
     :IRenderPipeline("MeshRenderPipeline") {}
 
 mrs::MeshRenderPipeline::~MeshRenderPipeline() {}
 
-void mrs::MeshRenderPipeline::Init() {
+void mrs::MeshRenderPipeline::Init() 
+{
 	Scene* scene = Application::Instance().GetScene();
+
 	scene->Registry()->on_construct<MeshRenderer>().connect<&MeshRenderPipeline::OnMeshRendererCreated>(this);
 	scene->Registry()->on_destroy<MeshRenderer>().connect<&MeshRenderPipeline::OnMeshRendererDestroyed>(this);
 
@@ -118,15 +131,38 @@ void mrs::MeshRenderPipeline::Init() {
 
 void mrs::MeshRenderPipeline::Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
 {
-    if (_rerecord)
-    {
-        BuildBatches(cmd, batch);
-        RecordIndirectcommands(cmd, current_frame, batch);
-
-        _rerecord = false;
-    }
-
+    // TODO: Optimize for indirect draw
     DrawObjects(cmd, current_frame);
+
+    // Bind global, object, and light descriptors
+     //vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+     //vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_sets[current_frame], 0, nullptr);
+     //vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[current_frame], 0, nullptr);
+     //vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 3, 1, &_shadow_map_descriptor, 0, nullptr);
+     //vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 4, 1, &_dir_light_sets[current_frame], 0, nullptr);
+
+     //static Scene* _scene = Application::Instance().GetScene();
+     //for (auto& entities: batch->entities)
+     //{
+     //    Entity e = {entities, _scene};
+
+     //    auto& renderable = e.GetComponent<MeshRenderer>();
+
+     //    // Bind material buffer and material texures
+     //    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 2, 1, &renderable.GetMaterial()->DescriptorSet(), 0, nullptr);
+
+     //    // Bind batch mesh vertex and index buffers
+     //    VkDeviceSize offset = 0;
+     //    vkCmdBindVertexBuffers(cmd, 0, 1, &renderable.GetMesh()->_buffer.buffer, &offset);
+
+     //    if (renderable.GetMesh()->_index_count > 0)
+     //    {
+     //        vkCmdBindIndexBuffer(cmd, renderable.GetMesh()->_index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+     //    }
+
+     //    // Draw batch
+     //    vkCmdDrawIndexed(cmd, renderable.GetMesh()->_index_count, 1, 0, 0, e.Id());
+     //}
 }
 
 void mrs::MeshRenderPipeline::End(VkCommandBuffer cmd)
@@ -154,8 +190,6 @@ void mrs::MeshRenderPipeline::OnMaterialsUpdate()
     _rerecord = true;
 }
 
-
-
 void mrs::MeshRenderPipeline::OnMeshRendererCreated(entt::basic_registry<entt::entity>&, entt::entity entity)
 {
     _rerecord = true;
@@ -169,21 +203,17 @@ void mrs::MeshRenderPipeline::OnMeshRendererDestroyed(entt::basic_registry<entt:
 
 void mrs::MeshRenderPipeline::DrawObjects(VkCommandBuffer cmd, uint32_t current_frame)
 {
-    VulkanFrameContext frame_context = _renderer->CurrentFrameData();
-
     // Bind global, object, and light descriptors
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_global_data_sets[current_frame], 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1, &_object_sets[current_frame], 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 3, 1, &_shadow_map_descriptor, 0, nullptr);
     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 4, 1, &_dir_light_sets[current_frame], 0, nullptr);
 
     for (auto& batch : _batches)
     {
         // Bind material buffer and material texures
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 2, 1, &batch.material->DescriptorSet(), 0, nullptr);
-
-        // Bind shadow map
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 3, 1, &_shadow_map_descriptor, 0, nullptr);
 
         // Bind batch mesh vertex and index buffers
         VkDeviceSize offset = 0;
@@ -207,21 +237,18 @@ void mrs::MeshRenderPipeline::InitIndirectCommands()
 
     // Create indirect buffer per frame
     _indirect_buffers.resize(frame_overlaps);
-    for (int i = 0; i < frame_overlaps; i++)
+    for(int i = 0; i < frame_overlaps; i++)
     {
-        _indirect_buffers[i] =
-            _renderer->CreateBuffer(_renderer->PadToStorageBufferSize(
-                _renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand))) *
-                max_indirect_commands,
-                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
-                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                VMA_MEMORY_USAGE_CPU_TO_GPU, 0);
+        _indirect_buffers[i] = _renderer->CreateBuffer(
+                _renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand)) * max_indirect_commands,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VMA_MEMORY_USAGE_CPU_TO_GPU, 
+                0);
 
         _renderer->DeletionQueue().Push([=]()
-            {
-                vmaDestroyBuffer(_renderer->Allocator(), _indirect_buffers[i].buffer, _indirect_buffers[i].allocation);
-            });
+        {
+            vmaDestroyBuffer(_renderer->Allocator(), _indirect_buffers[i].buffer, _indirect_buffers[i].allocation);
+        });
     }
 }
 
@@ -234,7 +261,7 @@ std::vector<mrs::IndirectBatch> mrs::MeshRenderPipeline::GetRenderablesAsBatches
 
     int batch_first = 0;
 
-    for (auto e : batch->entities)
+    for (auto& e : batch->entities)
     {
         auto& renderable = e.GetComponent<MeshRenderer>();
 
@@ -336,33 +363,38 @@ void mrs::MeshRenderPipeline::InitOffScreenPipeline()
         });
 }
 
-void mrs::MeshRenderPipeline::BuildBatches(VkCommandBuffer cmd, RenderableBatch* batch)
+void mrs::MeshRenderPipeline::BuildBatches(RenderableBatch* batch)
 {
     _batches = GetRenderablesAsBatches(batch);
 }
 
-void mrs::MeshRenderPipeline::RecordIndirectcommands(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch)
+void mrs::MeshRenderPipeline::RecordIndirectcommands(uint32_t current_frame, RenderableBatch* batch)
 {
-    char* draw_commands;
-    vmaMapMemory(_renderer->Allocator(), _indirect_buffers[current_frame].allocation, (void**)&draw_commands);
-    // Encode draw commands for each renderable ahead of time
-    int ctr = 0;
-    for (auto e : batch->entities)
+	size_t padded_command_size = _renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand));
+
+    // Encode draw commands for each mesh renderer 
+    for(int i = 0; i < frame_overlaps; i++)
     {
-        auto renderable = e.GetComponent<MeshRenderer>();
+	    int ctr = 0;
+        char* draw_commands;
+        vmaMapMemory(_renderer->Allocator(), _indirect_buffers[i].allocation, (void**)&draw_commands);
+        for (auto& e : batch->entities)
+        {
+            auto& mesh_renderer = e.GetComponent<MeshRenderer>();
 
-        VkDrawIndexedIndirectCommand draw_command = {};
-        draw_command.vertexOffset = 0;
-        draw_command.indexCount = renderable.GetMesh()->_index_count;
-        draw_command.instanceCount = 1;
-        draw_command.firstInstance = e.Id();
-
-        static size_t padded_draw_indirect_size = _renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand));
-        size_t offset = ctr * padded_draw_indirect_size;
-        memcpy(draw_commands + offset, &draw_command, sizeof(VkDrawIndexedIndirectCommand));
-        ctr++;
+            VkDrawIndexedIndirectCommand draw_command = {};
+            draw_command.vertexOffset = 0;
+            draw_command.firstIndex = 0;
+            draw_command.indexCount = mesh_renderer.GetMesh()->_index_count;
+            draw_command.instanceCount = 1;
+            draw_command.firstInstance = e.Id();
+            
+            size_t offset = padded_command_size * ctr;
+            memcpy(draw_commands + offset, &draw_command, sizeof(VkDrawIndexedIndirectCommand));
+            ctr++;
+        }
+        vmaUnmapMemory(_renderer->Allocator(), _indirect_buffers[i].allocation);
     }
-    vmaUnmapMemory(_renderer->Allocator(), _indirect_buffers[current_frame].allocation);
 }
 
 void mrs::MeshRenderPipeline::DrawShadowMap(VkCommandBuffer cmd, RenderableBatch* batch)
@@ -388,7 +420,6 @@ void mrs::MeshRenderPipeline::DrawShadowMap(VkCommandBuffer cmd, RenderableBatch
         // Draw batch
         static uint32_t batch_stride = static_cast<uint32_t>(_renderer->PadToStorageBufferSize(sizeof(VkDrawIndexedIndirectCommand)));
         uint32_t indirect_offset = batch.first * batch_stride;
-
         vkCmdDrawIndexedIndirect(cmd, _indirect_buffers[n_frame].buffer, indirect_offset, batch.count, batch_stride);
     }
 }

@@ -19,8 +19,8 @@ namespace mrs
 
         virtual void Begin(VkCommandBuffer cmd, uint32_t current_frame, RenderableBatch* batch) override;
         virtual void End(VkCommandBuffer cmd) override;
-    private:
-        void UpdateDescriptors();
+
+        virtual void UpdateDescriptors(uint32_t current_frame, float dt, RenderableBatch* batch) override;
     private:
         // TODO: Make Sprite Push constant data and put in storage buffer
         struct SpritePushConstant 

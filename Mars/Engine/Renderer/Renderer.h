@@ -75,6 +75,8 @@ namespace mrs {
 		void Init();
 		void Shutdown();
 
+        void WaitForFences();
+
 		// Starts the current frame and the recording of the command buffer
 		void Begin(Scene *scene);
 
@@ -122,9 +124,9 @@ namespace mrs {
 
         // Offscreen frame buffers
         const VkFormat _offscreen_framebuffer_format = VK_FORMAT_R8G8B8A8_UNORM;
-        std::vector<AllocatedImage> _offscreen_images; 
-        std::vector<VkImageView> _offscreen_images_views; 
-        std::vector<VkFramebuffer> _offscreen_framebuffers;
+        AllocatedImage _offscreen_image; 
+        VkImageView _offscreen_images_view; 
+        VkFramebuffer _offscreen_framebuffer;
 
         // Offscreen depth attachments
 		AllocatedImage _offscreen_depth_image = {};
@@ -134,12 +136,14 @@ namespace mrs {
 		const VkInstance Instance() const { return _instance; }
 
 		const VkFormat SwapchainImageFormat() const {return _swapchain_image_format;}
-		const std::vector<VkImageView> OffScreenImageViews() const { return _offscreen_images_views; }
+		VkImageView OffScreenImageView() const { return _offscreen_images_view; }
 		const std::vector<VkImage> SwapchainImages() const {return _swapchain_images;}
 		const std::vector<VkImageView> SwapchainImageViews() const {return _swapchain_image_views;}
 		const VkRenderPass SwapchainRenderPass() const {return _render_pass;}
 
 		const uint32_t CurrentFrame() const { return _frame_count % frame_overlaps; }
+		const uint32_t CurrentSwapChainImage() const { return _current_swapchain_image; }
+
 		const VkFramebuffer CurrentFrameBuffer() const { return _framebuffers[_current_swapchain_image]; }
 		const VulkanFrameContext &CurrentFrameData() const { return _frame_data[_frame_count % frame_overlaps]; }
 
@@ -156,7 +160,6 @@ namespace mrs {
 		size_t PadToStorageBufferSize(size_t original_size);
 
 		void ImmediateSubmit(std::function<void(VkCommandBuffer)> &&fn);
-		void UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index);
 	private:
 		void InitVulkan();
 		void InitSwapchain();
@@ -164,7 +167,9 @@ namespace mrs {
 		void InitDefaultRenderPass();
 		void InitFramebuffers();
 		void InitSyncStructures();
+
 		void InitGlobalDescriptors();
+		void UpdateGlobalDescriptors(Scene *scene, uint32_t frame_index);
 	public:
 		// General renderer info
 		RendererInfo _info = {};

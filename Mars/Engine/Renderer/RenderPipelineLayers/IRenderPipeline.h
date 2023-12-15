@@ -20,7 +20,7 @@ namespace mrs
     // Indirect Drawing
     struct IndirectBatch
     {
-        mrs::Mesh* mesh;
+        mrs::Mesh* mesh; 
         mrs::Material* material;
 
         uint32_t first; // batches first instance in draw indirect buffer
@@ -65,6 +65,8 @@ namespace mrs
         virtual void Init() {};
 
         virtual void InitDescriptors() {};
+
+        virtual void UpdateDescriptors(uint32_t current_frame, float dt, RenderableBatch* batch) {};
 
         // Called in in compute pass
         virtual void Compute(VkCommandBuffer cmd, uint32_t current_frame, float dt, RenderableBatch* compute_batch) {};
