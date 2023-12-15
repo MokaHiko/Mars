@@ -26,5 +26,5 @@
 	path = Vendor/imGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
 [submodule "vendor/spirv_reflect"]
-	path = vendor/spirv_reflect
+	path = Vendor/spirv_reflect
 	url = https://github.com/KhronosGroup/SPIRV-Reflect.git
